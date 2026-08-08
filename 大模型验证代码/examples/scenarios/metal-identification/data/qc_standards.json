@@ -1,0 +1,19 @@
+{
+  "description": "金属质检标准模板。训练与推理时用于判断实测光谱是否落在合格范围内。",
+  "standards": {
+    "gold": {
+      "material_cn": "黄金",
+      "red_blue_ratio_min": 1.9,
+      "red_blue_ratio_max": 2.3,
+      "nir_mean_min": 0.9,
+      "surface_states_allowed": ["polished", "brushed"]
+    },
+    "silver": {
+      "material_cn": "白银",
+      "red_blue_ratio_min": 0.98,
+      "red_blue_ratio_max": 1.08,
+      "nir_mean_min": 0.92,
+      "surface_states_allowed": ["polished", "brushed"]
+    }
+  }
+}

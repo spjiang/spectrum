@@ -1,0 +1,134 @@
+{
+  "description": "教学用金属高光谱质检示例数据。数值为简化反射率，便于理解合格、待复检、不合格样本差异。",
+  "wavelengths_nm": [400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000],
+  "samples": [
+    {
+      "sample_id": "qc_gold_001_roi_center",
+      "material_hint": "标称黄金饰品，产线质检ROI",
+      "reflectance": [0.38, 0.42, 0.55, 0.72, 0.83, 0.88, 0.91, 0.92, 0.93, 0.93, 0.94, 0.94, 0.94],
+      "features": {
+        "blue_450": 0.42,
+        "green_550": 0.72,
+        "red_650": 0.88,
+        "nir_850": 0.93,
+        "slope_450_650": 0.0023,
+        "red_blue_ratio": 2.1,
+        "nir_mean_800_1000": 0.936
+      },
+      "metadata": {
+        "camera": "VIS-NIR hyperspectral camera",
+        "calibration": "white_reference_corrected",
+        "illumination": "D65 simulated light source",
+        "roi": "center_20x20_pixels",
+        "surface_state": "polished"
+      },
+      "label": {
+        "expected_material": "gold",
+        "expected_material_cn": "黄金",
+        "detected_material": "gold",
+        "detected_material_cn": "黄金",
+        "qc_result": "pass",
+        "grade": "A",
+        "defect": "none",
+        "disposition": "release",
+        "label_source": "expert_verified"
+      }
+    },
+    {
+      "sample_id": "qc_silver_001_roi_center",
+      "material_hint": "标称白银饰品，产线质检ROI",
+      "reflectance": [0.88, 0.9, 0.91, 0.92, 0.93, 0.93, 0.94, 0.94, 0.94, 0.94, 0.95, 0.95, 0.95],
+      "features": {
+        "blue_450": 0.9,
+        "green_550": 0.92,
+        "red_650": 0.93,
+        "nir_850": 0.94,
+        "slope_450_650": 0.00015,
+        "red_blue_ratio": 1.03,
+        "nir_mean_800_1000": 0.945
+      },
+      "metadata": {
+        "camera": "VIS-NIR hyperspectral camera",
+        "calibration": "white_reference_corrected",
+        "illumination": "D65 simulated light source",
+        "roi": "center_20x20_pixels",
+        "surface_state": "polished"
+      },
+      "label": {
+        "expected_material": "silver",
+        "expected_material_cn": "白银",
+        "detected_material": "silver",
+        "detected_material_cn": "白银",
+        "qc_result": "pass",
+        "grade": "A",
+        "defect": "none",
+        "disposition": "release",
+        "label_source": "expert_verified"
+      }
+    },
+    {
+      "sample_id": "qc_gold_003_roi_center",
+      "material_hint": "标称黄金，但光谱疑似铜色替代",
+      "reflectance": [0.32, 0.36, 0.48, 0.61, 0.72, 0.8, 0.85, 0.87, 0.88, 0.89, 0.9, 0.9, 0.9],
+      "features": {
+        "blue_450": 0.36,
+        "green_550": 0.61,
+        "red_650": 0.8,
+        "nir_850": 0.89,
+        "slope_450_650": 0.0022,
+        "red_blue_ratio": 2.22,
+        "nir_mean_800_1000": 0.895
+      },
+      "metadata": {
+        "camera": "VIS-NIR hyperspectral camera",
+        "calibration": "white_reference_corrected",
+        "illumination": "D65 simulated light source",
+        "roi": "center_20x20_pixels",
+        "surface_state": "polished"
+      },
+      "label": {
+        "expected_material": "gold",
+        "expected_material_cn": "黄金",
+        "detected_material": "copper_like",
+        "detected_material_cn": "疑似铜色金属",
+        "qc_result": "recheck",
+        "grade": "C",
+        "defect": "material_mismatch",
+        "disposition": "recheck",
+        "label_source": "expert_verified"
+      }
+    },
+    {
+      "sample_id": "qc_silver_004_roi_center",
+      "material_hint": "标称白银，但表面氧化不合格",
+      "reflectance": [0.22, 0.24, 0.28, 0.31, 0.33, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42],
+      "features": {
+        "blue_450": 0.42,
+        "green_550": 0.45,
+        "red_650": 0.47,
+        "nir_850": 0.49,
+        "slope_450_650": 0.00025,
+        "red_blue_ratio": 1.12,
+        "nir_mean_800_1000": 0.48
+      },
+      "metadata": {
+        "camera": "VIS-NIR hyperspectral camera",
+        "calibration": "white_reference_corrected",
+        "illumination": "D65 simulated light source",
+        "roi": "center_20x20_pixels",
+        "surface_state": "oxidized"
+      },
+      "label": {
+        "expected_material": "silver",
+        "expected_material_cn": "白银",
+        "detected_material": "silver_abnormal",
+        "detected_material_cn": "白银表面异常",
+        "qc_result": "fail",
+        "grade": "C",
+        "defect": "oxidation",
+        "disposition": "reject",
+        "label_source": "expert_verified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# SpectralGPT
+
+- 年份：2024
+- 源目录：`2024/SpectralGPT`
+- 论文/说明：SpectralGPT: Spectral Remote Sensing Foundation Model
+
+## 目录说明
+
+- `source/`：模型源代码
+- `docs/`：文档
+- `datasets/`：指向统一测试数据集（软链接）

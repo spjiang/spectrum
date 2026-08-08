@@ -1,0 +1,5 @@
+sample_id,expected_material,expected_material_cn,qc_result,grade,defect,disposition,surface_state,notes
+qc_gold_001_roi_center,gold,黄金,pass,A,none,release,polished,标称黄金，光谱符合标准模板
+qc_silver_001_roi_center,silver,白银,pass,A,none,release,polished,标称白银，光谱符合标准模板
+qc_gold_003_roi_center,gold,黄金,recheck,C,material_mismatch,recheck,polished,标称黄金，但光谱疑似铜色替代
+qc_silver_004_roi_center,silver,白银,fail,C,oxidation,reject,oxidized,标称白银，但表面氧化不合格

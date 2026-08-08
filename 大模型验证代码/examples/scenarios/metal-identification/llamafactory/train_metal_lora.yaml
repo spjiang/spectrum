@@ -1,0 +1,42 @@
+### 金属质检 Qwen2.5-7B LoRA 微调配置
+### 使用方式（在 LLaMA-Factory 根目录执行）:
+###   llamafactory-cli train /path/to/spectrum/examples/scenarios/metal-identification/llamafactory/train_metal_lora.yaml
+
+model_name_or_path: Qwen/Qwen2.5-7B-Instruct
+
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 16
+lora_alpha: 32
+lora_target: all
+
+# 数据集目录：运行前请将下方路径改为本机 spectrum 仓库的 training 绝对路径
+# 例如 macOS: /Users/xxx/spectrum/examples/scenarios/metal-identification/training
+dataset_dir: /Users/jiangshengping/wwwroot/shenzhen/spectrum/examples/scenarios/metal-identification/training
+dataset: metal_qc_sft
+template: qwen
+cutoff_len: 2048
+max_samples: 10000
+overwrite_cache: true
+preprocessing_num_workers: 4
+
+output_dir: saves/metal-qc-qwen7b-lora
+logging_steps: 10
+save_steps: 100
+plot_loss: true
+overwrite_output_dir: true
+
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+learning_rate: 2.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+
+# 10% 自动划分验证集
+val_size: 0.1
+per_device_eval_batch_size: 2
+eval_strategy: steps
+eval_steps: 100

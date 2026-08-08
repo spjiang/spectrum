@@ -1,0 +1,801 @@
+sample_id,expected_material,expected_material_cn,qc_result,grade,defect,disposition,surface_state,red_blue_ratio,nir_mean_800_1000,notes
+qc_gold_fail_ox_0045,gold,黄金,fail,C,oxidation,reject,oxidized,1.19,0.4065,标称黄金，表面氧化发黑
+qc_silver_fail_plating_0056,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.51,0.8802,标称白银，疑似镀金/镀银
+qc_gold_pass_0149,gold,黄金,pass,A,none,release,polished,2.1,0.9416,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0009,silver,白银,fail,C,contamination,quarantine,contaminated,1.32,0.6577,标称白银，表面污染
+qc_gold_fail_mismatch_0021,gold,黄金,fail,C,material_mismatch,reject,polished,1.11,0.8959,标称黄金，材质严重不符
+qc_gold_pass_0096,gold,黄金,pass,A,none,release,polished,2.12,0.933,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0121,gold,黄金,pass,A,none,release,brushed,2.1,0.9373,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0015,gold,黄金,fail,C,oxidation,reject,oxidized,1.45,0.3945,标称黄金，表面氧化发黑
+qc_silver_pass_0144,silver,白银,pass,B,none,release,polished,1.05,0.954,标称白银饰品，产线质检 ROI
+qc_gold_fail_plating_0034,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.42,0.8918,标称黄金，疑似镀金/镀银
+qc_gold_pass_0044,gold,黄金,pass,B,none,release,polished,2.16,0.9463,标称黄金饰品，产线质检 ROI
+qc_silver_fail_mismatch_0023,silver,白银,fail,C,material_mismatch,reject,polished,1.09,0.879,标称白银，材质严重不符
+qc_silver_pass_0069,silver,白银,pass,B,none,release,brushed,1.01,0.9461,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0059,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.36,0.8915,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0173,silver,白银,pass,B,none,release,brushed,1.01,0.9457,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0004,gold,黄金,fail,C,material_mismatch,reject,polished,2.15,0.8824,标称黄金，材质严重不符
+qc_gold_recheck_copper_0063,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.33,0.8941,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0013,silver,白银,pass,A,none,release,polished,1.03,0.9488,标称白银饰品，产线质检 ROI
+qc_silver_pass_0068,silver,白银,pass,B,none,release,polished,1.02,0.9377,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0014,silver,白银,fail,C,oxidation,reject,oxidized,1.56,0.3904,标称白银，表面氧化严重
+qc_gold_pass_0016,gold,黄金,pass,B,none,release,polished,2.0,0.942,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0105,gold,黄金,pass,B,none,release,polished,2.02,0.9335,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0170,gold,黄金,pass,B,none,release,polished,2.23,0.9345,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0020,silver,白银,fail,C,oxidation,reject,oxidized,1.63,0.4008,标称白银，表面氧化严重
+qc_gold_pass_0074,gold,黄金,pass,A,none,release,brushed,2.08,0.938,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0105,silver,白银,pass,A,none,release,brushed,1.03,0.9489,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0031,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.16,0.902,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0089,gold,黄金,pass,A,none,release,polished,2.09,0.9386,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0044,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.22,0.8896,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0028,gold,黄金,pass,B,none,release,polished,2.17,0.9307,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0014,gold,黄金,pass,A,none,release,polished,2.09,0.9476,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0002,silver,白银,recheck,C,none,recheck,polished,1.1,0.9025,标称白银，光谱指标边界偏离
+qc_gold_pass_0153,gold,黄金,pass,A,none,release,polished,2.06,0.932,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0006,silver,白银,fail,C,oxidation,reject,oxidized,1.4,0.4096,标称白银，表面氧化严重
+qc_silver_pass_0057,silver,白银,pass,B,none,release,polished,1.06,0.9398,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0027,gold,黄金,recheck,C,none,recheck,polished,2.12,0.8895,标称黄金，近红外反射略低，边界样本
+qc_gold_fail_ox_0028,gold,黄金,fail,C,oxidation,reject,oxidized,1.5,0.3403,标称黄金，表面氧化发黑
+qc_silver_pass_0168,silver,白银,pass,B,none,release,brushed,1.05,0.9419,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0053,silver,白银,fail,C,contamination,quarantine,contaminated,1.19,0.6648,标称白银，表面污染
+qc_gold_pass_0127,gold,黄金,pass,A,none,release,polished,2.1,0.9253,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0034,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.36,0.8951,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0043,gold,黄金,pass,A,none,release,brushed,2.15,0.933,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0005,silver,白银,fail,C,contamination,quarantine,contaminated,1.21,0.6531,标称白银，表面污染
+qc_gold_recheck_nir_0036,gold,黄金,recheck,C,none,recheck,brushed,2.05,0.8876,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0112,gold,黄金,pass,B,none,release,polished,2.19,0.9373,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0099,silver,白银,pass,B,none,release,polished,1.03,0.9375,标称白银饰品，产线质检 ROI
+qc_silver_pass_0086,silver,白银,pass,A,none,release,brushed,1.02,0.9469,标称白银饰品，产线质检 ROI
+qc_gold_pass_0065,gold,黄金,pass,B,none,release,polished,2.22,0.9324,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0040,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.19,0.8931,标称黄金，光谱疑似铜色替代
+qc_gold_recheck_copper_0018,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.4,0.9039,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0068,gold,黄金,pass,B,none,release,brushed,1.99,0.9303,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0171,silver,白银,pass,A,none,release,brushed,1.03,0.9406,标称白银饰品，产线质检 ROI
+qc_gold_pass_0143,gold,黄金,pass,A,none,release,brushed,2.13,0.9296,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0079,silver,白银,pass,A,none,release,brushed,1.04,0.9559,标称白银饰品，产线质检 ROI
+qc_gold_pass_0022,gold,黄金,pass,B,none,release,brushed,2.02,0.9321,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0011,silver,白银,recheck,C,none,recheck,polished,0.95,0.8988,标称白银，光谱指标边界偏离
+qc_silver_fail_ox_0048,silver,白银,fail,C,oxidation,reject,oxidized,1.03,0.397,标称白银，表面氧化严重
+qc_gold_fail_plating_0048,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.25,0.8775,标称黄金，疑似镀金/镀银
+qc_gold_recheck_copper_0029,gold,黄金,recheck,C,material_mismatch,recheck,polished,1.97,0.8972,标称黄金，光谱疑似铜色替代
+qc_gold_recheck_copper_0013,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.11,0.8969,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0174,silver,白银,pass,B,none,release,polished,1.06,0.9521,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0010,gold,黄金,fail,C,oxidation,reject,oxidized,1.3,0.3923,标称黄金，表面氧化发黑
+qc_gold_fail_mismatch_0043,gold,黄金,fail,C,material_mismatch,reject,polished,1.09,0.8937,标称黄金，材质严重不符
+qc_gold_pass_0140,gold,黄金,pass,B,none,release,polished,2.23,0.9272,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0147,gold,黄金,pass,A,none,release,polished,2.11,0.9321,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0028,silver,白银,pass,A,none,release,polished,1.03,0.9461,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0027,silver,白银,recheck,C,none,recheck,polished,1.01,0.897,标称白银，光谱指标边界偏离
+qc_gold_pass_0064,gold,黄金,pass,A,none,release,brushed,2.06,0.927,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0044,gold,黄金,recheck,C,none,recheck,brushed,2.12,0.8998,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0015,silver,白银,pass,B,none,release,brushed,1.05,0.9564,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0004,gold,黄金,fail,C,oxidation,reject,oxidized,1.54,0.3957,标称黄金，表面氧化发黑
+qc_gold_recheck_nir_0018,gold,黄金,recheck,C,none,recheck,brushed,2.36,0.8665,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_copper_0033,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.3,0.8898,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0122,gold,黄金,pass,A,none,release,polished,2.07,0.932,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0101,silver,白银,pass,A,none,release,polished,1.04,0.9403,标称白银饰品，产线质检 ROI
+qc_silver_pass_0062,silver,白银,pass,A,none,release,brushed,1.04,0.9555,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0056,silver,白银,fail,C,oxidation,reject,oxidized,1.76,0.406,标称白银，表面氧化严重
+qc_silver_pass_0003,silver,白银,pass,B,none,release,brushed,1.0,0.9482,标称白银饰品，产线质检 ROI
+qc_gold_pass_0021,gold,黄金,pass,B,none,release,polished,2.0,0.9381,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0058,silver,白银,fail,C,contamination,quarantine,contaminated,1.3,0.653,标称白银，表面污染
+qc_gold_recheck_nir_0002,gold,黄金,recheck,C,none,recheck,polished,2.29,0.8715,标称黄金，近红外反射略低，边界样本
+qc_silver_fail_contam_0064,silver,白银,fail,C,contamination,quarantine,contaminated,1.23,0.6548,标称白银，表面污染
+qc_gold_recheck_copper_0053,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.06,0.8946,标称黄金，光谱疑似铜色替代
+qc_gold_fail_contam_0004,gold,黄金,fail,C,contamination,quarantine,contaminated,1.22,0.6542,标称黄金，表面污染
+qc_gold_pass_0077,gold,黄金,pass,A,none,release,brushed,2.05,0.9288,标称黄金饰品，产线质检 ROI
+qc_gold_fail_plating_0004,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.42,0.8925,标称黄金，疑似镀金/镀银
+qc_silver_pass_0161,silver,白银,pass,A,none,release,brushed,1.02,0.9435,标称白银饰品，产线质检 ROI
+qc_gold_pass_0106,gold,黄金,pass,A,none,release,polished,2.04,0.941,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0005,silver,白银,pass,A,none,release,brushed,1.02,0.9423,标称白银饰品，产线质检 ROI
+qc_gold_pass_0020,gold,黄金,pass,B,none,release,polished,2.03,0.9415,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0103,silver,白银,pass,A,none,release,polished,1.03,0.952,标称白银饰品，产线质检 ROI
+qc_silver_pass_0092,silver,白银,pass,A,none,release,brushed,1.04,0.943,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0044,silver,白银,recheck,C,none,recheck,polished,1.05,0.905,标称白银，光谱指标边界偏离
+qc_gold_fail_contam_0062,gold,黄金,fail,C,contamination,quarantine,contaminated,1.2,0.6552,标称黄金，表面污染
+qc_gold_pass_0023,gold,黄金,pass,B,none,release,polished,2.17,0.9403,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0147,silver,白银,pass,B,none,release,brushed,1.0,0.9484,标称白银饰品，产线质检 ROI
+qc_silver_pass_0061,silver,白银,pass,A,none,release,polished,1.02,0.9459,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0005,silver,白银,fail,C,oxidation,reject,oxidized,1.69,0.3957,标称白银，表面氧化严重
+qc_silver_recheck_0016,silver,白银,recheck,C,none,recheck,polished,1.06,0.8988,标称白银，光谱指标边界偏离
+qc_silver_pass_0007,silver,白银,pass,A,none,release,brushed,1.03,0.9485,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0041,silver,白银,fail,C,contamination,quarantine,contaminated,1.4,0.672,标称白银，表面污染
+qc_silver_pass_0059,silver,白银,pass,A,none,release,brushed,1.04,0.947,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0027,silver,白银,fail,C,contamination,quarantine,contaminated,1.22,0.6657,标称白银，表面污染
+qc_gold_pass_0061,gold,黄金,pass,A,none,release,brushed,2.04,0.9334,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0050,gold,黄金,pass,B,none,release,brushed,2.19,0.9354,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0016,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.16,0.8936,标称黄金，光谱疑似铜色替代
+qc_gold_fail_contam_0002,gold,黄金,fail,C,contamination,quarantine,contaminated,1.32,0.6529,标称黄金，表面污染
+qc_gold_fail_ox_0035,gold,黄金,fail,C,oxidation,reject,oxidized,1.47,0.3991,标称黄金，表面氧化发黑
+qc_silver_pass_0119,silver,白银,pass,B,none,release,polished,1.05,0.9468,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0023,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.07,0.9008,标称黄金，光谱疑似铜色替代
+qc_silver_fail_mismatch_0009,silver,白银,fail,C,material_mismatch,reject,polished,1.14,0.8879,标称白银，材质严重不符
+qc_gold_fail_contam_0036,gold,黄金,fail,C,contamination,quarantine,contaminated,1.18,0.6731,标称黄金，表面污染
+qc_silver_fail_plating_0049,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.44,0.89,标称白银，疑似镀金/镀银
+qc_gold_pass_0172,gold,黄金,pass,A,none,release,polished,2.1,0.9461,标称黄金饰品，产线质检 ROI
+qc_silver_fail_mismatch_0020,silver,白银,fail,C,material_mismatch,reject,polished,2.28,0.8795,标称白银，材质严重不符
+qc_silver_pass_0094,silver,白银,pass,B,none,release,brushed,1.05,0.9491,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0012,gold,黄金,fail,C,material_mismatch,reject,polished,1.1,0.8875,标称黄金，材质严重不符
+qc_silver_fail_mismatch_0039,silver,白银,fail,C,material_mismatch,reject,polished,2.2,0.9004,标称白银，材质严重不符
+qc_gold_recheck_copper_0052,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.53,0.8924,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0133,silver,白银,pass,B,none,release,brushed,1.04,0.9342,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0013,gold,黄金,fail,C,oxidation,reject,oxidized,1.27,0.3839,标称黄金，表面氧化发黑
+qc_silver_fail_ox_0043,silver,白银,fail,C,oxidation,reject,oxidized,1.75,0.4206,标称白银，表面氧化严重
+qc_silver_recheck_0008,silver,白银,recheck,C,none,recheck,polished,1.04,0.8924,标称白银，光谱指标边界偏离
+qc_silver_pass_0011,silver,白银,pass,B,none,release,polished,1.08,0.951,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0004,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.41,0.9093,标称黄金，光谱疑似铜色替代
+qc_gold_recheck_copper_0046,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.29,0.8954,标称黄金，光谱疑似铜色替代
+qc_silver_recheck_0028,silver,白银,recheck,C,none,recheck,polished,1.0,0.9105,标称白银，光谱指标边界偏离
+qc_gold_fail_ox_0031,gold,黄金,fail,C,oxidation,reject,oxidized,1.45,0.3961,标称黄金，表面氧化发黑
+qc_silver_pass_0056,silver,白银,pass,B,none,release,polished,1.06,0.9496,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0036,silver,白银,recheck,C,none,recheck,polished,1.03,0.9048,标称白银，光谱指标边界偏离
+qc_silver_pass_0107,silver,白银,pass,A,none,release,polished,1.02,0.9482,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0006,gold,黄金,fail,C,contamination,quarantine,contaminated,1.21,0.6694,标称黄金，表面污染
+qc_silver_fail_ox_0059,silver,白银,fail,C,oxidation,reject,oxidized,1.6,0.4059,标称白银，表面氧化严重
+qc_gold_pass_0093,gold,黄金,pass,A,none,release,polished,2.15,0.9321,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0007,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.34,0.8726,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0016,silver,白银,fail,C,oxidation,reject,oxidized,1.3,0.398,标称白银，表面氧化严重
+qc_silver_pass_0160,silver,白银,pass,A,none,release,polished,1.04,0.9499,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0011,gold,黄金,fail,C,material_mismatch,reject,polished,2.33,0.8956,标称黄金，材质严重不符
+qc_gold_recheck_copper_0015,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.19,0.8903,标称黄金，光谱疑似铜色替代
+qc_gold_recheck_nir_0030,gold,黄金,recheck,C,none,recheck,polished,2.22,0.8649,标称黄金，近红外反射略低，边界样本
+qc_silver_fail_ox_0007,silver,白银,fail,C,oxidation,reject,oxidized,1.46,0.4044,标称白银，表面氧化严重
+qc_silver_pass_0131,silver,白银,pass,B,none,release,brushed,1.06,0.949,标称白银饰品，产线质检 ROI
+qc_silver_fail_plating_0006,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.42,0.8698,标称白银，疑似镀金/镀银
+qc_silver_pass_0044,silver,白银,pass,B,none,release,brushed,1.06,0.9496,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0051,silver,白银,fail,C,oxidation,reject,oxidized,1.51,0.4011,标称白银，表面氧化严重
+qc_gold_recheck_copper_0012,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.09,0.8917,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0108,silver,白银,pass,A,none,release,polished,1.02,0.9457,标称白银饰品，产线质检 ROI
+qc_gold_pass_0130,gold,黄金,pass,B,none,release,polished,2.26,0.9436,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0015,gold,黄金,recheck,C,none,recheck,polished,2.09,0.8808,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0165,silver,白银,pass,A,none,release,polished,1.02,0.9407,标称白银饰品，产线质检 ROI
+qc_silver_fail_mismatch_0013,silver,白银,fail,C,material_mismatch,reject,polished,1.08,0.8786,标称白银，材质严重不符
+qc_silver_recheck_0003,silver,白银,recheck,C,none,recheck,polished,1.11,0.896,标称白银，光谱指标边界偏离
+qc_silver_pass_0098,silver,白银,pass,A,none,release,brushed,1.03,0.9451,标称白银饰品，产线质检 ROI
+qc_gold_pass_0051,gold,黄金,pass,B,none,release,brushed,2.29,0.9349,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0037,silver,白银,fail,C,contamination,quarantine,contaminated,1.18,0.6552,标称白银，表面污染
+qc_silver_pass_0115,silver,白银,pass,B,none,release,polished,1.0,0.9572,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0035,gold,黄金,fail,C,contamination,quarantine,contaminated,1.27,0.6537,标称黄金，表面污染
+qc_gold_recheck_copper_0010,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.16,0.9014,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0098,gold,黄金,pass,A,none,release,brushed,2.07,0.9427,标称黄金饰品，产线质检 ROI
+qc_gold_fail_contam_0029,gold,黄金,fail,C,contamination,quarantine,contaminated,1.26,0.6584,标称黄金，表面污染
+qc_gold_fail_plating_0011,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.43,0.8986,标称黄金，疑似镀金/镀银
+qc_silver_pass_0063,silver,白银,pass,B,none,release,polished,1.05,0.955,标称白银饰品，产线质检 ROI
+qc_gold_pass_0097,gold,黄金,pass,B,none,release,polished,2.01,0.9331,标称黄金饰品，产线质检 ROI
+qc_gold_fail_plating_0025,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.43,0.89,标称黄金，疑似镀金/镀银
+qc_gold_pass_0113,gold,黄金,pass,B,none,release,polished,2.19,0.9374,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0036,gold,黄金,pass,B,none,release,brushed,1.95,0.9415,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0033,silver,白银,fail,C,oxidation,reject,oxidized,1.52,0.4091,标称白银，表面氧化严重
+qc_silver_fail_ox_0062,silver,白银,fail,C,oxidation,reject,oxidized,1.32,0.4046,标称白银，表面氧化严重
+qc_gold_recheck_nir_0020,gold,黄金,recheck,C,none,recheck,brushed,1.97,0.8835,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0060,gold,黄金,pass,B,none,release,brushed,2.16,0.9366,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0070,gold,黄金,pass,B,none,release,brushed,2.18,0.933,标称黄金饰品，产线质检 ROI
+qc_silver_fail_mismatch_0047,silver,白银,fail,C,material_mismatch,reject,polished,1.1,0.8919,标称白银，材质严重不符
+qc_silver_fail_ox_0028,silver,白银,fail,C,oxidation,reject,oxidized,1.67,0.3973,标称白银，表面氧化严重
+qc_silver_fail_mismatch_0010,silver,白银,fail,C,material_mismatch,reject,polished,2.27,0.8822,标称白银，材质严重不符
+qc_silver_pass_0025,silver,白银,pass,B,none,release,polished,1.05,0.9466,标称白银饰品，产线质检 ROI
+qc_gold_pass_0054,gold,黄金,pass,A,none,release,polished,2.09,0.9392,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0019,silver,白银,recheck,C,none,recheck,polished,1.07,0.8989,标称白银，光谱指标边界偏离
+qc_gold_pass_0059,gold,黄金,pass,B,none,release,brushed,1.95,0.9459,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0055,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.34,0.891,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0030,silver,白银,pass,A,none,release,polished,1.03,0.9523,标称白银饰品，产线质检 ROI
+qc_gold_pass_0018,gold,黄金,pass,A,none,release,brushed,2.07,0.9501,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0090,gold,黄金,pass,A,none,release,brushed,2.1,0.9421,标称黄金饰品，产线质检 ROI
+qc_gold_fail_plating_0018,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.45,0.8815,标称黄金，疑似镀金/镀银
+qc_gold_pass_0033,gold,黄金,pass,B,none,release,brushed,2.17,0.9366,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0011,gold,黄金,pass,A,none,release,polished,2.1,0.9416,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0155,gold,黄金,pass,B,none,release,polished,2.17,0.9428,标称黄金饰品，产线质检 ROI
+qc_gold_fail_plating_0030,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.45,0.8861,标称黄金，疑似镀金/镀银
+qc_gold_pass_0007,gold,黄金,pass,A,none,release,polished,2.05,0.9264,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0026,gold,黄金,pass,B,none,release,polished,2.0,0.9501,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0134,silver,白银,pass,A,none,release,polished,1.02,0.9445,标称白银饰品，产线质检 ROI
+qc_gold_pass_0079,gold,黄金,pass,A,none,release,polished,2.04,0.9345,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0009,gold,黄金,recheck,C,none,recheck,polished,2.03,0.8702,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0143,silver,白银,pass,B,none,release,polished,1.09,0.9484,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0022,silver,白银,recheck,C,none,recheck,polished,1.08,0.8964,标称白银，光谱指标边界偏离
+qc_gold_pass_0040,gold,黄金,pass,A,none,release,brushed,2.06,0.9328,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0023,silver,白银,pass,B,none,release,brushed,1.01,0.9372,标称白银饰品，产线质检 ROI
+qc_silver_pass_0008,silver,白银,pass,B,none,release,polished,1.05,0.9439,标称白银饰品，产线质检 ROI
+qc_gold_fail_plating_0031,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.37,0.8784,标称黄金，疑似镀金/镀银
+qc_silver_fail_mismatch_0055,silver,白银,fail,C,material_mismatch,reject,polished,2.32,0.8969,标称白银，材质严重不符
+qc_gold_fail_plating_0037,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.35,0.8849,标称黄金，疑似镀金/镀银
+qc_gold_recheck_copper_0022,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.15,0.905,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0158,silver,白银,pass,A,none,release,brushed,1.02,0.9513,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0025,gold,黄金,fail,C,oxidation,reject,oxidized,1.28,0.371,标称黄金，表面氧化发黑
+qc_gold_recheck_copper_0045,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.55,0.9004,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0137,gold,黄金,pass,A,none,release,polished,2.08,0.9316,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0039,silver,白银,recheck,C,none,recheck,polished,0.99,0.912,标称白银，光谱指标边界偏离
+qc_gold_fail_ox_0044,gold,黄金,fail,C,oxidation,reject,oxidized,1.53,0.3496,标称黄金，表面氧化发黑
+qc_gold_pass_0173,gold,黄金,pass,B,none,release,polished,2.28,0.9255,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0036,gold,黄金,fail,C,oxidation,reject,oxidized,1.25,0.3889,标称黄金，表面氧化发黑
+qc_silver_pass_0039,silver,白银,pass,B,none,release,polished,1.06,0.9427,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0003,gold,黄金,fail,C,oxidation,reject,oxidized,1.23,0.4189,标称黄金，表面氧化发黑
+qc_silver_fail_plating_0051,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.5,0.8946,标称白银，疑似镀金/镀银
+qc_gold_recheck_nir_0004,gold,黄金,recheck,C,none,recheck,brushed,1.99,0.8685,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0170,silver,白银,pass,B,none,release,polished,1.05,0.9376,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0019,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6494,标称白银，表面污染
+qc_gold_recheck_copper_0027,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.12,0.8854,标称黄金，光谱疑似铜色替代
+qc_silver_recheck_0046,silver,白银,recheck,C,none,recheck,polished,1.03,0.9067,标称白银，光谱指标边界偏离
+qc_gold_recheck_nir_0022,gold,黄金,recheck,C,none,recheck,brushed,2.11,0.8658,标称黄金，近红外反射略低，边界样本
+qc_silver_fail_ox_0019,silver,白银,fail,C,oxidation,reject,oxidized,1.63,0.3799,标称白银，表面氧化严重
+qc_gold_fail_ox_0017,gold,黄金,fail,C,oxidation,reject,oxidized,1.49,0.3988,标称黄金，表面氧化发黑
+qc_gold_pass_0002,gold,黄金,pass,A,none,release,brushed,2.1,0.9412,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0023,silver,白银,fail,C,contamination,quarantine,contaminated,1.37,0.6466,标称白银，表面污染
+qc_gold_recheck_nir_0021,gold,黄金,recheck,C,none,recheck,brushed,2.06,0.8737,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_copper_0060,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.34,0.9024,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0006,gold,黄金,pass,A,none,release,polished,2.09,0.9251,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0017,silver,白银,recheck,C,none,recheck,polished,1.06,0.9071,标称白银，光谱指标边界偏离
+qc_silver_pass_0071,silver,白银,pass,B,none,release,brushed,1.06,0.9469,标称白银饰品，产线质检 ROI
+qc_silver_pass_0166,silver,白银,pass,B,none,release,polished,1.05,0.945,标称白银饰品，产线质检 ROI
+qc_silver_pass_0002,silver,白银,pass,A,none,release,brushed,1.02,0.9416,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0057,silver,白银,fail,C,oxidation,reject,oxidized,1.69,0.3894,标称白银，表面氧化严重
+qc_silver_fail_ox_0015,silver,白银,fail,C,oxidation,reject,oxidized,1.33,0.3978,标称白银，表面氧化严重
+qc_gold_fail_ox_0027,gold,黄金,fail,C,oxidation,reject,oxidized,1.2,0.3529,标称黄金，表面氧化发黑
+qc_gold_pass_0087,gold,黄金,pass,B,none,release,brushed,1.95,0.9303,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0148,gold,黄金,pass,B,none,release,brushed,2.0,0.9454,标称黄金饰品，产线质检 ROI
+qc_gold_fail_plating_0002,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.43,0.883,标称黄金，疑似镀金/镀银
+qc_gold_pass_0047,gold,黄金,pass,A,none,release,brushed,2.06,0.9317,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0032,silver,白银,fail,C,oxidation,reject,oxidized,1.21,0.4146,标称白银，表面氧化严重
+qc_gold_pass_0085,gold,黄金,pass,B,none,release,polished,1.97,0.9365,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0017,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.55,0.8799,标称白银，疑似镀金/镀银
+qc_gold_recheck_nir_0041,gold,黄金,recheck,C,none,recheck,polished,2.28,0.8941,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0149,silver,白银,pass,B,none,release,brushed,1.04,0.9399,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0008,gold,黄金,recheck,C,none,recheck,brushed,2.09,0.8921,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0052,silver,白银,pass,A,none,release,polished,1.04,0.942,标称白银饰品，产线质检 ROI
+qc_gold_pass_0116,gold,黄金,pass,B,none,release,polished,2.19,0.9332,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0045,silver,白银,fail,C,oxidation,reject,oxidized,1.63,0.4043,标称白银，表面氧化严重
+qc_gold_pass_0071,gold,黄金,pass,B,none,release,polished,2.01,0.9455,标称黄金饰品，产线质检 ROI
+qc_gold_fail_mismatch_0019,gold,黄金,fail,C,material_mismatch,reject,polished,1.07,0.8791,标称黄金，材质严重不符
+qc_gold_recheck_copper_0002,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.21,0.8957,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0153,silver,白银,pass,A,none,release,brushed,1.02,0.9417,标称白银饰品，产线质检 ROI
+qc_silver_pass_0021,silver,白银,pass,A,none,release,polished,1.03,0.9447,标称白银饰品，产线质检 ROI
+qc_gold_pass_0019,gold,黄金,pass,A,none,release,polished,2.08,0.9291,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0053,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.42,0.8793,标称白银，疑似镀金/镀银
+qc_gold_recheck_nir_0031,gold,黄金,recheck,C,none,recheck,polished,2.08,0.8857,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0142,silver,白银,pass,B,none,release,brushed,1.05,0.9473,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0019,gold,黄金,recheck,C,none,recheck,polished,2.09,0.8891,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0114,silver,白银,pass,B,none,release,brushed,1.01,0.9394,标称白银饰品，产线质检 ROI
+qc_gold_pass_0045,gold,黄金,pass,B,none,release,polished,1.94,0.9415,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0040,silver,白银,fail,C,oxidation,reject,oxidized,1.55,0.3901,标称白银，表面氧化严重
+qc_silver_recheck_0042,silver,白银,recheck,C,none,recheck,polished,1.07,0.9087,标称白银，光谱指标边界偏离
+qc_gold_pass_0048,gold,黄金,pass,B,none,release,polished,2.16,0.9395,标称黄金饰品，产线质检 ROI
+qc_gold_fail_mismatch_0048,gold,黄金,fail,C,material_mismatch,reject,polished,2.13,0.8941,标称黄金，材质严重不符
+qc_silver_pass_0121,silver,白银,pass,B,none,release,polished,1.01,0.9529,标称白银饰品，产线质检 ROI
+qc_silver_pass_0138,silver,白银,pass,B,none,release,polished,1.03,0.9366,标称白银饰品，产线质检 ROI
+qc_gold_pass_0145,gold,黄金,pass,B,none,release,polished,1.99,0.929,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0076,silver,白银,pass,B,none,release,polished,1.0,0.9446,标称白银饰品，产线质检 ROI
+qc_silver_pass_0130,silver,白银,pass,B,none,release,polished,1.06,0.948,标称白银饰品，产线质检 ROI
+qc_silver_pass_0083,silver,白银,pass,A,none,release,polished,1.02,0.9519,标称白银饰品，产线质检 ROI
+qc_gold_pass_0017,gold,黄金,pass,B,none,release,brushed,2.17,0.9312,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0048,silver,白银,pass,B,none,release,brushed,1.01,0.9511,标称白银饰品，产线质检 ROI
+qc_gold_pass_0009,gold,黄金,pass,B,none,release,brushed,2.19,0.9417,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0011,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.46,0.8939,标称黄金，光谱疑似铜色替代
+qc_silver_fail_mismatch_0024,silver,白银,fail,C,material_mismatch,reject,polished,1.07,0.9049,标称白银，材质严重不符
+qc_silver_pass_0156,silver,白银,pass,A,none,release,polished,1.02,0.9473,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0026,gold,黄金,fail,C,contamination,quarantine,contaminated,1.31,0.6704,标称黄金，表面污染
+qc_gold_fail_contam_0054,gold,黄金,fail,C,contamination,quarantine,contaminated,1.33,0.6716,标称黄金，表面污染
+qc_silver_fail_contam_0049,silver,白银,fail,C,contamination,quarantine,contaminated,1.13,0.6581,标称白银，表面污染
+qc_gold_fail_ox_0011,gold,黄金,fail,C,oxidation,reject,oxidized,1.86,0.368,标称黄金，表面氧化发黑
+qc_gold_recheck_copper_0008,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.03,0.8838,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0035,silver,白银,pass,B,none,release,polished,1.01,0.9567,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0051,silver,白银,fail,C,contamination,quarantine,contaminated,1.25,0.6679,标称白银，表面污染
+qc_silver_recheck_0045,silver,白银,recheck,C,none,recheck,polished,1.03,0.9174,标称白银，光谱指标边界偏离
+qc_gold_fail_ox_0047,gold,黄金,fail,C,oxidation,reject,oxidized,1.33,0.4286,标称黄金，表面氧化发黑
+qc_gold_pass_0131,gold,黄金,pass,A,none,release,polished,2.11,0.9397,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0133,gold,黄金,pass,A,none,release,polished,2.08,0.9315,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0047,silver,白银,fail,C,oxidation,reject,oxidized,1.56,0.4088,标称白银，表面氧化严重
+qc_gold_fail_ox_0041,gold,黄金,fail,C,oxidation,reject,oxidized,1.72,0.3545,标称黄金，表面氧化发黑
+qc_silver_pass_0010,silver,白银,pass,A,none,release,polished,1.04,0.9492,标称白银饰品，产线质检 ROI
+qc_silver_pass_0060,silver,白银,pass,B,none,release,polished,1.0,0.943,标称白银饰品，产线质检 ROI
+qc_gold_pass_0117,gold,黄金,pass,A,none,release,brushed,2.12,0.9355,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0064,silver,白银,pass,A,none,release,polished,1.03,0.9445,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0044,gold,黄金,fail,C,contamination,quarantine,contaminated,1.27,0.665,标称黄金，表面污染
+qc_gold_pass_0095,gold,黄金,pass,A,none,release,brushed,2.14,0.9265,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0017,gold,黄金,recheck,C,none,recheck,polished,2.09,0.8962,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0053,silver,白银,pass,B,none,release,brushed,1.07,0.9326,标称白银饰品，产线质检 ROI
+qc_silver_pass_0009,silver,白银,pass,A,none,release,polished,1.03,0.9455,标称白银饰品，产线质检 ROI
+qc_silver_fail_mismatch_0029,silver,白银,fail,C,material_mismatch,reject,polished,2.08,0.8916,标称白银，材质严重不符
+qc_gold_pass_0035,gold,黄金,pass,A,none,release,polished,2.13,0.9295,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0005,gold,黄金,fail,C,oxidation,reject,oxidized,1.52,0.3706,标称黄金，表面氧化发黑
+qc_gold_pass_0012,gold,黄金,pass,B,none,release,brushed,2.01,0.9252,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0038,silver,白银,fail,C,contamination,quarantine,contaminated,1.28,0.6436,标称白银，表面污染
+qc_gold_recheck_nir_0011,gold,黄金,recheck,C,none,recheck,brushed,2.22,0.8778,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_copper_0005,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.19,0.9159,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0134,gold,黄金,pass,B,none,release,brushed,2.16,0.9342,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0104,silver,白银,pass,B,none,release,polished,1.05,0.9456,标称白银饰品，产线质检 ROI
+qc_silver_pass_0136,silver,白银,pass,B,none,release,polished,1.01,0.9443,标称白银饰品，产线质检 ROI
+qc_gold_pass_0168,gold,黄金,pass,A,none,release,brushed,2.11,0.9506,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0126,gold,黄金,pass,A,none,release,brushed,2.05,0.9291,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0021,silver,白银,recheck,C,none,recheck,polished,1.02,0.8983,标称白银，光谱指标边界偏离
+qc_gold_pass_0046,gold,黄金,pass,A,none,release,brushed,2.13,0.9424,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0035,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.4,0.8761,标称白银，疑似镀金/镀银
+qc_gold_recheck_copper_0003,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.11,0.8879,标称黄金，光谱疑似铜色替代
+qc_gold_fail_mismatch_0033,gold,黄金,fail,C,material_mismatch,reject,polished,1.09,0.8925,标称黄金，材质严重不符
+qc_gold_fail_contam_0032,gold,黄金,fail,C,contamination,quarantine,contaminated,1.19,0.6453,标称黄金，表面污染
+qc_silver_recheck_0034,silver,白银,recheck,C,none,recheck,polished,0.99,0.9095,标称白银，光谱指标边界偏离
+qc_silver_pass_0140,silver,白银,pass,A,none,release,polished,1.03,0.9469,标称白银饰品，产线质检 ROI
+qc_gold_pass_0078,gold,黄金,pass,A,none,release,brushed,2.05,0.9243,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0063,silver,白银,fail,C,oxidation,reject,oxidized,1.38,0.408,标称白银，表面氧化严重
+qc_gold_fail_plating_0055,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.46,0.8964,标称黄金，疑似镀金/镀银
+qc_gold_pass_0038,gold,黄金,pass,B,none,release,polished,2.17,0.9219,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0044,silver,白银,fail,C,oxidation,reject,oxidized,1.44,0.3924,标称白银，表面氧化严重
+qc_gold_fail_contam_0063,gold,黄金,fail,C,contamination,quarantine,contaminated,1.15,0.6566,标称黄金，表面污染
+qc_gold_pass_0057,gold,黄金,pass,A,none,release,polished,2.15,0.9321,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0015,silver,白银,recheck,C,none,recheck,polished,0.99,0.8934,标称白银，光谱指标边界偏离
+qc_silver_pass_0049,silver,白银,pass,B,none,release,polished,1.05,0.9409,标称白银饰品，产线质检 ROI
+qc_silver_fail_mismatch_0035,silver,白银,fail,C,material_mismatch,reject,polished,1.12,0.8836,标称白银，材质严重不符
+qc_gold_fail_mismatch_0034,gold,黄金,fail,C,material_mismatch,reject,polished,2.18,0.8991,标称黄金，材质严重不符
+qc_gold_fail_mismatch_0006,gold,黄金,fail,C,material_mismatch,reject,polished,1.16,0.8767,标称黄金，材质严重不符
+qc_gold_recheck_nir_0028,gold,黄金,recheck,C,none,recheck,brushed,2.05,0.8989,标称黄金，近红外反射略低，边界样本
+qc_gold_fail_mismatch_0051,gold,黄金,fail,C,material_mismatch,reject,polished,1.09,0.9061,标称黄金，材质严重不符
+qc_gold_recheck_copper_0025,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.15,0.9002,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0052,gold,黄金,pass,B,none,release,brushed,2.19,0.9293,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0031,gold,黄金,pass,B,none,release,brushed,2.16,0.9342,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0017,silver,白银,pass,A,none,release,brushed,1.03,0.9414,标称白银饰品，产线质检 ROI
+qc_silver_fail_plating_0027,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.44,0.8862,标称白银，疑似镀金/镀银
+qc_silver_fail_plating_0001,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.45,0.8793,标称白银，疑似镀金/镀银
+qc_gold_fail_contam_0008,gold,黄金,fail,C,contamination,quarantine,contaminated,1.4,0.6633,标称黄金，表面污染
+qc_gold_fail_plating_0014,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.36,0.8841,标称黄金，疑似镀金/镀银
+qc_silver_fail_mismatch_0030,silver,白银,fail,C,material_mismatch,reject,polished,1.09,0.911,标称白银，材质严重不符
+qc_silver_pass_0024,silver,白银,pass,A,none,release,polished,1.02,0.9578,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0046,silver,白银,fail,C,oxidation,reject,oxidized,1.16,0.3916,标称白银，表面氧化严重
+qc_gold_fail_plating_0043,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.41,0.8972,标称黄金，疑似镀金/镀银
+qc_silver_fail_contam_0016,silver,白银,fail,C,contamination,quarantine,contaminated,1.31,0.6562,标称白银，表面污染
+qc_silver_pass_0128,silver,白银,pass,A,none,release,brushed,1.03,0.9465,标称白银饰品，产线质检 ROI
+qc_silver_fail_plating_0033,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.42,0.8822,标称白银，疑似镀金/镀银
+qc_gold_recheck_copper_0006,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.36,0.9039,标称黄金，光谱疑似铜色替代
+qc_gold_fail_mismatch_0002,gold,黄金,fail,C,material_mismatch,reject,polished,1.11,0.8902,标称黄金，材质严重不符
+qc_gold_pass_0125,gold,黄金,pass,B,none,release,brushed,2.03,0.9392,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0039,gold,黄金,pass,B,none,release,polished,2.02,0.9411,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0055,gold,黄金,pass,B,none,release,brushed,2.23,0.934,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0019,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.02,0.8759,标称黄金，光谱疑似铜色替代
+qc_silver_recheck_0001,silver,白银,recheck,C,none,recheck,polished,1.12,0.9112,标称白银，光谱指标边界偏离
+qc_silver_fail_ox_0030,silver,白银,fail,C,oxidation,reject,oxidized,1.31,0.41,标称白银，表面氧化严重
+qc_silver_fail_ox_0064,silver,白银,fail,C,oxidation,reject,oxidized,1.56,0.4021,标称白银，表面氧化严重
+qc_gold_pass_0111,gold,黄金,pass,A,none,release,brushed,2.06,0.9354,标称黄金饰品，产线质检 ROI
+qc_gold_fail_mismatch_0040,gold,黄金,fail,C,material_mismatch,reject,polished,2.13,0.8972,标称黄金，材质严重不符
+qc_silver_pass_0111,silver,白银,pass,A,none,release,polished,1.04,0.9509,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0052,gold,黄金,fail,C,material_mismatch,reject,polished,2.13,0.8825,标称黄金，材质严重不符
+qc_gold_recheck_copper_0054,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.27,0.8995,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0020,silver,白银,pass,B,none,release,polished,1.0,0.9417,标称白银饰品，产线质检 ROI
+qc_silver_pass_0043,silver,白银,pass,B,none,release,polished,1.05,0.9356,标称白银饰品，产线质检 ROI
+qc_gold_pass_0165,gold,黄金,pass,B,none,release,brushed,2.25,0.9271,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0039,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.37,0.8849,标称白银，疑似镀金/镀银
+qc_silver_pass_0016,silver,白银,pass,B,none,release,polished,1.05,0.9462,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0037,gold,黄金,fail,C,oxidation,reject,oxidized,1.24,0.3535,标称黄金，表面氧化发黑
+qc_silver_fail_mismatch_0001,silver,白银,fail,C,material_mismatch,reject,polished,2.25,0.895,标称白银，材质严重不符
+qc_gold_fail_contam_0015,gold,黄金,fail,C,contamination,quarantine,contaminated,1.21,0.6606,标称黄金，表面污染
+qc_gold_fail_contam_0056,gold,黄金,fail,C,contamination,quarantine,contaminated,1.22,0.6649,标称黄金，表面污染
+qc_gold_pass_0104,gold,黄金,pass,A,none,release,brushed,2.12,0.9336,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0009,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.44,0.8712,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0010,gold,黄金,pass,A,none,release,brushed,2.08,0.9428,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0055,silver,白银,fail,C,oxidation,reject,oxidized,1.65,0.3962,标称白银，表面氧化严重
+qc_silver_fail_contam_0052,silver,白银,fail,C,contamination,quarantine,contaminated,1.27,0.6684,标称白银，表面污染
+qc_gold_fail_plating_0005,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.54,0.8753,标称黄金，疑似镀金/镀银
+qc_silver_recheck_0014,silver,白银,recheck,C,none,recheck,polished,1.05,0.8935,标称白银，光谱指标边界偏离
+qc_gold_recheck_nir_0047,gold,黄金,recheck,C,none,recheck,polished,2.0,0.8941,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0034,silver,白银,pass,B,none,release,brushed,1.04,0.9392,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0032,gold,黄金,fail,C,oxidation,reject,oxidized,1.62,0.4156,标称黄金，表面氧化发黑
+qc_silver_pass_0031,silver,白银,pass,B,none,release,polished,1.05,0.9365,标称白银饰品，产线质检 ROI
+qc_gold_pass_0003,gold,黄金,pass,B,none,release,brushed,2.17,0.9233,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0049,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.31,0.897,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0010,silver,白银,fail,C,oxidation,reject,oxidized,1.48,0.3979,标称白银，表面氧化严重
+qc_silver_pass_0113,silver,白银,pass,A,none,release,polished,1.04,0.9462,标称白银饰品，产线质检 ROI
+qc_silver_pass_0042,silver,白银,pass,A,none,release,brushed,1.02,0.9517,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0016,gold,黄金,recheck,C,none,recheck,polished,2.05,0.8736,标称黄金，近红外反射略低，边界样本
+qc_gold_fail_ox_0001,gold,黄金,fail,C,oxidation,reject,oxidized,1.44,0.3654,标称黄金，表面氧化发黑
+qc_gold_pass_0162,gold,黄金,pass,B,none,release,polished,2.16,0.9347,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0030,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.47,0.892,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0029,silver,白银,fail,C,oxidation,reject,oxidized,1.49,0.4018,标称白银，表面氧化严重
+qc_silver_fail_ox_0050,silver,白银,fail,C,oxidation,reject,oxidized,1.61,0.4036,标称白银，表面氧化严重
+qc_gold_fail_plating_0050,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.42,0.8793,标称黄金，疑似镀金/镀银
+qc_gold_recheck_nir_0014,gold,黄金,recheck,C,none,recheck,brushed,2.34,0.8921,标称黄金，近红外反射略低，边界样本
+qc_silver_fail_ox_0011,silver,白银,fail,C,oxidation,reject,oxidized,1.41,0.3984,标称白银，表面氧化严重
+qc_silver_pass_0014,silver,白银,pass,A,none,release,polished,1.04,0.9507,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0032,gold,黄金,recheck,C,none,recheck,brushed,2.11,0.898,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_nir_0010,gold,黄金,recheck,C,none,recheck,brushed,1.99,0.8785,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0135,gold,黄金,pass,B,none,release,polished,2.03,0.9365,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0118,gold,黄金,pass,A,none,release,brushed,2.04,0.9385,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0138,gold,黄金,pass,B,none,release,brushed,2.02,0.9262,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0048,gold,黄金,fail,C,oxidation,reject,oxidized,1.32,0.3326,标称黄金，表面氧化发黑
+qc_gold_recheck_copper_0048,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.17,0.8947,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0038,silver,白银,pass,A,none,release,brushed,1.02,0.9506,标称白银饰品，产线质检 ROI
+qc_silver_pass_0129,silver,白银,pass,B,none,release,brushed,1.05,0.9423,标称白银饰品，产线质检 ROI
+qc_silver_pass_0159,silver,白银,pass,A,none,release,brushed,1.04,0.9432,标称白银饰品，产线质检 ROI
+qc_silver_pass_0067,silver,白银,pass,A,none,release,polished,1.02,0.9478,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0013,gold,黄金,fail,C,contamination,quarantine,contaminated,1.23,0.6586,标称黄金，表面污染
+qc_gold_pass_0167,gold,黄金,pass,A,none,release,polished,2.04,0.933,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0041,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.45,0.8768,标称白银，疑似镀金/镀银
+qc_silver_fail_plating_0009,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.37,0.8941,标称白银，疑似镀金/镀银
+qc_gold_recheck_nir_0024,gold,黄金,recheck,C,none,recheck,polished,2.22,0.893,标称黄金，近红外反射略低，边界样本
+qc_gold_fail_ox_0021,gold,黄金,fail,C,oxidation,reject,oxidized,1.44,0.3945,标称黄金，表面氧化发黑
+qc_gold_pass_0088,gold,黄金,pass,B,none,release,brushed,2.23,0.941,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0051,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.25,0.8834,标称黄金，光谱疑似铜色替代
+qc_gold_fail_mismatch_0003,gold,黄金,fail,C,material_mismatch,reject,polished,2.19,0.9117,标称黄金，材质严重不符
+qc_gold_fail_contam_0061,gold,黄金,fail,C,contamination,quarantine,contaminated,1.23,0.6586,标称黄金，表面污染
+qc_gold_pass_0099,gold,黄金,pass,B,none,release,polished,2.28,0.9346,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0081,gold,黄金,pass,A,none,release,brushed,2.07,0.9355,标称黄金饰品，产线质检 ROI
+qc_gold_fail_plating_0036,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.52,0.8982,标称黄金，疑似镀金/镀银
+qc_gold_pass_0080,gold,黄金,pass,B,none,release,polished,2.17,0.9353,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0033,gold,黄金,recheck,C,none,recheck,polished,2.07,0.8989,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0117,silver,白银,pass,A,none,release,brushed,1.03,0.9417,标称白银饰品，产线质检 ROI
+qc_gold_pass_0108,gold,黄金,pass,B,none,release,brushed,2.18,0.9342,标称黄金饰品，产线质检 ROI
+qc_gold_fail_plating_0010,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.4,0.8858,标称黄金，疑似镀金/镀银
+qc_silver_recheck_0013,silver,白银,recheck,C,none,recheck,polished,1.06,0.9113,标称白银，光谱指标边界偏离
+qc_gold_fail_plating_0052,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.39,0.8825,标称黄金，疑似镀金/镀银
+qc_silver_fail_ox_0013,silver,白银,fail,C,oxidation,reject,oxidized,1.41,0.4056,标称白银，表面氧化严重
+qc_silver_pass_0066,silver,白银,pass,B,none,release,brushed,1.05,0.9442,标称白银饰品，产线质检 ROI
+qc_silver_pass_0096,silver,白银,pass,A,none,release,brushed,1.03,0.9481,标称白银饰品，产线质检 ROI
+qc_silver_fail_mismatch_0017,silver,白银,fail,C,material_mismatch,reject,polished,2.26,0.8897,标称白银，材质严重不符
+qc_gold_recheck_nir_0043,gold,黄金,recheck,C,none,recheck,polished,1.96,0.887,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0157,gold,黄金,pass,B,none,release,brushed,1.99,0.9401,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0081,silver,白银,pass,A,none,release,brushed,1.04,0.9457,标称白银饰品，产线质检 ROI
+qc_gold_pass_0158,gold,黄金,pass,A,none,release,brushed,2.09,0.9348,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0110,gold,黄金,pass,A,none,release,brushed,2.14,0.947,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0119,gold,黄金,pass,A,none,release,brushed,2.12,0.9387,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0039,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.43,0.8918,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0056,gold,黄金,pass,A,none,release,brushed,2.08,0.9338,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0037,silver,白银,recheck,C,none,recheck,polished,1.04,0.9057,标称白银，光谱指标边界偏离
+qc_gold_fail_plating_0019,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.47,0.8833,标称黄金，疑似镀金/镀银
+qc_gold_fail_contam_0014,gold,黄金,fail,C,contamination,quarantine,contaminated,1.27,0.6537,标称黄金，表面污染
+qc_gold_recheck_nir_0006,gold,黄金,recheck,C,none,recheck,brushed,2.03,0.8769,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0100,silver,白银,pass,A,none,release,polished,1.04,0.9471,标称白银饰品，产线质检 ROI
+qc_silver_pass_0176,silver,白银,pass,A,none,release,polished,1.02,0.9539,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0015,gold,黄金,fail,C,material_mismatch,reject,polished,1.09,0.8867,标称黄金，材质严重不符
+qc_gold_pass_0176,gold,黄金,pass,A,none,release,brushed,2.05,0.9388,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0038,silver,白银,recheck,C,none,recheck,polished,0.96,0.8992,标称白银，光谱指标边界偏离
+qc_gold_recheck_nir_0026,gold,黄金,recheck,C,none,recheck,brushed,1.98,0.8862,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0049,gold,黄金,pass,B,none,release,polished,1.97,0.943,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0156,gold,黄金,pass,B,none,release,brushed,2.2,0.9304,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0169,silver,白银,pass,A,none,release,brushed,1.03,0.944,标称白银饰品，产线质检 ROI
+qc_silver_pass_0046,silver,白银,pass,A,none,release,brushed,1.02,0.9455,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0038,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.07,0.8798,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0049,silver,白银,fail,C,oxidation,reject,oxidized,1.28,0.3923,标称白银，表面氧化严重
+qc_gold_pass_0092,gold,黄金,pass,B,none,release,brushed,2.0,0.9462,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0084,gold,黄金,pass,B,none,release,brushed,2.03,0.9313,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0042,silver,白银,fail,C,oxidation,reject,oxidized,1.53,0.4091,标称白银，表面氧化严重
+qc_silver_pass_0065,silver,白银,pass,B,none,release,polished,1.05,0.9429,标称白银饰品，产线质检 ROI
+qc_silver_pass_0085,silver,白银,pass,A,none,release,polished,1.04,0.9446,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0038,silver,白银,fail,C,oxidation,reject,oxidized,1.65,0.3898,标称白银，表面氧化严重
+qc_silver_fail_plating_0008,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.5,0.8939,标称白银，疑似镀金/镀银
+qc_silver_fail_mismatch_0025,silver,白银,fail,C,material_mismatch,reject,polished,2.3,0.8924,标称白银，材质严重不符
+qc_silver_fail_ox_0017,silver,白银,fail,C,oxidation,reject,oxidized,1.64,0.4013,标称白银，表面氧化严重
+qc_silver_fail_ox_0053,silver,白银,fail,C,oxidation,reject,oxidized,1.65,0.4083,标称白银，表面氧化严重
+qc_gold_fail_ox_0012,gold,黄金,fail,C,oxidation,reject,oxidized,1.41,0.3541,标称黄金，表面氧化发黑
+qc_silver_recheck_0041,silver,白银,recheck,C,none,recheck,polished,1.01,0.9079,标称白银，光谱指标边界偏离
+qc_silver_pass_0050,silver,白银,pass,B,none,release,brushed,1.0,0.9523,标称白银饰品，产线质检 ROI
+qc_silver_pass_0145,silver,白银,pass,A,none,release,brushed,1.04,0.9462,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0039,gold,黄金,fail,C,oxidation,reject,oxidized,1.57,0.3965,标称黄金，表面氧化发黑
+qc_silver_pass_0082,silver,白银,pass,B,none,release,polished,1.06,0.9355,标称白银饰品，产线质检 ROI
+qc_silver_pass_0112,silver,白银,pass,B,none,release,brushed,1.03,0.9388,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0031,gold,黄金,fail,C,contamination,quarantine,contaminated,1.21,0.6587,标称黄金，表面污染
+qc_gold_pass_0141,gold,黄金,pass,B,none,release,polished,2.0,0.935,标称黄金饰品，产线质检 ROI
+qc_silver_fail_mismatch_0016,silver,白银,fail,C,material_mismatch,reject,polished,1.14,0.9,标称白银，材质严重不符
+qc_gold_fail_contam_0040,gold,黄金,fail,C,contamination,quarantine,contaminated,1.28,0.6543,标称黄金，表面污染
+qc_silver_fail_ox_0027,silver,白银,fail,C,oxidation,reject,oxidized,1.44,0.4004,标称白银，表面氧化严重
+qc_gold_recheck_nir_0029,gold,黄金,recheck,C,none,recheck,brushed,2.13,0.8699,标称黄金，近红外反射略低，边界样本
+qc_silver_fail_ox_0022,silver,白银,fail,C,oxidation,reject,oxidized,1.36,0.3997,标称白银，表面氧化严重
+qc_silver_fail_ox_0061,silver,白银,fail,C,oxidation,reject,oxidized,1.26,0.3785,标称白银，表面氧化严重
+qc_gold_fail_plating_0029,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.47,0.8825,标称黄金，疑似镀金/镀银
+qc_silver_fail_contam_0030,silver,白银,fail,C,contamination,quarantine,contaminated,1.19,0.6704,标称白银，表面污染
+qc_gold_fail_ox_0034,gold,黄金,fail,C,oxidation,reject,oxidized,1.38,0.3719,标称黄金，表面氧化发黑
+qc_gold_fail_mismatch_0050,gold,黄金,fail,C,material_mismatch,reject,polished,2.42,0.9044,标称黄金，材质严重不符
+qc_silver_pass_0084,silver,白银,pass,A,none,release,brushed,1.04,0.9439,标称白银饰品，产线质检 ROI
+qc_gold_pass_0169,gold,黄金,pass,B,none,release,polished,2.03,0.9294,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0091,gold,黄金,pass,B,none,release,brushed,2.03,0.9459,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0148,silver,白银,pass,B,none,release,polished,1.0,0.9384,标称白银饰品，产线质检 ROI
+qc_silver_pass_0077,silver,白银,pass,B,none,release,polished,1.03,0.9391,标称白银饰品，产线质检 ROI
+qc_gold_pass_0139,gold,黄金,pass,B,none,release,brushed,1.99,0.9331,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0048,silver,白银,recheck,C,none,recheck,polished,1.07,0.8935,标称白银，光谱指标边界偏离
+qc_silver_pass_0033,silver,白银,pass,A,none,release,brushed,1.04,0.9484,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0008,gold,黄金,fail,C,oxidation,reject,oxidized,1.38,0.4141,标称黄金，表面氧化发黑
+qc_gold_pass_0129,gold,黄金,pass,B,none,release,polished,2.2,0.9381,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0001,gold,黄金,pass,A,none,release,brushed,2.05,0.9418,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0030,gold,黄金,fail,C,oxidation,reject,oxidized,1.54,0.3952,标称黄金，表面氧化发黑
+qc_gold_recheck_copper_0035,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.18,0.8987,标称黄金，光谱疑似铜色替代
+qc_silver_fail_mismatch_0046,silver,白银,fail,C,material_mismatch,reject,polished,2.21,0.9072,标称白银，材质严重不符
+qc_gold_fail_mismatch_0041,gold,黄金,fail,C,material_mismatch,reject,polished,1.17,0.8877,标称黄金，材质严重不符
+qc_gold_recheck_copper_0061,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.28,0.8992,标称黄金，光谱疑似铜色替代
+qc_gold_fail_plating_0042,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.39,0.8904,标称黄金，疑似镀金/镀银
+qc_silver_fail_mismatch_0044,silver,白银,fail,C,material_mismatch,reject,polished,1.12,0.8999,标称白银，材质严重不符
+qc_silver_pass_0154,silver,白银,pass,B,none,release,brushed,1.01,0.9421,标称白银饰品，产线质检 ROI
+qc_gold_fail_plating_0040,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.37,0.8865,标称黄金，疑似镀金/镀银
+qc_silver_fail_contam_0003,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6731,标称白银，表面污染
+qc_gold_recheck_nir_0038,gold,黄金,recheck,C,none,recheck,polished,1.99,0.8824,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_copper_0017,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.42,0.8858,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0041,silver,白银,fail,C,oxidation,reject,oxidized,1.52,0.4061,标称白银，表面氧化严重
+qc_gold_recheck_nir_0048,gold,黄金,recheck,C,none,recheck,brushed,1.91,0.8777,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_nir_0025,gold,黄金,recheck,C,none,recheck,polished,2.07,0.8979,标称黄金，近红外反射略低，边界样本
+qc_silver_fail_plating_0023,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.36,0.8949,标称白银，疑似镀金/镀银
+qc_silver_pass_0122,silver,白银,pass,A,none,release,brushed,1.02,0.9535,标称白银饰品，产线质检 ROI
+qc_gold_pass_0005,gold,黄金,pass,A,none,release,brushed,2.08,0.9317,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0116,silver,白银,pass,A,none,release,polished,1.04,0.9468,标称白银饰品，产线质检 ROI
+qc_silver_pass_0132,silver,白银,pass,A,none,release,brushed,1.04,0.9475,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0035,silver,白银,recheck,C,none,recheck,polished,1.11,0.9121,标称白银，光谱指标边界偏离
+qc_silver_pass_0045,silver,白银,pass,A,none,release,polished,1.04,0.9433,标称白银饰品，产线质检 ROI
+qc_gold_pass_0103,gold,黄金,pass,A,none,release,polished,2.13,0.9412,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0027,silver,白银,pass,B,none,release,brushed,1.05,0.9443,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0024,silver,白银,recheck,C,none,recheck,polished,1.11,0.8946,标称白银，光谱指标边界偏离
+qc_gold_pass_0086,gold,黄金,pass,A,none,release,polished,2.1,0.938,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0037,gold,黄金,recheck,C,none,recheck,polished,2.04,0.8842,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0120,gold,黄金,pass,A,none,release,polished,2.08,0.9316,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0026,silver,白银,recheck,C,none,recheck,polished,0.93,0.9033,标称白银，光谱指标边界偏离
+qc_silver_fail_ox_0058,silver,白银,fail,C,oxidation,reject,oxidized,1.75,0.4207,标称白银，表面氧化严重
+qc_gold_pass_0075,gold,黄金,pass,A,none,release,brushed,2.08,0.9354,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0151,silver,白银,pass,B,none,release,polished,1.05,0.9414,标称白银饰品，产线质检 ROI
+qc_gold_pass_0053,gold,黄金,pass,B,none,release,brushed,2.2,0.9348,标称黄金饰品，产线质检 ROI
+qc_silver_fail_mismatch_0018,silver,白银,fail,C,material_mismatch,reject,polished,2.18,0.9026,标称白银，材质严重不符
+qc_gold_fail_mismatch_0022,gold,黄金,fail,C,material_mismatch,reject,polished,1.13,0.8703,标称黄金，材质严重不符
+qc_gold_fail_ox_0020,gold,黄金,fail,C,oxidation,reject,oxidized,1.21,0.3875,标称黄金，表面氧化发黑
+qc_silver_pass_0074,silver,白银,pass,A,none,release,brushed,1.02,0.9512,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0031,silver,白银,fail,C,oxidation,reject,oxidized,1.4,0.4016,标称白银，表面氧化严重
+qc_silver_pass_0037,silver,白银,pass,B,none,release,polished,1.04,0.9371,标称白银饰品，产线质检 ROI
+qc_gold_pass_0063,gold,黄金,pass,B,none,release,polished,2.19,0.9435,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0029,gold,黄金,fail,C,oxidation,reject,oxidized,1.68,0.3575,标称黄金，表面氧化发黑
+qc_gold_fail_plating_0028,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.4,0.8824,标称黄金，疑似镀金/镀银
+qc_gold_pass_0066,gold,黄金,pass,A,none,release,brushed,2.15,0.9424,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0019,silver,白银,pass,B,none,release,polished,1.05,0.9486,标称白银饰品，产线质检 ROI
+qc_silver_fail_plating_0045,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.42,0.871,标称白银，疑似镀金/镀银
+qc_silver_fail_ox_0060,silver,白银,fail,C,oxidation,reject,oxidized,1.53,0.4087,标称白银，表面氧化严重
+qc_silver_pass_0097,silver,白银,pass,B,none,release,brushed,1.05,0.9453,标称白银饰品，产线质检 ROI
+qc_gold_pass_0042,gold,黄金,pass,B,none,release,brushed,2.16,0.9363,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0015,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.36,0.8718,标称白银，疑似镀金/镀银
+qc_silver_recheck_0004,silver,白银,recheck,C,none,recheck,polished,0.99,0.9022,标称白银，光谱指标边界偏离
+qc_silver_fail_ox_0052,silver,白银,fail,C,oxidation,reject,oxidized,1.28,0.4025,标称白银，表面氧化严重
+qc_silver_fail_contam_0055,silver,白银,fail,C,contamination,quarantine,contaminated,1.22,0.6771,标称白银，表面污染
+qc_silver_pass_0012,silver,白银,pass,A,none,release,brushed,1.04,0.9401,标称白银饰品，产线质检 ROI
+qc_silver_pass_0087,silver,白银,pass,A,none,release,polished,1.02,0.9466,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0020,gold,黄金,fail,C,contamination,quarantine,contaminated,1.17,0.6567,标称黄金，表面污染
+qc_silver_pass_0078,silver,白银,pass,A,none,release,polished,1.02,0.9455,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0014,gold,黄金,fail,C,oxidation,reject,oxidized,1.29,0.4195,标称黄金，表面氧化发黑
+qc_gold_recheck_nir_0042,gold,黄金,recheck,C,none,recheck,polished,1.9,0.884,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0058,gold,黄金,pass,A,none,release,polished,2.14,0.9287,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0082,gold,黄金,pass,A,none,release,brushed,2.14,0.9312,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0059,silver,白银,fail,C,contamination,quarantine,contaminated,1.28,0.6567,标称白银，表面污染
+qc_silver_fail_ox_0036,silver,白银,fail,C,oxidation,reject,oxidized,1.51,0.4094,标称白银，表面氧化严重
+qc_silver_pass_0102,silver,白银,pass,B,none,release,polished,1.06,0.9525,标称白银饰品，产线质检 ROI
+qc_gold_pass_0069,gold,黄金,pass,A,none,release,brushed,2.11,0.9375,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0008,silver,白银,fail,C,oxidation,reject,oxidized,1.54,0.4036,标称白银，表面氧化严重
+qc_silver_fail_contam_0024,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6794,标称白银，表面污染
+qc_gold_pass_0102,gold,黄金,pass,A,none,release,polished,2.1,0.9379,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0057,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.11,0.8987,标称黄金，光谱疑似铜色替代
+qc_silver_fail_plating_0003,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.5,0.8981,标称白银，疑似镀金/镀银
+qc_gold_fail_ox_0024,gold,黄金,fail,C,oxidation,reject,oxidized,1.55,0.4352,标称黄金，表面氧化发黑
+qc_silver_pass_0032,silver,白银,pass,A,none,release,polished,1.03,0.9478,标称白银饰品，产线质检 ROI
+qc_silver_fail_mismatch_0008,silver,白银,fail,C,material_mismatch,reject,polished,1.05,0.881,标称白银，材质严重不符
+qc_silver_fail_ox_0025,silver,白银,fail,C,oxidation,reject,oxidized,1.41,0.3922,标称白银，表面氧化严重
+qc_gold_fail_ox_0026,gold,黄金,fail,C,oxidation,reject,oxidized,1.31,0.3773,标称黄金，表面氧化发黑
+qc_gold_fail_plating_0021,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.45,0.8849,标称黄金，疑似镀金/镀银
+qc_silver_recheck_0047,silver,白银,recheck,C,none,recheck,polished,1.04,0.916,标称白银，光谱指标边界偏离
+qc_gold_recheck_copper_0014,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.12,0.8946,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0026,silver,白银,pass,A,none,release,polished,1.04,0.941,标称白银饰品，产线质检 ROI
+qc_gold_pass_0123,gold,黄金,pass,A,none,release,polished,2.15,0.9448,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0109,silver,白银,pass,A,none,release,polished,1.03,0.9422,标称白银饰品，产线质检 ROI
+qc_gold_pass_0154,gold,黄金,pass,A,none,release,polished,2.05,0.937,标称黄金饰品，产线质检 ROI
+qc_silver_fail_mismatch_0007,silver,白银,fail,C,material_mismatch,reject,polished,1.1,0.8877,标称白银，材质严重不符
+qc_gold_fail_plating_0024,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.41,0.893,标称黄金，疑似镀金/镀银
+qc_silver_pass_0141,silver,白银,pass,B,none,release,polished,1.01,0.9477,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0036,gold,黄金,fail,C,material_mismatch,reject,polished,1.08,0.8907,标称黄金，材质严重不符
+qc_silver_fail_contam_0018,silver,白银,fail,C,contamination,quarantine,contaminated,1.29,0.6627,标称白银，表面污染
+qc_gold_fail_plating_0026,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.42,0.8775,标称黄金，疑似镀金/镀银
+qc_gold_pass_0015,gold,黄金,pass,A,none,release,brushed,2.13,0.9374,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0037,gold,黄金,recheck,C,material_mismatch,recheck,polished,1.99,0.9042,标称黄金，光谱疑似铜色替代
+qc_silver_recheck_0032,silver,白银,recheck,C,none,recheck,polished,1.08,0.9108,标称白银，光谱指标边界偏离
+qc_gold_fail_plating_0032,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.33,0.8728,标称黄金，疑似镀金/镀银
+qc_silver_recheck_0030,silver,白银,recheck,C,none,recheck,polished,1.08,0.9163,标称白银，光谱指标边界偏离
+qc_silver_fail_ox_0026,silver,白银,fail,C,oxidation,reject,oxidized,1.72,0.4016,标称白银，表面氧化严重
+qc_silver_fail_contam_0034,silver,白银,fail,C,contamination,quarantine,contaminated,1.21,0.6589,标称白银，表面污染
+qc_silver_recheck_0033,silver,白银,recheck,C,none,recheck,polished,1.07,0.897,标称白银，光谱指标边界偏离
+qc_gold_recheck_copper_0036,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.09,0.8882,标称黄金，光谱疑似铜色替代
+qc_gold_recheck_copper_0032,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.18,0.8957,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0024,silver,白银,fail,C,oxidation,reject,oxidized,1.29,0.4017,标称白银，表面氧化严重
+qc_silver_pass_0146,silver,白银,pass,A,none,release,polished,1.02,0.9468,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0002,silver,白银,fail,C,oxidation,reject,oxidized,1.58,0.4083,标称白银，表面氧化严重
+qc_gold_pass_0160,gold,黄金,pass,A,none,release,polished,2.09,0.9386,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0001,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.14,0.891,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0175,gold,黄金,pass,B,none,release,polished,2.17,0.9458,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0025,silver,白银,recheck,C,none,recheck,polished,1.04,0.9146,标称白银，光谱指标边界偏离
+qc_gold_recheck_copper_0064,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.26,0.903,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0018,silver,白银,fail,C,oxidation,reject,oxidized,1.46,0.3912,标称白银，表面氧化严重
+qc_silver_fail_ox_0009,silver,白银,fail,C,oxidation,reject,oxidized,1.26,0.3938,标称白银，表面氧化严重
+qc_silver_fail_contam_0047,silver,白银,fail,C,contamination,quarantine,contaminated,1.22,0.6669,标称白银，表面污染
+qc_silver_pass_0090,silver,白银,pass,A,none,release,polished,1.04,0.9487,标称白银饰品，产线质检 ROI
+qc_gold_pass_0013,gold,黄金,pass,B,none,release,polished,1.99,0.9394,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0023,gold,黄金,fail,C,oxidation,reject,oxidized,1.33,0.3537,标称黄金，表面氧化发黑
+qc_gold_fail_contam_0007,gold,黄金,fail,C,contamination,quarantine,contaminated,1.22,0.6719,标称黄金，表面污染
+qc_silver_pass_0135,silver,白银,pass,A,none,release,brushed,1.02,0.9442,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0022,gold,黄金,fail,C,oxidation,reject,oxidized,1.52,0.3951,标称黄金，表面氧化发黑
+qc_silver_pass_0041,silver,白银,pass,A,none,release,brushed,1.02,0.9443,标称白银饰品，产线质检 ROI
+qc_gold_pass_0029,gold,黄金,pass,A,none,release,polished,2.08,0.9497,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0058,silver,白银,pass,B,none,release,polished,1.01,0.9476,标称白银饰品，产线质检 ROI
+qc_silver_pass_0088,silver,白银,pass,B,none,release,brushed,1.0,0.9512,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0042,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.11,0.8767,标称黄金，光谱疑似铜色替代
+qc_silver_fail_contam_0050,silver,白银,fail,C,contamination,quarantine,contaminated,1.19,0.6689,标称白银，表面污染
+qc_gold_pass_0151,gold,黄金,pass,A,none,release,polished,2.04,0.9362,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0132,gold,黄金,pass,A,none,release,polished,2.14,0.9286,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0159,gold,黄金,pass,A,none,release,brushed,2.13,0.9269,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0126,silver,白银,pass,A,none,release,brushed,1.03,0.9415,标称白银饰品，产线质检 ROI
+qc_gold_fail_contam_0043,gold,黄金,fail,C,contamination,quarantine,contaminated,1.2,0.6637,标称黄金，表面污染
+qc_silver_recheck_0023,silver,白银,recheck,C,none,recheck,polished,1.0,0.8971,标称白银，光谱指标边界偏离
+qc_silver_pass_0137,silver,白银,pass,A,none,release,brushed,1.03,0.9465,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0012,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6528,标称白银，表面污染
+qc_gold_pass_0163,gold,黄金,pass,A,none,release,brushed,2.14,0.9337,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0139,silver,白银,pass,B,none,release,polished,1.05,0.9523,标称白银饰品，产线质检 ROI
+qc_silver_pass_0123,silver,白银,pass,A,none,release,polished,1.03,0.9471,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0049,gold,黄金,fail,C,material_mismatch,reject,polished,2.28,0.9008,标称黄金，材质严重不符
+qc_gold_fail_ox_0002,gold,黄金,fail,C,oxidation,reject,oxidized,1.41,0.3565,标称黄金，表面氧化发黑
+qc_gold_fail_plating_0044,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.39,0.8867,标称黄金，疑似镀金/镀银
+qc_silver_pass_0051,silver,白银,pass,A,none,release,brushed,1.04,0.943,标称白银饰品，产线质检 ROI
+qc_gold_pass_0027,gold,黄金,pass,A,none,release,brushed,2.14,0.9393,标称黄金饰品，产线质检 ROI
+qc_gold_fail_mismatch_0056,gold,黄金,fail,C,material_mismatch,reject,polished,2.51,0.8899,标称黄金，材质严重不符
+qc_silver_fail_ox_0023,silver,白银,fail,C,oxidation,reject,oxidized,1.45,0.3968,标称白银，表面氧化严重
+qc_gold_pass_0152,gold,黄金,pass,A,none,release,polished,2.04,0.9325,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0144,gold,黄金,pass,A,none,release,brushed,2.04,0.9425,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0037,gold,黄金,pass,B,none,release,polished,2.25,0.9236,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0033,gold,黄金,fail,C,oxidation,reject,oxidized,1.48,0.3796,标称黄金，表面氧化发黑
+qc_silver_pass_0106,silver,白银,pass,B,none,release,polished,1.05,0.9419,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0006,gold,黄金,fail,C,oxidation,reject,oxidized,1.71,0.4043,标称黄金，表面氧化发黑
+qc_silver_pass_0089,silver,白银,pass,B,none,release,brushed,1.02,0.9396,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0046,gold,黄金,recheck,C,none,recheck,brushed,2.06,0.864,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0163,silver,白银,pass,B,none,release,polished,1.06,0.9499,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0040,gold,黄金,recheck,C,none,recheck,brushed,2.05,0.8762,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0127,silver,白银,pass,B,none,release,brushed,1.06,0.9398,标称白银饰品，产线质检 ROI
+qc_silver_pass_0175,silver,白银,pass,B,none,release,brushed,1.05,0.953,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0060,silver,白银,fail,C,contamination,quarantine,contaminated,1.2,0.6595,标称白银，表面污染
+qc_silver_fail_plating_0007,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.41,0.8931,标称白银，疑似镀金/镀银
+qc_silver_recheck_0040,silver,白银,recheck,C,none,recheck,polished,1.02,0.8936,标称白银，光谱指标边界偏离
+qc_silver_recheck_0006,silver,白银,recheck,C,none,recheck,polished,1.02,0.8942,标称白银，光谱指标边界偏离
+qc_gold_pass_0076,gold,黄金,pass,A,none,release,polished,2.11,0.9387,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0162,silver,白银,pass,A,none,release,brushed,1.03,0.9465,标称白银饰品，产线质检 ROI
+qc_gold_pass_0100,gold,黄金,pass,B,none,release,polished,1.95,0.9337,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0095,silver,白银,pass,B,none,release,brushed,1.09,0.9441,标称白银饰品，产线质检 ROI
+qc_silver_pass_0040,silver,白银,pass,A,none,release,polished,1.04,0.9441,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0031,silver,白银,recheck,C,none,recheck,polished,1.01,0.8995,标称白银，光谱指标边界偏离
+qc_silver_pass_0073,silver,白银,pass,B,none,release,polished,1.06,0.9598,标称白银饰品，产线质检 ROI
+qc_gold_pass_0146,gold,黄金,pass,A,none,release,brushed,2.09,0.9323,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0172,silver,白银,pass,B,none,release,polished,1.05,0.9415,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0007,gold,黄金,recheck,C,none,recheck,polished,2.04,0.8697,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_copper_0024,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.36,0.894,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0174,gold,黄金,pass,A,none,release,brushed,2.05,0.9297,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0115,gold,黄金,pass,B,none,release,brushed,2.21,0.9288,标称黄金饰品，产线质检 ROI
+qc_gold_fail_ox_0018,gold,黄金,fail,C,oxidation,reject,oxidized,1.21,0.3991,标称黄金，表面氧化发黑
+qc_silver_pass_0093,silver,白银,pass,A,none,release,polished,1.02,0.9458,标称白银饰品，产线质检 ROI
+qc_gold_pass_0150,gold,黄金,pass,A,none,release,brushed,2.09,0.9248,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0107,gold,黄金,pass,A,none,release,polished,2.11,0.9321,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0128,gold,黄金,pass,A,none,release,brushed,2.12,0.9257,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0023,gold,黄金,recheck,C,none,recheck,brushed,2.09,0.8917,标称黄金，近红外反射略低，边界样本
+qc_gold_recheck_nir_0035,gold,黄金,recheck,C,none,recheck,polished,2.05,0.8884,标称黄金，近红外反射略低，边界样本
+qc_silver_fail_contam_0042,silver,白银,fail,C,contamination,quarantine,contaminated,1.35,0.6588,标称白银，表面污染
+qc_silver_fail_contam_0021,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6528,标称白银，表面污染
+qc_silver_fail_plating_0038,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.34,0.8893,标称白银，疑似镀金/镀银
+qc_silver_fail_mismatch_0027,silver,白银,fail,C,material_mismatch,reject,polished,1.17,0.891,标称白银，材质严重不符
+qc_gold_recheck_copper_0021,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.43,0.8893,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0041,gold,黄金,pass,B,none,release,brushed,2.24,0.9392,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0056,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.08,0.905,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0124,silver,白银,pass,B,none,release,brushed,1.07,0.9458,标称白银饰品，产线质检 ROI
+qc_gold_pass_0062,gold,黄金,pass,B,none,release,polished,2.26,0.9496,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0029,silver,白银,recheck,C,none,recheck,polished,1.04,0.9121,标称白银，光谱指标边界偏离
+qc_gold_recheck_nir_0034,gold,黄金,recheck,C,none,recheck,brushed,2.08,0.8672,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0025,gold,黄金,pass,A,none,release,polished,2.09,0.9288,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0035,silver,白银,fail,C,oxidation,reject,oxidized,1.45,0.4052,标称白银，表面氧化严重
+qc_gold_fail_contam_0039,gold,黄金,fail,C,contamination,quarantine,contaminated,1.3,0.6636,标称黄金，表面污染
+qc_gold_fail_ox_0046,gold,黄金,fail,C,oxidation,reject,oxidized,1.55,0.371,标称黄金，表面氧化发黑
+qc_gold_pass_0124,gold,黄金,pass,B,none,release,polished,2.21,0.9365,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0039,silver,白银,fail,C,oxidation,reject,oxidized,1.16,0.3929,标称白银，表面氧化严重
+qc_silver_pass_0091,silver,白银,pass,B,none,release,polished,1.01,0.9451,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0012,gold,黄金,recheck,C,none,recheck,brushed,1.94,0.8757,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0073,gold,黄金,pass,B,none,release,polished,2.22,0.9494,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_copper_0043,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.42,0.8779,标称黄金，光谱疑似铜色替代
+qc_silver_recheck_0018,silver,白银,recheck,C,none,recheck,polished,1.0,0.9049,标称白银，光谱指标边界偏离
+qc_silver_fail_ox_0021,silver,白银,fail,C,oxidation,reject,oxidized,1.39,0.4024,标称白银，表面氧化严重
+qc_gold_recheck_nir_0001,gold,黄金,recheck,C,none,recheck,brushed,2.14,0.8736,标称黄金，近红外反射略低，边界样本
+qc_gold_pass_0034,gold,黄金,pass,B,none,release,brushed,1.98,0.9292,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0008,gold,黄金,pass,B,none,release,polished,2.16,0.9363,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0072,gold,黄金,pass,B,none,release,brushed,2.16,0.9409,标称黄金饰品，产线质检 ROI
+qc_silver_recheck_0010,silver,白银,recheck,C,none,recheck,polished,1.03,0.9046,标称白银，光谱指标边界偏离
+qc_silver_fail_plating_0020,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.37,0.8823,标称白银，疑似镀金/镀银
+qc_gold_pass_0164,gold,黄金,pass,B,none,release,brushed,2.19,0.9245,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0164,silver,白银,pass,B,none,release,polished,1.07,0.9513,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0043,gold,黄金,fail,C,oxidation,reject,oxidized,1.58,0.3537,标称黄金，表面氧化发黑
+qc_gold_pass_0114,gold,黄金,pass,A,none,release,brushed,2.11,0.9262,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0033,silver,白银,fail,C,contamination,quarantine,contaminated,1.23,0.6396,标称白银，表面污染
+qc_silver_fail_ox_0001,silver,白银,fail,C,oxidation,reject,oxidized,1.85,0.4154,标称白银，表面氧化严重
+qc_silver_fail_plating_0022,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.47,0.8765,标称白银，疑似镀金/镀银
+qc_gold_fail_mismatch_0028,gold,黄金,fail,C,material_mismatch,reject,polished,2.12,0.8892,标称黄金，材质严重不符
+qc_silver_pass_0072,silver,白银,pass,A,none,release,brushed,1.03,0.9475,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0039,gold,黄金,recheck,C,none,recheck,polished,2.15,0.8909,标称黄金，近红外反射略低，边界样本
+qc_gold_fail_ox_0042,gold,黄金,fail,C,oxidation,reject,oxidized,1.35,0.3438,标称黄金，表面氧化发黑
+qc_gold_fail_plating_0046,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.43,0.891,标称黄金，疑似镀金/镀银
+qc_silver_pass_0075,silver,白银,pass,A,none,release,brushed,1.04,0.946,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0007,silver,白银,recheck,C,none,recheck,polished,1.05,0.8992,标称白银，光谱指标边界偏离
+qc_silver_recheck_0009,silver,白银,recheck,C,none,recheck,polished,0.99,0.9006,标称白银，光谱指标边界偏离
+qc_gold_fail_ox_0016,gold,黄金,fail,C,oxidation,reject,oxidized,1.53,0.3733,标称黄金，表面氧化发黑
+qc_silver_pass_0036,silver,白银,pass,B,none,release,brushed,1.05,0.9472,标称白银饰品，产线质检 ROI
+qc_gold_pass_0032,gold,黄金,pass,A,none,release,brushed,2.11,0.9275,标称黄金饰品，产线质检 ROI
+qc_gold_pass_0067,gold,黄金,pass,A,none,release,brushed,2.09,0.9404,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0125,silver,白银,pass,B,none,release,polished,1.03,0.9371,标称白银饰品，产线质检 ROI
+qc_gold_pass_0136,gold,黄金,pass,A,none,release,polished,2.06,0.9342,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0155,silver,白银,pass,B,none,release,polished,1.01,0.9512,标称白银饰品，产线质检 ROI
+qc_silver_pass_0029,silver,白银,pass,A,none,release,brushed,1.04,0.9461,标称白银饰品，产线质检 ROI
+qc_gold_fail_plating_0047,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.33,0.8831,标称黄金，疑似镀金/镀银
+qc_silver_pass_0004,silver,白银,pass,A,none,release,polished,1.03,0.9453,标称白银饰品，产线质检 ROI
+qc_silver_pass_0070,silver,白银,pass,A,none,release,brushed,1.02,0.9593,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0026,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.06,0.88,标称黄金，光谱疑似铜色替代
+qc_silver_recheck_0005,silver,白银,recheck,C,none,recheck,polished,1.0,0.9105,标称白银，光谱指标边界偏离
+qc_gold_pass_0166,gold,黄金,pass,B,none,release,polished,2.02,0.9333,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0022,silver,白银,pass,B,none,release,brushed,1.07,0.9456,标称白银饰品，产线质检 ROI
+qc_silver_fail_ox_0012,silver,白银,fail,C,oxidation,reject,oxidized,1.18,0.3975,标称白银，表面氧化严重
+qc_silver_fail_ox_0054,silver,白银,fail,C,oxidation,reject,oxidized,1.31,0.4011,标称白银，表面氧化严重
+qc_gold_recheck_copper_0047,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.12,0.8875,标称黄金，光谱疑似铜色替代
+qc_gold_fail_contam_0046,gold,黄金,fail,C,contamination,quarantine,contaminated,1.16,0.6745,标称黄金，表面污染
+qc_gold_fail_ox_0040,gold,黄金,fail,C,oxidation,reject,oxidized,1.57,0.4014,标称黄金，表面氧化发黑
+qc_silver_fail_plating_0054,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.36,0.867,标称白银，疑似镀金/镀银
+qc_gold_recheck_copper_0028,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.0,0.9057,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0094,gold,黄金,pass,B,none,release,polished,2.19,0.9367,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0013,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.46,0.8779,标称白银，疑似镀金/镀银
+qc_silver_recheck_0020,silver,白银,recheck,C,none,recheck,polished,1.02,0.9135,标称白银，光谱指标边界偏离
+qc_gold_fail_contam_0017,gold,黄金,fail,C,contamination,quarantine,contaminated,1.26,0.6462,标称黄金，表面污染
+qc_gold_fail_ox_0007,gold,黄金,fail,C,oxidation,reject,oxidized,1.81,0.3926,标称黄金，表面氧化发黑
+qc_gold_pass_0171,gold,黄金,pass,B,none,release,brushed,1.96,0.938,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0080,silver,白银,pass,B,none,release,brushed,1.05,0.9425,标称白银饰品，产线质检 ROI
+qc_gold_fail_mismatch_0005,gold,黄金,fail,C,material_mismatch,reject,polished,1.09,0.8825,标称黄金，材质严重不符
+qc_silver_pass_0157,silver,白银,pass,B,none,release,brushed,1.02,0.933,标称白银饰品，产线质检 ROI
+qc_gold_pass_0024,gold,黄金,pass,A,none,release,polished,2.13,0.9369,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0003,gold,黄金,recheck,C,none,recheck,polished,1.95,0.8788,标称黄金，近红外反射略低，边界样本
+qc_gold_fail_ox_0009,gold,黄金,fail,C,oxidation,reject,oxidized,1.26,0.3926,标称黄金，表面氧化发黑
+qc_gold_fail_mismatch_0053,gold,黄金,fail,C,material_mismatch,reject,polished,2.08,0.8917,标称黄金，材质严重不符
+qc_gold_pass_0083,gold,黄金,pass,A,none,release,brushed,2.04,0.9386,标称黄金饰品，产线质检 ROI
+qc_silver_fail_ox_0004,silver,白银,fail,C,oxidation,reject,oxidized,1.37,0.3954,标称白银，表面氧化严重
+qc_gold_fail_contam_0011,gold,黄金,fail,C,contamination,quarantine,contaminated,1.26,0.6702,标称黄金，表面污染
+qc_gold_fail_contam_0001,gold,黄金,fail,C,contamination,quarantine,contaminated,1.25,0.6629,标称黄金，表面污染
+qc_gold_pass_0142,gold,黄金,pass,B,none,release,polished,2.03,0.9353,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0054,silver,白银,pass,A,none,release,brushed,1.03,0.9457,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0010,silver,白银,fail,C,contamination,quarantine,contaminated,1.31,0.6652,标称白银，表面污染
+qc_gold_pass_0030,gold,黄金,pass,A,none,release,polished,2.05,0.9378,标称黄金饰品，产线质检 ROI
+qc_gold_fail_mismatch_0042,gold,黄金,fail,C,material_mismatch,reject,polished,2.25,0.8964,标称黄金，材质严重不符
+qc_silver_pass_0018,silver,白银,pass,A,none,release,brushed,1.03,0.9516,标称白银饰品，产线质检 ROI
+qc_gold_recheck_nir_0005,gold,黄金,recheck,C,none,recheck,polished,2.01,0.8844,标称黄金，近红外反射略低，边界样本
+qc_gold_fail_mismatch_0014,gold,黄金,fail,C,material_mismatch,reject,polished,2.15,0.8993,标称黄金，材质严重不符
+qc_silver_fail_mismatch_0054,silver,白银,fail,C,material_mismatch,reject,polished,1.09,0.8867,标称白银，材质严重不符
+qc_silver_fail_contam_0045,silver,白银,fail,C,contamination,quarantine,contaminated,1.13,0.6757,标称白银，表面污染
+qc_gold_fail_ox_0019,gold,黄金,fail,C,oxidation,reject,oxidized,1.54,0.3932,标称黄金，表面氧化发黑
+qc_gold_recheck_copper_0041,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.17,0.8841,标称黄金，光谱疑似铜色替代
+qc_gold_pass_0101,gold,黄金,pass,A,none,release,polished,2.06,0.939,标称黄金饰品，产线质检 ROI
+qc_silver_fail_plating_0012,silver,白银,fail,C,plating_risk,quarantine,tarnished,1.45,0.884,标称白银，疑似镀金/镀银
+qc_silver_pass_0001,silver,白银,pass,B,none,release,brushed,1.05,0.9519,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0048,silver,白银,fail,C,contamination,quarantine,contaminated,1.23,0.6574,标称白银，表面污染
+qc_gold_fail_mismatch_0032,gold,黄金,fail,C,material_mismatch,reject,polished,2.22,0.9104,标称黄金，材质严重不符
+qc_silver_pass_0167,silver,白银,pass,B,none,release,brushed,1.07,0.9519,标称白银饰品，产线质检 ROI
+qc_silver_fail_mismatch_0038,silver,白银,fail,C,material_mismatch,reject,polished,2.26,0.9074,标称白银，材质严重不符
+qc_gold_pass_0004,gold,黄金,pass,B,none,release,polished,1.9,0.9305,标称黄金饰品，产线质检 ROI
+qc_silver_pass_0120,silver,白银,pass,B,none,release,brushed,1.06,0.9478,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0058,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.49,0.8971,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0006,silver,白银,pass,A,none,release,polished,1.02,0.9423,标称白银饰品，产线质检 ROI
+qc_gold_pass_0161,gold,黄金,pass,A,none,release,brushed,2.14,0.9268,标称黄金饰品，产线质检 ROI
+qc_gold_recheck_nir_0045,gold,黄金,recheck,C,none,recheck,polished,2.26,0.8685,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0118,silver,白银,pass,A,none,release,brushed,1.04,0.9477,标称白银饰品，产线质检 ROI
+qc_silver_recheck_0012,silver,白银,recheck,C,none,recheck,polished,1.07,0.9013,标称白银，光谱指标边界偏离
+qc_silver_fail_mismatch_0031,silver,白银,fail,C,material_mismatch,reject,polished,1.12,0.8937,标称白银，材质严重不符
+qc_silver_recheck_0043,silver,白银,recheck,C,none,recheck,polished,1.05,0.906,标称白银，光谱指标边界偏离
+qc_gold_recheck_copper_0062,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.34,0.8966,标称黄金，光谱疑似铜色替代
+qc_silver_pass_0055,silver,白银,pass,B,none,release,brushed,1.01,0.9555,标称白银饰品，产线质检 ROI
+qc_gold_recheck_copper_0050,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.12,0.8945,标称黄金，光谱疑似铜色替代
+qc_silver_fail_ox_0034,silver,白银,fail,C,oxidation,reject,oxidized,1.25,0.4088,标称白银，表面氧化严重
+qc_silver_fail_ox_0037,silver,白银,fail,C,oxidation,reject,oxidized,1.39,0.3999,标称白银，表面氧化严重
+qc_silver_fail_ox_0003,silver,白银,fail,C,oxidation,reject,oxidized,1.72,0.4057,标称白银，表面氧化严重
+qc_silver_pass_0150,silver,白银,pass,B,none,release,brushed,1.05,0.9447,标称白银饰品，产线质检 ROI
+qc_silver_fail_contam_0028,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6611,标称白银，表面污染
+qc_gold_fail_mismatch_0037,gold,黄金,fail,C,material_mismatch,reject,polished,2.21,0.8952,标称黄金，材质严重不符
+qc_silver_fail_contam_0025,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6486,标称白银，表面污染
+qc_gold_fail_plating_0016,gold,黄金,fail,C,plating_risk,quarantine,tarnished,1.36,0.8907,标称黄金，疑似镀金/镀银
+qc_silver_fail_contam_0057,silver,白银,fail,C,contamination,quarantine,contaminated,1.24,0.6774,标称白银，表面污染
+qc_gold_pass_0109,gold,黄金,pass,B,none,release,polished,2.02,0.9237,标称黄金饰品，产线质检 ROI
+qc_silver_fail_contam_0022,silver,白银,fail,C,contamination,quarantine,contaminated,1.18,0.6711,标称白银，表面污染
+qc_gold_recheck_copper_0020,gold,黄金,recheck,C,material_mismatch,recheck,polished,2.17,0.9062,标称黄金，光谱疑似铜色替代
+qc_gold_fail_mismatch_0045,gold,黄金,fail,C,material_mismatch,reject,polished,2.28,0.8907,标称黄金，材质严重不符
+qc_silver_pass_0152,silver,白银,pass,B,none,release,polished,1.01,0.9531,标称白银饰品，产线质检 ROI
+qc_silver_pass_0110,silver,白银,pass,B,none,release,polished,1.01,0.9428,标称白银饰品，产线质检 ROI
+qc_gold_fail_ox_0038,gold,黄金,fail,C,oxidation,reject,oxidized,1.86,0.3909,标称黄金，表面氧化发黑
+qc_gold_recheck_nir_0013,gold,黄金,recheck,C,none,recheck,brushed,2.12,0.895,标称黄金，近红外反射略低，边界样本
+qc_silver_pass_0047,silver,白银,pass,B,none,release,polished,1.04,0.938,标称白银饰品，产线质检 ROI
+qc_silver_fail_mismatch_0026,silver,白银,fail,C,material_mismatch,reject,polished,1.06,0.8893,标称白银，材质严重不符

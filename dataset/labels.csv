@@ -1,0 +1,6 @@
+sample_id,file_path,label,label_cn,moisture_pct,sugar_brix,grade,notes
+APPLE-001,raw/apple_healthy/001.hdr,healthy,健康,13.2,14.1,A,无可见缺陷
+APPLE-002,raw/apple_healthy/002.hdr,healthy,健康,12.8,13.9,A,无可见缺陷
+APPLE-003,raw/apple_bruise/003.hdr,bruise,碰伤,14.5,13.2,B,表皮褐色区域约2cm
+APPLE-004,raw/apple_rot/004.hdr,rot,腐烂,18.3,9.8,C,已有酒味
+APPLE-005,raw/apple_healthy/005.hdr,healthy,健康,13.0,14.5,A,无可见缺陷

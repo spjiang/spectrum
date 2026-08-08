@@ -1,0 +1,176 @@
+* A-SPN  
+Attention-Based Second-Order Pooling Network for Hyperspectral Image Classification  
+* ACDFSL  
+Attentive Cross-Domain Few-Shot Learning in Hyperspectral Image Classification  
+* ADASR  
+An Adversarial Auto-Augmentation Framework for Hyperspectral and Multispectral Data Fusion  
+* AMGCFN  
+Attention Multihop Graph and Multiscale Convolutional Fusion Network for Hyperspectral Image Classification  
+* AMS-M2ESL  
+Adaptive Mask Sampling and Manifold to Euclidean Subspace Learning with Distance Covariance Representation for Hyperspectral Image Classification  
+* ASPC  
+Adaptive Spatial Pyramid Constraint for HSI Classification With Limited Training Samples  
+* ASSMN  
+Adaptive Spectral–Spatial Multiscale Contextual Feature Extraction for Hyperspectral Image Classification  
+* CMR-CNN  
+Cross-Mixing Residual Network for Hyperspectral Image Classification  
+* CNCMN 
+Composite Neighbor-Aware Convolutional Metric Networks for Hyperspectral Image Classification  
+* CNN_Enhanced_GCN  
+CNN-Enhanced Graph Convolutional Network With Pixel- and Superpixel-Level Feature Fusion for Hyperspectral Image Classification  
+* CS2DT  
+Cross Spatial–Spectral Dense Transformer for Hyperspectral Image Classification  
+* CSIL 
+An interactive learning framework for hyperspectral image classification  
+* CTN  
+Convolutional Transformer Network for Hyperspectral Image Classification  
+* CVNNs  
+Attention based Dual-Branch Complex Feature Fusion Network for Hyperspectral Image Classification  
+* CVSSN  
+Exploring the Relationship between Center and Neighborhoods: Central Vector oriented Self-Similarity Network for Hyperspectral Image Classification  
+* DADBN  
+Hyperspectral Image Classification Based on Domain Adversarial Broad Adaptation Network  
+* DACNET  
+Efficient Dynamic Attention 3D Convolution for Hyperspectral Image Classification  
+* DBDA  
+Double-Branch Dual-Attention Mechanism Network for Hyperspectral Image Classification  
+* DCN-T  
+Dual Context Network with Transformer for Hyperspectral Image Classification  
+* DDCD  
+LiteDenseNet: A Lightweight Network for Hyperspectral Image Classification  
+* DKDMN  
+Data and knowledge-driven deep multiview fusion network based on diffusion model for hyperspectral image classification  
+* DM-MRN  
+Multistage Relation Network With Dual-Metric for Few-Shot Hyperspectral Image Classification  
+* DPRN  
+Deep Pyramidal Residual Networks for Hyperspectral Image Classification  
+* DRGCN  
+Dual Residual Graph Convolutional Network for Hyperspectral Image Classification  
+* DeepMatrixCapsules  
+Hyperspectral Image Classification Using Deep Matrix Capsules  
+* DeepTreeAttention  
+Hyperspectral Image Classification with Attention Aided CNNs (https://arxiv.org/abs/2005.11977)  
+* DSFormer  
+Dual Selective Fusion Transformer Network for Hyperspectral Image Classification    
+* ENL-FCN  
+Efficient Deep Learning of Non-local Features for Hyperspectral Image Classification  
+* F2HNN  
+Hyperspectral Image Classification Using Feature Fusion Hypergraph Convolution Neural Network  
+* FDSSC  
+A Fast Dense Spectral–Spatial Convolution Network Framework for Hyperspectral Images Classification
+* FSKNet  
+Faster hyperspectral image classification based on selective kernel mechanism using deep convolutional networks  
+* FullyContNet  
+Fully Contextual Network for Hyperspectral Scene Parsing  
+* GCN_TGRS_DFH  
+Graph Convolutional Networks for Hyperspectral Image Classification  
+* HKNAS  
+Classification of Hyperspectral Imagery Based on Hyper Kernel Neural Architecture Search  
+* HSIC-FM  
+Overcoming the Barrier of Incompleteness: A Hyperspectral Image Classification Full Model  
+* HSIFormer  
+HSIFormer: An Efficient Vision Transformer Framework for Enhanced Hyperspectral Image Classification Using Local Window Attention  
+* HSIMAE  
+HSIMAE：A Unified Masked Autoencoder with Large-scale Pretraining for Hyperspectral Image Classification  
+* HSISurvey  
+A Comprehensive Survey for Hyperspectral Image Classification: The Evolution from Conventional to Transformers and Mamba Models  
+* HSI_DeepLearning_Review  
+Deep Feature Extraction and Classification of Hyperspectral Images Based on Convolutional Neural Networks  
+* HyT_NAS  
+Grafting Transformer on Automatically Designed Convolutional Neural Network for Hyperspectral Image Classification  
+* HybridSN  
+HybridSN Exploring 3D-2D Feature for Hyperspectral Image Classification  
+* HypelCNN  
+A Deep Learning Classification Framework with Spectral and Spatial Feature Fusion Layers for Hyperspectral and Lidar Sensor Data  
+* HyLiOSR  
+HyLiOSR: Staged Progressive Learning for Joint Open-Set Recognition of Hyperspectral and LiDAR Data  
+* LFSMIM  
+A Low-Frequency Spectral Masked Image Modeling Method for Hyperspectral Image Classification  
+* LMSS-NAS  
+Lightweight Multiscale Neural Architecture Search With Spectral–Spatial Attention for Hyperspectral Image Classification  
+* MAFN  
+Hyperspectral image classification with multiattention fusion network  
+* MambaMoE  
+MambaMoE: Mixture-of-Spectral-Spatial-Experts State Space Model for Hyperspectral Image Classification  
+* MCNN-based_HSI_Classification  
+3D Octave and 2D Vanilla Mixed Convolutional Neural Network for Hyperspectral Image Classification with Limited Samples  
+* MIEPN  
+Multidimensional Information Expansion and Processing Network for Hyperspectral Image Classification  
+* MRViT  
+Mixed Convolutions with Vision Transformer in Hyperspectral Image Classification  
+* MSA-GCN  
+Interactive Enhanced Network Based on Multihead Self-Attention and Graph Convolution for Classification of Hyperspectral and LiDAR Data  
+* MSSG-UNet  
+Multilevel Superpixel Structured Graph U-Nets for Hyperspectral Image Classification  
+* MUNet  
+Multimodal Hyperspectral Unmixing Insights From Attention Networks  
+* MVAHN  
+Multiple Vision Architectures-based Hybrid Network for Hyperspectral Image Classification  
+* Machine_Learning_Methods  
+No paper! The project uses the CNN models、the KNN method、the SVM method as classifier in hyperspectral image classification  
+* MambaHSI  
+MambaHSI: Spatial-Spectral Mamba for Hyperspectral Image Classification    
+* MambaHSI+  
+MambaHSI+: Multidirectional State Propagation for Efficient Hyperspectral Image Classification    
+* NCGLF2  
+NCGLF2：Network combining global and local features for fusion of multisource remote sensing data     
+* OSICN  
+Can Spectral Information Work While Extracting Spatial Distribution? — An Online Spectral Information Compensation Network for HSI Classification  
+* PHDMamba  
+PHDMamba: Progressive Hybrid Mamba for Hyperspectral Image Classification  
+* S3Net  
+S3Net: Spectral-Spatial Siamese Network for Few-Shot Hyperspectral Image Classification  
+* SACNet  
+Self-Attention Context Network Addressing the Threat of Adversarial Attacks for Hyperspectral Image Classification  
+* SGMAE  
+SGMAE:Self-Supervised Graph Masked Autoencoders for Hyperspectral Image Classification  
+* SKDN  
+Random Shuffling Data for Hyperspectral Image Classification with Siamese and Knowledge Distillation Network  
+* SSDC  
+Spectral-Spatial Distribution Consistent Network Based on Meta-Learning for Cross-Domain Hyperspectral Image Classification  
+* SSFTM  
+Spectral State Fusion Tree Mamba for Hyperspectral Image Classification  
+* SSFTT  
+Spectral Spatial Feature Tokenization Transformer for Hyperspectral Image Classification  
+* SSGRN  
+Spectral-Spatial Global Graph Reasoning for Hyperspectral Image Classification  
+* SSMLP-RPL  
+Spectral–Spatial MLP-Like Network With Reciprocal Points Learning for Open-Set Hyperspectral Image Classification  
+* SSMTR  
+Spectral–Spatial Masked Transformer With Supervised and Contrastive Learning for Hyperspectral Image Classification  
+* SSNSC  
+Spectral-Spatial Nearest Subspace Classifier for Hyperspectral Image Classification  
+* SSRN  
+Spectral–Spatial Residual Network for Hyperspectral Image Classification  
+* SSTN  
+Spatial-Spectral Transformer for Hyperspectral Image Classification  
+* SpectralFormer  
+SpectralFormer Rethinking Hyperspectral Image Classification With Transformers  
+* SpectralGPT  
+SpectralGPT: Spectral Remote Sensing Foundation Model  
+* TCRL  
+TCRL: Triple Contrastive Representation Learning for Hyperspectral Image Classification With Noisy Labels  
+* TP-Net  
+A-Triple-Path-Spectral-Spatial-Network-with-Interleave-Attention-for-Hyperspectral-Image-Classificat For HSI classification  
+* morphFormer   
+Spectral–Spatial Morphological Attention Transformer for Hyperspectral Image Classification  
+* pResNet-HSI  
+Deep Pyramidal Residual Networks for Hyperspectral Image Classification  
+* CTF-SSCL  
+CTF-SSCL: CNN-Transformer for Few-shot Hyperspectral Image Classification Assisted by Semisupervised Contrastive Learning  
+* MCMD-CFSL  
+A Multimodal Prototype Correction and Multidimensional Knowledge Distillation Framework for Cross-Domain Few-Shot Hyperspectral Image Classification  
+* S4L-FSC  
+Spectral-Spatial Self-Supervised Learning for Few-Shot Hyperspectral Image Classification  
+* MTLSC-Diff    
+MTLSC-Diff: Multitask learning with diffusion models for hyperspectral image super-resolution and classification  
+* MLPA  
+Multi-Level Prototype Alignment for Cross-Domain Few-Shot Hyperspectral Image Classification  
+* Hyper-LKCNet  
+Hyper-LKCNet: Exploring the Utilization of Large Kernel Convolution for Hyperspectral Image Classification  
+* S2PST  
+Spectral Structure-Aware Initialization and Probability-Consistent Self-Training for Cross-scene Hyperspectral Image Classification  
+
+
+
+
