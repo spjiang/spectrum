@@ -28,6 +28,14 @@ def make_reflectance_cube() -> np.ndarray:
     return cube
 
 
+def make_detect_cube(cube: np.ndarray) -> np.ndarray:
+    """在植被半区写入低 NDVI 斑块，供检测算法演示。"""
+    c = cube.copy()
+    c[4:10, 2:8, 3] = 0.08  # 压低 NIR
+    c[4:10, 2:8, 2] = 0.22  # 抬高 RED → NDVI 变低
+    return c
+
+
 def make_dn_cube(cube: np.ndarray) -> np.ndarray:
     return (cube * 1000.0).astype(np.float32)
 
@@ -303,7 +311,7 @@ def fixture_spec(algo_id: str, cube, dn, gt, index) -> dict:
         },
         "40_detect_segment": {
             "files": {
-                "input.tif": cube,
+                "input.tif": make_detect_cube(cube),
                 "file2.geojson": {
                     "type": "FeatureCollection",
                     "features": [
@@ -318,8 +326,8 @@ def fixture_spec(algo_id: str, cube, dn, gt, index) -> dict:
                     ],
                 },
             },
-            "params": {},
-            "note": "影像 GeoTIFF + 标注 GeoJSON。",
+            "params": {"red_band": 2, "nir_band": 3, "percentile": 20, "min_pixels": 4},
+            "note": "影像 GeoTIFF（含低 NDVI 斑块）+ 标注 GeoJSON。",
             "curl_extra": ' -F "file2=@./testdata/file2.geojson"',
         },
         "41_unmixing": {

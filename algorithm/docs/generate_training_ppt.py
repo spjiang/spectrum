@@ -32,7 +32,7 @@ C = {
 }
 
 FONT = "PingFang SC"
-IMPL = {12, 20, 21, 22, 23, 27, 28, 34, 45}
+IMPL = {12, 20, 21, 22, 23, 27, 28, 34, 40, 42, 45}
 ALG_IDS = [
     "01_flight_planning", "02_sync_timestamp", "03_pos_solution", "04_flight_qc", "05_cloud_shadow",
     "06_dark_current", "07_bad_pixel", "08_destriping", "09_smile_keystone", "10_radiance_calibration",

@@ -2,35 +2,40 @@
 
 - **algorithm_id**: `42_anomaly_detect`
 - **层级**: L3
-- **实现状态**: 骨架（implemented=false）
+- **实现状态**: **可运行**（教学实现）
 
 ## 作用
 
-异常检测（对齐业界算法清单 #42）。
+用 Reed–Xiaoli (RX) 光谱异常检测，找出「不像背景大多数」的像元（对齐清单 #42）。
 
-## 使用场景
+## 方法（教学级）
 
-见 `algorithm/docs/采集到算法-算法清单.md` 对应条目。
+对全图像元光谱估计均值 μ 与协方差 Σ，计算马氏距离平方作为异常得分，再按百分位阈值生成告警掩膜。
 
-## 启动（整个算法服务）
+## 参数
+
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `percentile` | 95 | 得分高于该百分位判为异常 |
+| `min_pixels` | 2 | 告警小斑剔除 |
+
+## 启动
 
 ```bash
 cd algorithm/source
-python run.py
+./scripts/start.sh
 ```
 
-## 测试数据
-
-本目录 `testdata/` 使用**业界常用格式**（GeoTIFF / GeoJSON / CSV），说明见 `testdata/README.md`。
+## 调用示例
 
 ```bash
 curl -X POST "http://127.0.0.1:28800/api/v1/42_anomaly_detect/run" \
-  -F "file=@./testdata/input.tif"
+  -F "file=@algorithms/42_anomaly_detect/testdata/input.tif" \
+  -F 'params={"percentile":95,"min_pixels":2}'
 ```
 
-## 输入 / 输出
+## 输出
 
-- **输入**: `multipart` 字段 `file`（主文件），可选 `file2`，`params`（JSON 字符串）
-- **输出**: JSON；若有产物，路径在 `files` 字段中
-
-当前为骨架（implemented=false）。
+- `files.score_tif`：RX 异常得分图  
+- `files.mask_tif`：告警二值掩膜  
+- `files.preview_png`：预览  

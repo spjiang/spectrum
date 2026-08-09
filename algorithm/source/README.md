@@ -62,7 +62,7 @@ chmod +x scripts/start.sh
 
 ## 已实现（可运行）
 
-`12_panel_reflectance` · `20_bad_band_remove` · `21_savgol_smooth` · `22_normalize` · `23_pca` · `27_ndvi` · `28_ndre` · `34_svm_rf_classify` · `45_parcel_zonal_stats`
+`12_panel_reflectance` · `20_bad_band_remove` · `21_savgol_smooth` · `22_normalize` · `23_pca` · `27_ndvi` · `28_ndre` · `34_svm_rf_classify` · `40_detect_segment` · `42_anomaly_detect` · `45_parcel_zonal_stats`
 
 其余为骨架（`implemented: false`），接口形状一致，可在对应目录补 `service.py`。
 

@@ -35,7 +35,7 @@ Client ──► app.main (FastAPI :28800)
 
 ## 第一批实现
 
-12、20、21、22、23、27、28、34、45（见 `common/catalog.py` 中 `implemented: true`）
+12、20、21、22、23、27、28、34、40、42、45（见 `common/catalog.py` 中 `implemented: true`）
 
 ## 非目标
 
