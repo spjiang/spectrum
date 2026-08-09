@@ -1,4 +1,4 @@
-"""SVM 像素分类；可选真值文件计算 OA/AA/Kappa。"""
+"""SVM 像素分类。Cube/标签均为 GeoTIFF；分类图输出 GeoTIFF。"""
 from __future__ import annotations
 
 import json
@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from common.io import as_cube, load_array, new_job_dir, save_npy, save_preview_png, save_upload
+from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_preview_png, save_upload
 from common.response import err_response, ok_response
 
 ALGORITHM_ID = "34_svm_rf_classify"
@@ -28,15 +28,15 @@ def _aa_from_cm(cm: np.ndarray) -> float:
 
 async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     """
-    file: Cube HxWxB
-    file2: 标签图 HxW（0 为背景/忽略）
+    file: 多波段 GeoTIFF（Cube）
+    file2: 单波段标签 GeoTIFF（0 为背景/忽略）
     params: test_size, kernel
     """
     if file2 is None:
         return err_response(
             algorithm_id=ALGORITHM_ID,
             algorithm=TITLE,
-            message="SVM 分类需要 file2 标签图（.npy，0 表示忽略）",
+            message="SVM 分类需要 file2 标签 GeoTIFF（单波段，0 表示忽略）",
         )
     try:
         params = json.loads(params_json or "{}")
@@ -48,9 +48,11 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     job = new_job_dir(ALGORITHM_ID)
     cube_path = await save_upload(file, job)
     gt_path = await save_upload(file2, job)
-    cube = as_cube(load_array(cube_path).astype(np.float64))
-    gt = load_array(gt_path)
-    if gt.ndim != 2 or gt.shape != cube.shape[:2]:
+    cube_arr, profile = load_raster(cube_path)
+    gt_arr, _ = load_raster(gt_path)
+    cube = as_cube(cube_arr.astype(np.float64))
+    gt = gt_arr if gt_arr.ndim == 2 else gt_arr[:, :, 0]
+    if gt.shape != cube.shape[:2]:
         return err_response(
             algorithm_id=ALGORITHM_ID,
             algorithm=TITLE,
@@ -74,21 +76,19 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     cm = confusion_matrix(y_test, y_pred_test)
     aa = _aa_from_cm(cm)
 
-    # 全图推理（仅对有光谱的全部像素）
     flat = cube.reshape(-1, cube.shape[2])
-    pred_flat = clf.predict(flat)
-    pred_map = pred_flat.reshape(cube.shape[:2])
+    pred_map = clf.predict(flat).reshape(cube.shape[:2]).astype(np.int32)
 
-    pred_path = job / "pred_map.npy"
+    pred_path = job / "pred_map.tif"
     png_path = job / "pred_preview.png"
-    save_npy(pred_map, pred_path)
+    save_geotiff(pred_map, pred_path, profile=profile)
     save_preview_png(pred_map.astype(float), png_path, title="SVM Pred")
 
     return ok_response(
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="SVM 分类完成；测试集给出 OA/AA/Kappa",
+        message="SVM 分类完成；输出分类 GeoTIFF；测试集给出 OA/AA/Kappa",
         data={
             "oa": oa,
             "aa": aa,
@@ -97,6 +97,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
             "n_test": int(len(y_test)),
             "classes": [int(c) for c in np.unique(y)],
             "kernel": kernel,
+            "format": "GeoTIFF",
         },
-        files={"pred_map_npy": str(pred_path.resolve()), "preview_png": str(png_path.resolve())},
+        files={"pred_map_tif": str(pred_path.resolve()), "preview_png": str(png_path.resolve())},
     )

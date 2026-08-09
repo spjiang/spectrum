@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "weed"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              114.0602,
+              22.5402
+            ],
+            [
+              114.0604,
+              22.5402
+            ],
+            [
+              114.0604,
+              22.5404
+            ],
+            [
+              114.0602,
+              22.5404
+            ],
+            [
+              114.0602,
+              22.5402
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

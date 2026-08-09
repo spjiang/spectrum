@@ -7,6 +7,8 @@
 
 提供可学习、可对接的 HTTP API：文件输入、JSON 输出（含文件路径）；与业界 45 项算法清单一一对应。
 
+面向阅读的简介见：[当前服务简单介绍.md](./当前服务简单介绍.md)。
+
 ## 架构
 
 ```text
@@ -25,7 +27,11 @@ Client ──► app.main (FastAPI :28800)
 
 - `POST /api/v1/{algorithm_id}/run`
 - 输入：`multipart` 字段 `file` / 可选 `file2` / `params`
-- 输出：统一 JSON；`files` 中给产物绝对路径  
+- **业界格式**：栅格 **GeoTIFF**（可读 ENVI）；矢量 **GeoJSON**；轨迹/光谱库 **CSV**
+- 输出：统一 JSON；栅格产物为 **`.tif`**，路径在 `files`
+- `.npy` 仅兼容旧教学数据，非正式契约
+
+详见 `业界文件格式介绍.md`。
 
 ## 第一批实现
 

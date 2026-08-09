@@ -2,7 +2,8 @@
 
 一个 FastAPI 进程聚合 **45** 个算法模块；**目录仍按算法拆分**，便于对照业界清单学习与扩展。
 
-设计说明：[`../docs/source-http-api-设计说明.md`](../docs/source-http-api-设计说明.md)
+设计说明：[`../docs/source-http-api-设计说明.md`](../docs/source-http-api-设计说明.md)  
+服务简介：[`../docs/当前服务简单介绍.md`](../docs/当前服务简单介绍.md)
 
 ## 目录结构
 
@@ -65,21 +66,35 @@ chmod +x scripts/start.sh
 
 其余为骨架（`implemented: false`），接口形状一致，可在对应目录补 `service.py`。
 
-## 调用示例
+## 测试数据（业界格式）
+
+每个算法目录 `testdata/` 使用 **GeoTIFF / GeoJSON / CSV**（见 [业界文件格式介绍](../docs/业界文件格式介绍.md)）。
 
 ```bash
-# NDVI
-curl -X POST "http://127.0.0.1:28800/api/v1/27_ndvi/run" \
-  -F "file=@data/examples/sample_cube.npy" \
-  -F 'params={"red_band":2,"nir_band":3}'
+python examples/generate_algorithm_testdata.py
 
-# SVM 分类（Cube + 标签）
-curl -X POST "http://127.0.0.1:28800/api/v1/34_svm_rf_classify/run" \
-  -F "file=@data/examples/sample_cube.npy" \
-  -F "file2=@data/examples/sample_gt.npy"
+# NDVI（GeoTIFF 入，GeoTIFF 出）
+curl -X POST "http://127.0.0.1:28800/api/v1/27_ndvi/run" \
+  -F "file=@algorithms/27_ndvi/testdata/input.tif" \
+  -F 'params={"red_band":2,"nir_band":3}'
 ```
 
-## 如何新增/补全算法
+## 测试数据
+
+每个算法目录下有 `testdata/`（`input.*` / 可选 `file2.*` / `params.json`）。重新生成：
+
+```bash
+python examples/generate_algorithm_testdata.py
+```
+
+```bash
+# 例：在算法目录测 NDVI
+cd algorithms/27_ndvi
+curl -X POST "http://127.0.0.1:28800/api/v1/27_ndvi/run" \
+  -F "file=@./testdata/input.npy" \
+  -F 'params={"red_band":2,"nir_band":3}'
+```
+
 
 1. 在 `common/catalog.py` 登记（或使用已有 id）  
 2. `algorithms/<id>/service.py` 实现 `async def run(...)`  

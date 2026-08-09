@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "demo_field",
+        "gsd_m": 0.1,
+        "overlap": 0.7,
+        "sidelap": 0.6
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              114.06,
+              22.54
+            ],
+            [
+              114.061,
+              22.54
+            ],
+            [
+              114.061,
+              22.541
+            ],
+            [
+              114.06,
+              22.541
+            ],
+            [
+              114.06,
+              22.54
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

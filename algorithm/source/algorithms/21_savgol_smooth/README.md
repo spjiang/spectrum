@@ -19,11 +19,13 @@ cd algorithm/source
 python run.py
 ```
 
-## 调用示例
+## 测试数据
+
+本目录 `testdata/` 使用**业界常用格式**（GeoTIFF / GeoJSON / CSV），说明见 `testdata/README.md`。
 
 ```bash
 curl -X POST "http://127.0.0.1:28800/api/v1/21_savgol_smooth/run" \
-  -F "file=@./data/examples/sample_cube.npy"
+  -F "file=@./testdata/input.tif" -F 'params={"window_length": 5, "polyorder": 2}'
 ```
 
 ## 输入 / 输出
