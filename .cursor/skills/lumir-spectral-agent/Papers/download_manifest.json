@@ -1,0 +1,1246 @@
+[
+  {
+    "file": "0704_2022.md",
+    "paper_name": "Hazelnut quality detection based on deep learning and near-infrared spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/0704_2022.md",
+    "oa_http_status": 200,
+    "doi": "10.3116/16091833/23/4/267/2022",
+    "resolved_url": "https://doi.org/10.3116/16091833/23/4/267/2022",
+    "oa_pdf": "https://doi.org/10.3116/16091833/23/4/267/2022"
+  },
+  {
+    "file": "Milk_Classification_of_NIR_spectra_using_Principal_Component_Analysis_in_Python.md",
+    "paper_name": "Milk Classification of NIR spectra using Principal Component Analysis in Python",
+    "status": "webpage_text",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Milk_Classification_of_NIR_spectra_using_Principal_Component_Analysis_in_Python.md",
+    "http_status": 200,
+    "oa_http_status": 403,
+    "doi": "10.3390/rs12010113",
+    "resolved_url": "https://doi.org/10.3390/rs12010113",
+    "oa_pdf": "https://www.mdpi.com/2072-4292/12/1/113/pdf?version=1577845575"
+  },
+  {
+    "file": "1-s2.0-S0023643824007989-main.md",
+    "paper_name": "Identification and sorting of impurities in tea using spectral vision",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0023643824007989-main.md",
+    "oa_http_status": 200,
+    "doi": "10.1016/j.lwt.2024.116519",
+    "resolved_url": "https://doi.org/10.1016/j.lwt.2024.116519",
+    "oa_pdf": "https://doi.org/10.1016/j.lwt.2024.116519"
+  },
+  {
+    "file": "1-s2.0-S0039914022006038-main.md",
+    "paper_name": "Rapid identification of salmonella serovars by using Raman spectroscopy and machine learning algorithm",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0039914022006038-main.md",
+    "doi": "10.1016/j.talanta.2022.123807",
+    "resolved_url": "https://doi.org/10.1016/j.talanta.2022.123807",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S0045653523005799-main.md",
+    "paper_name": "Classification of household microplastics using a multi-model approach based on Raman spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0045653523005799-main.md",
+    "doi": "10.1016/j.chemosphere.2023.138312",
+    "resolved_url": "https://doi.org/10.1016/j.chemosphere.2023.138312",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S0167587723000247-main.md",
+    "paper_name": "Novel prediction models for hyperketonemia using bovine milk Fourier-transform infrared spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0167587723000247-main.md",
+    "oa_http_status": 200,
+    "doi": "10.1016/j.prevetmed.2023.105860",
+    "resolved_url": "https://doi.org/10.1016/j.prevetmed.2023.105860",
+    "oa_pdf": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10038899/pdf/nihms-1870466.pdf"
+  },
+  {
+    "file": "1-s2.0-S016816992200240X-main.md",
+    "paper_name": "Detection of heavy metals in vegetable soil based on THz spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S016816992200240X-main.md",
+    "doi": "10.1016/j.compag.2022.106923",
+    "resolved_url": "https://doi.org/10.1016/j.compag.2022.106923",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S0169136823001932-main.md",
+    "paper_name": "Anomaly detection in Fourier transform infrared spectroscopy of geological specimens using variational autoencoders",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0169136823001932-main.md",
+    "oa_http_status": 200,
+    "doi": "10.1016/j.oregeorev.2023.105478",
+    "resolved_url": "https://doi.org/10.1016/j.oregeorev.2023.105478",
+    "oa_pdf": "https://doi.org/10.1016/j.oregeorev.2023.105478"
+  },
+  {
+    "file": "1-s2.0-S0169260723001888-main.md",
+    "paper_name": "An application of raman spectroscopy in combination with machine learning to determine gastric cancer spectroscopy marker",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0169260723001888-main.md",
+    "doi": "10.1016/j.cmpb.2023.107523",
+    "resolved_url": "https://doi.org/10.1016/j.cmpb.2023.107523",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S0308814613008546-main.md",
+    "paper_name": "Simultaneous determination of six bioactive flavonoids in Citri Reticulatae Pericarpium by rapid resolution liquid chromatography coupled with triple quadrupole electrospray tandem mass spectrometry",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0308814613008546-main.md",
+    "doi": "10.1016/j.foodchem.2013.06.077",
+    "resolved_url": "https://doi.org/10.1016/j.foodchem.2013.06.077",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S0308814623025499-main.md",
+    "paper_name": "Rapid quality evaluation and geographical origin recognition of ginger powder by portable NIRS in tandem with chemometrics",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0308814623025499-main.md",
+    "doi": "10.1016/j.foodchem.2023.137931",
+    "resolved_url": "https://doi.org/10.1016/j.foodchem.2023.137931",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S0889157523001394-main.md",
+    "paper_name": "Geographical origin identification of Chinese red wines using ultraviolet-visible spectroscopy coupled with machine learning techniques",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0889157523001394-main.md",
+    "doi": "10.1016/j.jfca.2023.105265",
+    "resolved_url": "https://doi.org/10.1016/j.jfca.2023.105265",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S0924203122000959-main.md",
+    "paper_name": "Brand identification of transparent intumescent fire retardant coatings using portable Raman spectroscopy and machine learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0924203122000959-main.md",
+    "doi": "10.1016/j.vibspec.2022.103428",
+    "resolved_url": "https://doi.org/10.1016/j.vibspec.2022.103428",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S092420312300036X-main.md",
+    "paper_name": "Label-free discrimination of T and B lymphocyte activation based on vibrational spectroscopy – A machine learning approach",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S092420312300036X-main.md",
+    "oa_http_status": 200,
+    "doi": "10.1016/j.vibspec.2023.103529",
+    "resolved_url": "https://doi.org/10.1016/j.vibspec.2023.103529",
+    "oa_pdf": "http://hdl.handle.net/10400.21/17202"
+  },
+  {
+    "file": "1-s2.0-S0956713523004073-main.md",
+    "paper_name": "Identification of the animal origin of milk via Laser-Induced Breakdown Spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S0956713523004073-main.md",
+    "oa_http_status": 200,
+    "doi": "10.1016/j.foodcont.2023.110007",
+    "resolved_url": "https://doi.org/10.1016/j.foodcont.2023.110007",
+    "oa_pdf": "https://doi.org/10.1016/j.foodcont.2023.110007"
+  },
+  {
+    "file": "1-s2.0-S1386142517302640-main.md",
+    "paper_name": "On-line monitoring of extraction process of Flos Lonicerae Japonicae using near infrared spectroscopy combined with synergy interval PLS and genetic algorithm",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142517302640-main.md",
+    "doi": "10.1016/j.saa.2017.04.004",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2017.04.004",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S1386142519304019-main.md",
+    "paper_name": "NIR spectroscopy-multivariate analysis for discrimination and bioactive compounds prediction of different Citrus species peels",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142519304019-main.md",
+    "doi": "10.1016/j.saa.2019.04.026",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2019.04.026",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S1386142521007277-main.md",
+    "paper_name": "Diffuse reflectance spectroscopy based rapid coal rank estimation: A machine learning enabled framework",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142521007277-main.md",
+    "doi": "10.1016/j.saa.2021.120150",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2021.120150",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S1386142522004231-main.md",
+    "paper_name": "Analysis and comparison of machine learning methods for blood identification using single-cell laser tweezer Raman spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142522004231-main.md",
+    "doi": "10.1016/j.saa.2022.121274",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2022.121274",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S1386142522007892-main.md",
+    "paper_name": "Determination of blood species using echelle Raman spectrometer and surface enhanced Raman spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142522007892-main.md",
+    "doi": "10.1016/j.saa.2022.121640",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2022.121640",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S1386142522008034-main.md",
+    "paper_name": "Raman spectroscopy and machine learning for the classification of esophageal squamous carcinoma",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142522008034-main.md",
+    "doi": "10.1016/j.saa.2022.121654",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2022.121654",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S138614252300118X-main.md",
+    "paper_name": "Botanical honey recognition and quantitative mixture detection based on Raman spectroscopy and machine learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S138614252300118X-main.md",
+    "doi": "10.1016/j.saa.2023.122433",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2023.122433",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S1386142523004912-main.md",
+    "paper_name": "Determination of benzo(a)pyrene in peanut oil based on Raman spectroscopy and machine learning methods",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142523004912-main.md",
+    "doi": "10.1016/j.saa.2023.122806",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2023.122806",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S1386142524013817-main.md",
+    "paper_name": "Application of handheld near infrared spectrometer in quality control of traditional Chinese medicine: Rapid screening and quantitative analysis of Lonicerae Japonicae Flos adulteration",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S1386142524013817-main.md",
+    "doi": "10.1016/j.saa.2024.125215",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2024.125215",
+    "oa_pdf": null
+  },
+  {
+    "file": "1-s2.0-S2352009423000135-main.md",
+    "paper_name": "Applying NIR and MIR spectroscopy for C and soil property prediction in northern cold-region ecosystems. Which approach works better?",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1-s2.0-S2352009423000135-main.md",
+    "doi": "10.1016/j.geodrs.2023.e00617",
+    "resolved_url": "https://www.sciencedirect.com/science/article/pii/S2352009423000135",
+    "oa_pdf": null
+  },
+  {
+    "file": "1630004.md",
+    "paper_name": "基于拉曼光谱和机器学习的一次性口罩分类识别",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/1630004.md",
+    "doi": "10.3788/lop202158.1630004",
+    "resolved_url": "https://doi.org/10.3788/lop202158.1630004",
+    "oa_pdf": null
+  },
+  {
+    "file": "2022231.md",
+    "paper_name": "Detection and Recognition of Volatile Substances in Mothballs Using Laser-induced Breakdown Spectroscopy and Raman Spectroscopy",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/2022231.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/2022231.pdf",
+    "doi": "10.46770/as.2022.231",
+    "resolved_url": "https://doi.org/10.46770/as.2022.231",
+    "oa_pdf": "https://doi.org/10.46770/as.2022.231"
+  },
+  {
+    "file": "A Comparative Study of the COD Hyperspectral Inversion Models in _Water Based on the Maching Learning.md",
+    "paper_name": "基于机器学习的水体化学需氧量高光谱反演模型对比研究",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/A Comparative Study of the COD Hyperspectral Inversion Models in _Water Based on the Maching Learning.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/A Comparative Study of the COD Hyperspectral Inversion Models in _Water Based on the Maching Learning.pdf",
+    "doi": "10.7498/aps.73.20241022",
+    "resolved_url": "https://doi.org/10.7498/aps.73.20241022",
+    "oa_pdf": "https://wulixb.iphy.ac.cn/pdf-content/10.7498/aps.73.20241022.pdf"
+  },
+  {
+    "file": "A convolutional attention network for multi-task classification of stamp ink.md",
+    "paper_name": "A convolutional attention network for multi-task classification of stamp ink based on visible and near-infrared spectral information",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/A convolutional attention network for multi-task classification of stamp ink.md",
+    "doi": "10.1016/j.microc.2025.112689",
+    "resolved_url": "https://doi.org/10.1016/j.microc.2025.112689",
+    "oa_pdf": null
+  },
+  {
+    "file": "A_new_approach_to_monitor_water_quality_.md",
+    "paper_name": "A new approach to monitor water quality in the Menor sea (Spain) using satellite data and machine learning methods",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/A_new_approach_to_monitor_water_quality_.md",
+    "doi": "10.1016/j.envpol.2021.117489",
+    "resolved_url": "https://doi.org/10.1016/j.envpol.2021.117489",
+    "oa_pdf": null
+  },
+  {
+    "file": "A_New_High-Resolution_Remote_Sensing_Monitoring_Method_for_Nutrients_in_Coastal_Waters.md",
+    "paper_name": "A New High-Resolution Remote Sensing Monitoring Method for Nutrients in Coastal Waters",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/A_New_High-Resolution_Remote_Sensing_Monitoring_Method_for_Nutrients_in_Coastal_Waters.md",
+    "oa_http_status": 404,
+    "doi": "10.1109/tgrs.2023.3294436",
+    "resolved_url": "https://doi.org/10.1109/tgrs.2023.3294436",
+    "oa_pdf": "https://ieeexplore.ieee.org/ielx7/36/4358825/10178052.pdf"
+  },
+  {
+    "file": "A_novel_water_body_extraction_neural_net.md",
+    "paper_name": "A novel water body extraction neural network (WBE-NN) for optical high-resolution multispectral imagery",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/A_novel_water_body_extraction_neural_net.md",
+    "doi": "10.1016/j.jhydrol.2020.125092",
+    "resolved_url": "https://doi.org/10.1016/j.jhydrol.2020.125092",
+    "oa_pdf": null
+  },
+  {
+    "file": "A_Simple_Method_for_Extracting_Water_Dep.md",
+    "paper_name": "A Simple Method for Extracting Water Depth From Multispectral Satellite Imagery in Regions of Variable Bottom Type",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/A_Simple_Method_for_Extracting_Water_Dep.md",
+    "oa_http_status": 403,
+    "doi": "10.1029/2018ea000539",
+    "resolved_url": "https://doi.org/10.1029/2018ea000539",
+    "oa_pdf": "https://agupubs.onlinelibrary.wiley.com/doi/pdfdirect/10.1029/2018EA000539"
+  },
+  {
+    "file": "as-77-5-491.md",
+    "paper_name": "Portable Diffuse Reflectance Spectroscopy of Potato Leaves for Pre-Symptomatic Detection of Late Blight Disease",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/as-77-5-491.md",
+    "oa_http_status": 403,
+    "doi": "10.1177/00037028231165342",
+    "resolved_url": "https://doi.org/10.1177/00037028231165342",
+    "oa_pdf": "https://doi.org/10.1177/00037028231165342"
+  },
+  {
+    "file": "Assessing_predawn_leaf_water_potential_b.md",
+    "paper_name": "Assessing predawn leaf water potential based on hyperspectral data and pigment’s concentration of Vitis vinifera L. in the Douro Wine Region",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Assessing_predawn_leaf_water_potential_b.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/plants11162154",
+    "resolved_url": "https://doi.org/10.3390/plants11162154",
+    "oa_pdf": "https://www.mdpi.com/2223-7747/11/16/2154/pdf?version=1660990471"
+  },
+  {
+    "file": "Automatic_water_detection_from_multidime.md",
+    "paper_name": "Automatic water detection from multidimensional hierarchical clustering for Sentinel-2 images and a comparison with Level 2A processors",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Automatic_water_detection_from_multidime.md",
+    "oa_http_status": 403,
+    "doi": "10.1016/j.rse.2020.112209",
+    "resolved_url": "https://doi.org/10.1016/j.rse.2020.112209",
+    "oa_pdf": "https://www.sciencedirect.com/science/article/am/pii/S0034425720305824"
+  },
+  {
+    "file": "Automation_for_Water_and_Nitrogen_Defici.md",
+    "paper_name": "Article Automation for Water and Nitrogen Deficit Stress Detection in Soilless Tomato Crops Based on Spectral Indices",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Automation_for_Water_and_Nitrogen_Defici.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/plants11091153",
+    "resolved_url": "https://doi.org/10.3390/plants11091153",
+    "oa_pdf": "https://www.mdpi.com/2223-7747/11/9/1153/pdf?version=1650939622"
+  },
+  {
+    "file": "Bioengineering   Transla Med - 2023 - Ghazvini - Predicting the onset of preeclampsia by longitudinal monitoring of.md",
+    "paper_name": "Predicting the onset of preeclampsia by longitudinal monitoring of metabolic changes throughout pregnancy with Raman spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Bioengineering   Transla Med - 2023 - Ghazvini - Predicting the onset of preeclampsia by longitudinal monitoring of.md",
+    "oa_http_status": 403,
+    "doi": "10.1002/btm2.10595",
+    "resolved_url": "https://doi.org/10.1002/btm2.10595",
+    "oa_pdf": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/btm2.10595"
+  },
+  {
+    "file": "biosensors-13-00092.md",
+    "paper_name": "Rapid Characterization of Black Tea Taste Quality Using Miniature NIR Spectroscopy and Electronic Tongue Sensors",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/biosensors-13-00092.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/bios13010092",
+    "resolved_url": "https://doi.org/10.3390/bios13010092",
+    "oa_pdf": "https://www.mdpi.com/2079-6374/13/1/92/pdf?version=1672927449"
+  },
+  {
+    "file": "cancers-14-05015-v3.md",
+    "paper_name": "Infrared Spectroscopy of Urine for the Non-Invasive Detection of Endometrial Cancer",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/cancers-14-05015-v3.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/cancers14205015",
+    "resolved_url": "https://doi.org/10.3390/cancers14205015",
+    "oa_pdf": "https://www.mdpi.com/2072-6694/14/20/5015/pdf?version=1667300746"
+  },
+  {
+    "file": "cancers-15-01720-v2.md",
+    "paper_name": "Deep Learning Applied to Raman Spectroscopy for the Detection of Microsatellite Instability/MMR Deficient Colorectal Cancer",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/cancers-15-01720-v2.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/cancers15061720",
+    "resolved_url": "https://doi.org/10.3390/cancers15061720",
+    "oa_pdf": "https://www.mdpi.com/2072-6694/15/6/1720/pdf?version=1678689104"
+  },
+  {
+    "file": "Classification modeling method for hyperspectral stamp‐pad ink data based on.md",
+    "paper_name": "Classification modeling method for hyperspectral stamp-pad ink data based on one-dimensional convolutional neural network",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Classification modeling method for hyperspectral stamp‐pad ink data based on.md",
+    "doi": "10.1111/1556-4029.14909",
+    "resolved_url": "https://doi.org/10.1111/1556-4029.14909",
+    "oa_pdf": null
+  },
+  {
+    "file": "Classification of Chinese Herbal Medicine by Laser-Induced Breakdown Spectroscopy with Principal Component Analysis and Artificial Neural Network.md",
+    "paper_name": "Classification of Chinese Herbal Medicine by Laser-Induced Breakdown Spectroscopy with Principal Component Analysis and Artificial Neural Network",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Classification of Chinese Herbal Medicine by Laser-Induced Breakdown Spectroscopy with Principal Component Analysis and Artificial Neural Network.md",
+    "doi": "10.1080/00032719.2017.1340949",
+    "resolved_url": "https://doi.org/10.1080/00032719.2017.1340949",
+    "oa_pdf": null
+  },
+  {
+    "file": "Classification_of_alfalfa_hay_.md",
+    "paper_name": "Classification of Alfalfa Hay Based on Infrared Spectroscopy",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Classification_of_alfalfa_hay_.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Classification_of_alfalfa_hay_.pdf",
+    "doi": "10.15376/biores.18.3.5399-5416",
+    "resolved_url": "http://dx.doi.org/10.15376/biores.18.3.5399-5416",
+    "oa_pdf": "https://bioresources.cnr.ncsu.edu/wp-content/uploads/2023/06/BioRes_18_3_5399_Wu_WWL_Classification_Alfalfa-Hay_Infrared_Spectroscopy_22495.pdf"
+  },
+  {
+    "file": "Cloud_Detection_From_Paired_CrIS_Water_V.md",
+    "paper_name": "Cloud Detection From Paired CrIS Water Vapor and CO2 Channels Using Machine Learning Techniques",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Cloud_Detection_From_Paired_CrIS_Water_V.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/radiation4030022",
+    "resolved_url": "https://doi.org/10.3390/radiation4030022",
+    "oa_pdf": "https://www.mdpi.com/2673-592X/4/3/22/pdf?version=1726477781"
+  },
+  {
+    "file": "Detection of Total Organic Carbon in Surface Water Based on UV-Vis Spectroscopy.md",
+    "paper_name": "地表水总有机碳含量紫外可见光谱检测方法",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Detection of Total Organic Carbon in Surface Water Based on UV-Vis Spectroscopy.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Detection of Total Organic Carbon in Surface Water Based on UV-Vis Spectroscopy.pdf",
+    "doi": "10.3799/dqkx.2024.043",
+    "resolved_url": "https://doi.org/10.3799/dqkx.2024.043",
+    "oa_pdf": "http://www.earth-science.net/fileDQKX/journal/article/dqkxzx/2024/11/dqkxzx-49-11-4169.pdf"
+  },
+  {
+    "file": "Detection_of_waterlogging_stress_based_o.md",
+    "paper_name": "Detection of waterlogging stress based on hyperspectral images of oilseed rape leaves (Brassica napus L.)",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Detection_of_waterlogging_stress_based_o.md",
+    "doi": "10.1016/j.compag.2019.02.022",
+    "resolved_url": "https://doi.org/10.1016/j.compag.2019.02.022",
+    "oa_pdf": null
+  },
+  {
+    "file": "Drugs Identification Using Near-Infrared Spectroscopy Based on Random Forest and CatBoost.md",
+    "paper_name": "随机森林结合的近红外光谱药品鉴别",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Drugs Identification Using Near-Infrared Spectroscopy Based on Random Forest and CatBoost.md",
+    "doi": "10.3788/irla20250003",
+    "resolved_url": "https://doi.org/10.3788/irla20250003",
+    "oa_pdf": null
+  },
+  {
+    "file": "Ecohydrology - 2023 - Wang - Evaluating the driving forces of spectral inversion methods used for assessing water quality.md",
+    "paper_name": "Evaluating the driving forces of spectral inversion methods used for assessing water quality parameters in Poyang Lake, China",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Ecohydrology - 2023 - Wang - Evaluating the driving forces of spectral inversion methods used for assessing water quality.md",
+    "doi": "10.1002/eco.2577",
+    "resolved_url": "https://doi.org/10.1002/eco.2577",
+    "oa_pdf": null
+  },
+  {
+    "file": "Estimation_of_Water_Stress_in_Potato_Pla.md",
+    "paper_name": "Estimation of Water Stress in Potato Plants Using Hyperspectral Imagery and Machine Learning Algorithms",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Estimation_of_Water_Stress_in_Potato_Pla.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/horticulturae7070176",
+    "resolved_url": "https://doi.org/10.3390/horticulturae7070176",
+    "oa_pdf": "https://www.mdpi.com/2311-7524/7/7/176/pdf?version=1625222757"
+  },
+  {
+    "file": "European J Soil Science - 2022 - Baumann - Modelling soil water retention and water‐holding capacity with visible.md",
+    "paper_name": "Modelling soil water retention and water-holding capacity with visible–near-infrared spectra and machine learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/European J Soil Science - 2022 - Baumann - Modelling soil water retention and water‐holding capacity with visible.md",
+    "oa_http_status": 403,
+    "doi": "10.1111/ejss.13220",
+    "resolved_url": "https://doi.org/10.1111/ejss.13220",
+    "oa_pdf": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/ejss.13220"
+  },
+  {
+    "file": "Evaluating_the_sensitivity_of_water_stre.md",
+    "paper_name": "Evaluating the sensitivity of water stressed maize chlorophyll and structure based on UAV derived vegetation indices",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Evaluating_the_sensitivity_of_water_stre.md",
+    "doi": "10.1016/j.compag.2021.106174",
+    "resolved_url": "https://doi.org/10.1016/j.compag.2021.106174",
+    "oa_pdf": null
+  },
+  {
+    "file": "Evaluation_of_the_water_soluble_extracti.md",
+    "paper_name": "Evaluation of the water soluble extractive of astragali radix with different growth patterns using 1H-NMR spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Evaluation_of_the_water_soluble_extracti.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/molecules19033460",
+    "resolved_url": "https://doi.org/10.3390/molecules19033460",
+    "oa_pdf": "https://www.mdpi.com/1420-3049/19/3/3460/pdf?version=1403116567"
+  },
+  {
+    "file": "Evaluation_of_water_quality_based_on_a_m.md",
+    "paper_name": "Evaluation of water quality based on a machine learning algorithm and water quality index for the Ebinur Lake Watershed, China",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Evaluation_of_water_quality_based_on_a_m.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Evaluation_of_water_quality_based_on_a_m.pdf",
+    "doi": "10.1038/s41598-017-12853-y",
+    "resolved_url": "https://doi.org/10.1038/s41598-017-12853-y",
+    "oa_pdf": "https://www.nature.com/articles/s41598-017-12853-y.pdf"
+  },
+  {
+    "file": "Final-attachment-published-LR-4931-6089603e9087340b9bdcbbb1.md",
+    "paper_name": "Comparing Various Machine Learning Algorithms for Sugar Prediction in Chickpea using Near-infrared Spectroscopy",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Final-attachment-published-LR-4931-6089603e9087340b9bdcbbb1.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Final-attachment-published-LR-4931-6089603e9087340b9bdcbbb1.pdf",
+    "doi": "10.18805/lr-4931",
+    "resolved_url": "https://doi.org/10.18805/lr-4931",
+    "oa_pdf": "https://arccarticles.s3.amazonaws.com/PublishedArticle/Final-attachment-published-LR-4931-6089603e9087340b9bdcbbb1.pdf"
+  },
+  {
+    "file": "Food Processing Preservation - 2021 - Ou - Identification of Pu er raw tea with different storage years by infrared.md",
+    "paper_name": "Identification of Pu'er raw tea with different storage years by infrared spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Food Processing Preservation - 2021 - Ou - Identification of Pu er raw tea with different storage years by infrared.md",
+    "doi": "10.1111/jfpp.16103",
+    "resolved_url": "https://doi.org/10.1111/jfpp.16103",
+    "oa_pdf": null
+  },
+  {
+    "file": "foods-12-02939.md",
+    "paper_name": "Rapid Determination of Nutmeg Shell Content in Ground Nutmeg Using FT-NIR Spectroscopy and Machine Learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/foods-12-02939.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/foods12152939",
+    "resolved_url": "https://doi.org/10.3390/foods12152939",
+    "oa_pdf": "https://www.mdpi.com/2304-8158/12/15/2939/pdf?version=1690985248"
+  },
+  {
+    "file": "fpls-13-836488.md",
+    "paper_name": "A Perspective on Plant Phenomics: Coupling Deep Learning and Near-Infrared Spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/fpls-13-836488.md",
+    "oa_http_status": 200,
+    "doi": "10.3389/fpls.2022.836488",
+    "resolved_url": "https://doi.org/10.3389/fpls.2022.836488",
+    "oa_pdf": "https://doi.org/10.3389/fpls.2022.836488"
+  },
+  {
+    "file": "Free_water_table_area_monitoring_on.md",
+    "paper_name": "Free water table area monitoring on wetlands using satellite and UAV orthophotomaps – Kampinos National Park case study",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Free_water_table_area_monitoring_on.md",
+    "oa_http_status": 0,
+    "doi": "10.26491/mhwm/95086",
+    "resolved_url": "https://doi.org/10.26491/mhwm/95086",
+    "oa_pdf": "http://www.mhwm.pl/pdf-95086-40522?filename=Free water table area.pdf"
+  },
+  {
+    "file": "guo-et-al-2023-on-site-rapid-detection-of-aging-of-pericarpium-citri-reticulatae-using-multispectral-imaging.md",
+    "paper_name": "On-site rapid detection of aging of Pericarpium Citri Reticulatae using multispectral imaging",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/guo-et-al-2023-on-site-rapid-detection-of-aging-of-pericarpium-citri-reticulatae-using-multispectral-imaging.md",
+    "doi": "10.1177/09670335231194737",
+    "resolved_url": "https://doi.org/10.1177/09670335231194737",
+    "oa_pdf": null
+  },
+  {
+    "file": "High information interactive CNN.md",
+    "paper_name": "FGRC-Net: A high-information interactive convolutional neural network for identifying ink spectral information",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/High information interactive CNN.md",
+    "doi": "10.1016/j.eswa.2023.121167",
+    "resolved_url": "https://doi.org/10.1016/j.eswa.2023.121167",
+    "oa_pdf": null
+  },
+  {
+    "file": "Hybrid_Artificial_Neural_Networks_for_Modeling_Shallow-Water_Bathymetry_via_Satellite_Imagery.md",
+    "paper_name": "Hybrid Artificial Neural Networks for Modeling Shallow-Water Bathymetry via Satellite Imagery",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Hybrid_Artificial_Neural_Networks_for_Modeling_Shallow-Water_Bathymetry_via_Satellite_Imagery.md",
+    "doi": "10.1109/tgrs.2021.3107839",
+    "resolved_url": "https://doi.org/10.1109/tgrs.2021.3107839",
+    "oa_pdf": null
+  },
+  {
+    "file": "Identification of Transmission Fluid Based on NIR Spectroscopy by Combining Sparse Representation Method with Manifold Learning.md",
+    "paper_name": "汽车自动变速箱油的近红外光谱识别研究",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Identification of Transmission Fluid Based on NIR Spectroscopy by Combining Sparse Representation Method with Manifold Learning.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Identification of Transmission Fluid Based on NIR Spectroscopy by Combining Sparse Representation Method with Manifold Learning.pdf",
+    "doi": "10.1177/00081256231202266",
+    "resolved_url": "https://doi.org/10.1177/00081256231202266",
+    "oa_pdf": "https://gw.alipayobjects.com/os/bmw-prod/22c09247-b5e5-466b-8b83-32e919aad970.pdf"
+  },
+  {
+    "file": "Identification_of_mine_water_inrush_usin.md",
+    "paper_name": "Identification of mine water inrush using laser-induced fluorescence spectroscopy combined with one-dimensional convolutional neural network",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Identification_of_mine_water_inrush_usin.md",
+    "oa_http_status": 403,
+    "doi": "10.1039/c9ra00805e",
+    "resolved_url": "https://doi.org/10.1039/c9ra00805e",
+    "oa_pdf": "https://pubs.rsc.org/en/content/articlepdf/2019/ra/c9ra00805e"
+  },
+  {
+    "file": "j-neurosurg-article-p469.md",
+    "paper_name": "Raman spectroscopy to differentiate between fresh tissue samples of glioma and normal brain: a comparison with 5-ALA–induced fluorescence-guided surgery",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/j-neurosurg-article-p469.md",
+    "doi": "10.3171/2020.5.jns20376",
+    "resolved_url": "https://doi.org/10.3171/2020.5.jns20376",
+    "oa_pdf": null
+  },
+  {
+    "file": "Journal of Biophotonics - 2021 - David - Multispectral label‐free Raman spectroscopy can detect ovarian and endometrial.md",
+    "paper_name": "Multispectral label-free Raman spectroscopy can detect ovarian and endometrial cancer with high accuracy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Journal of Biophotonics - 2021 - David - Multispectral label‐free Raman spectroscopy can detect ovarian and endometrial.md",
+    "doi": "10.1002/jbio.202100198",
+    "resolved_url": "https://doi.org/10.1002/jbio.202100198",
+    "oa_pdf": null
+  },
+  {
+    "file": "Lagoon_water_quality_monitoring_based_on.md",
+    "paper_name": "Lagoon water quality monitoring based on digital image analysis and machine learning estimators",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Lagoon_water_quality_monitoring_based_on.md",
+    "doi": "10.1016/j.watres.2020.115471",
+    "resolved_url": "https://doi.org/10.1016/j.watres.2020.115471",
+    "oa_pdf": null
+  },
+  {
+    "file": "Liang.md",
+    "paper_name": "Information extraction of UV-NIR spectral data in waste water based on Large Language Model",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Liang.md",
+    "doi": "10.1016/j.saa.2024.124475",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2024.124475",
+    "oa_pdf": null
+  },
+  {
+    "file": "Machine_Learning-Based_Ensemble_Band_Selection_for_Early_Water_Stress_Identification_in_Groundnut_Canopy_Using_UAV-Based_Hyperspectral_Imaging.md",
+    "paper_name": "Machine Learning-Based Ensemble Band Selection for Early Water Stress Identification in Groundnut Canopy Using UAV-Based Hyperspectral Imaging",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Machine_Learning-Based_Ensemble_Band_Selection_for_Early_Water_Stress_Identification_in_Groundnut_Canopy_Using_UAV-Based_Hyperspectral_Imaging.md",
+    "doi": "10.1109/lgrs.2023.3284675",
+    "resolved_url": "https://doi.org/10.1109/lgrs.2023.3284675",
+    "oa_pdf": null
+  },
+  {
+    "file": "Mapping spatial distribution of crop residues using PRISMA satellite imaging spectroscopy.md",
+    "paper_name": "Mapping spatial distribution of crop residues using PRISMA satellite imaging spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Mapping spatial distribution of crop residues using PRISMA satellite imaging spectroscopy.md",
+    "oa_http_status": 403,
+    "doi": "10.1080/22797254.2022.2122872",
+    "resolved_url": "https://doi.org/10.1080/22797254.2022.2122872",
+    "oa_pdf": "https://doi.org/10.1080/22797254.2022.2122872"
+  },
+  {
+    "file": "MicrobiologyOpen - 2022 - Boodaghidizaji - Characterizing viral samples using machine learning for Raman and absorption.md",
+    "paper_name": "Characterizing viral samples using machine learning for Raman and absorption spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/MicrobiologyOpen - 2022 - Boodaghidizaji - Characterizing viral samples using machine learning for Raman and absorption.md",
+    "oa_http_status": 403,
+    "doi": "10.1002/mbo3.1336",
+    "resolved_url": "https://doi.org/10.1002/mbo3.1336",
+    "oa_pdf": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/mbo3.1336"
+  },
+  {
+    "file": "Modeling_Hyperspectral_Response_of_Water.md",
+    "paper_name": "Letter Modeling Hyperspectral Response of Water-Stress Induced Lettuce Plants Using Artificial Neural Networks",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Modeling_Hyperspectral_Response_of_Water.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Modeling_Hyperspectral_Response_of_Water.pdf",
+    "doi": "10.1186/s12870-020-02807-4",
+    "resolved_url": "https://doi.org/10.1186/s12870-020-02807-4",
+    "oa_pdf": "https://bmcplantbiol.biomedcentral.com/track/pdf/10.1186/s12870-020-02807-4"
+  },
+  {
+    "file": "Modelling_Water_Stress_in_a_Shiraz_Viney.md",
+    "paper_name": "Modelling Water Stress in a Shiraz Vineyard Using Hyperspectral Imaging and Machine Learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Modelling_Water_Stress_in_a_Shiraz_Viney.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/rs10020202",
+    "resolved_url": "https://doi.org/10.3390/rs10020202",
+    "oa_pdf": "https://www.mdpi.com/2072-4292/10/2/202/pdf?version=1517298137"
+  },
+  {
+    "file": "molecules-27-04281-v2.md",
+    "paper_name": "Forensic Analysis of Textile Synthetic Fibers Using a FT-IR Spectroscopy Approach",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/molecules-27-04281-v2.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/molecules27134281",
+    "resolved_url": "https://doi.org/10.3390/molecules27134281",
+    "oa_pdf": "https://www.mdpi.com/1420-3049/27/13/4281/pdf?version=1656989391"
+  },
+  {
+    "file": "molecules-28-06087.md",
+    "paper_name": "Hybrid Raman and Laser-Induced Breakdown Spectroscopy for Food Authentication Applications",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/molecules-28-06087.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/molecules28166087",
+    "resolved_url": "https://doi.org/10.3390/molecules28166087",
+    "oa_pdf": "https://www.mdpi.com/1420-3049/28/16/6087/pdf?version=1692182759"
+  },
+  {
+    "file": "Monitoring_the_dynamics_of_surface_water.md",
+    "paper_name": "Monitoring the dynamics of surface water fraction from MODIS time series in a Mediterranean environment",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Monitoring_the_dynamics_of_surface_water.md",
+    "oa_http_status": 200,
+    "doi": "10.1016/j.jag.2017.11.007",
+    "resolved_url": "https://doi.org/10.1016/j.jag.2017.11.007",
+    "oa_pdf": "https://research.utwente.nl/en/publications/dc32e1d5-8d14-4bbd-8ca2-1b39d1c7bea6"
+  },
+  {
+    "file": "Monitoring_urban_black-odorous_water_by_.md",
+    "paper_name": "Monitoring Urban Black-Odorous Water by Using Hyperspectral Data and Machine Learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Monitoring_urban_black-odorous_water_by_.md",
+    "doi": "10.1016/j.envpol.2020.116166",
+    "resolved_url": "https://doi.org/10.1016/j.envpol.2020.116166",
+    "oa_pdf": null
+  },
+  {
+    "file": "Multi scale feature extraction network with machine learning algorithms for water body extraction from remote sensing images.md",
+    "paper_name": "Multi scale feature extraction network with machine learning algorithms for water body extraction from remote sensing images",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Multi scale feature extraction network with machine learning algorithms for water body extraction from remote sensing images.md",
+    "doi": "10.1080/01431161.2022.2136505",
+    "resolved_url": "https://doi.org/10.1080/01431161.2022.2136505",
+    "oa_pdf": null
+  },
+  {
+    "file": "Multi-Spectral_Water_Index__MuWI___A_Nat.md",
+    "paper_name": "Article Multi-Spectral Water Index (MuWI): A Native 10-m Multi-Spectral Water Index for Accurate Water Mapping on Sentinel-2",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Multi-Spectral_Water_Index__MuWI___A_Nat.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Multi-Spectral_Water_Index__MuWI___A_Nat.pdf",
+    "doi": "10.1038/s41597-023-02096-0",
+    "resolved_url": "https://doi.org/10.1038/s41597-023-02096-0",
+    "oa_pdf": "https://www.nature.com/articles/s41597-023-02096-0.pdf"
+  },
+  {
+    "file": "Near-Infrared Spectroscopy Combined With Random Forest Algorithm_ A Fast and Effective Strategy for Origin Traceability of Fuzi.md",
+    "paper_name": "近 红 外 光 谱 结 合 随 机 森 林 算 法 一 种 快 速 有 效 的 附 子 产 地 溯 源 策 略",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Near-Infrared Spectroscopy Combined With Random Forest Algorithm_ A Fast and Effective Strategy for Origin Traceability of Fuzi.md",
+    "oa_http_status": 200,
+    "doi": "10.5281/zenodo.6864765",
+    "resolved_url": "https://zenodo.org/record/6864765",
+    "oa_pdf": "https://zenodo.org/record/6864765"
+  },
+  {
+    "file": "Near-Infrared Spectroscopy with Machine Learning for Classifying and Quantifying Nutmeg Adulteration.md",
+    "paper_name": "Near-Infrared Spectroscopy with Machine Learning for Classifying and Quantifying Nutmeg Adulteration",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Near-Infrared Spectroscopy with Machine Learning for Classifying and Quantifying Nutmeg Adulteration.md",
+    "doi": "10.1080/00032719.2023.2206665",
+    "resolved_url": "https://doi.org/10.1080/00032719.2023.2206665",
+    "oa_pdf": null
+  },
+  {
+    "file": "passaris-et-al-2022-validation-of-fourier-transform-infrared-spectroscopy-for-serotyping-of-streptococcus-pneumoniae.md",
+    "paper_name": "Validation of Fourier Transform Infrared Spectroscopy for Serotyping of Streptococcus pneumoniae",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/passaris-et-al-2022-validation-of-fourier-transform-infrared-spectroscopy-for-serotyping-of-streptococcus-pneumoniae.md",
+    "oa_http_status": 403,
+    "doi": "10.1128/jcm.00325-22",
+    "resolved_url": "https://doi.org/10.1128/jcm.00325-22",
+    "oa_pdf": "https://doi.org/10.1128/jcm.00325-22"
+  },
+  {
+    "file": "Potential_of_Large-Scale_Inland_Water_Bo.md",
+    "paper_name": "Potential of Large‑Scale Inland Water Body Mapping from Sentinel‑1/2 Data on the Example of Bavaria’s Lakes and Rivers",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Potential_of_Large-Scale_Inland_Water_Bo.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/rs16173329",
+    "resolved_url": "https://doi.org/10.3390/rs16173329",
+    "oa_pdf": "https://www.mdpi.com/2072-4292/16/17/3329/pdf?version=1725776949"
+  },
+  {
+    "file": "Predicting_Water_Stress_in_Wild_Blueberr.md",
+    "paper_name": "Predicting Water Stress in Wild Blueberry Fields Using Airborne Visible and Near Infrared Imaging Spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Predicting_Water_Stress_in_Wild_Blueberr.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/rs13081425",
+    "resolved_url": "https://doi.org/10.3390/rs13081425",
+    "oa_pdf": "https://www.mdpi.com/2072-4292/13/8/1425/pdf?version=1618360793"
+  },
+  {
+    "file": "Prediction for Soil Water Content Based on Variable Preferred and Extreme Learning Machine Algorithm.md",
+    "paper_name": "基于变量优选和极限学习机算法的土壤水分含量预测",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Prediction for Soil Water Content Based on Variable Preferred and Extreme Learning Machine Algorithm.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Prediction for Soil Water Content Based on Variable Preferred and Extreme Learning Machine Algorithm.pdf",
+    "doi": "10.3799/dqkx.2023.043",
+    "resolved_url": "https://doi.org/10.3799/dqkx.2023.043",
+    "oa_pdf": "http://www.earth-science.net/fileDQKX/journal/article/dqkxzx/2024/5/dqkxzx-49-5-1746.pdf"
+  },
+  {
+    "file": "Raman_Spectroscopy_and_Machine_Learning_for_Microplastics_Identification_and_Classification_in_Water_Environments.md",
+    "paper_name": "Raman Spectroscopy and Machine Learning for Microplastics Identification and Classification in Water Environments",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Raman_Spectroscopy_and_Machine_Learning_for_Microplastics_Identification_and_Classification_in_Water_Environments.md",
+    "doi": "10.1109/jstqe.2022.3222065",
+    "resolved_url": "https://doi.org/10.1109/jstqe.2022.3222065",
+    "oa_pdf": null
+  },
+  {
+    "file": "Rapid On-site identification of geographical origin and storage age of tangerine peel by Near-infrared spectroscopy.md",
+    "paper_name": "Rapid On-site identification of geographical origin and storage age of tangerine peel by Near-infrared spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Rapid On-site identification of geographical origin and storage age of tangerine peel by Near-infrared spectroscopy.md",
+    "doi": "10.1016/j.saa.2022.120936",
+    "resolved_url": "https://doi.org/10.1016/j.saa.2022.120936",
+    "oa_pdf": null
+  },
+  {
+    "file": "Rapid_direct_analysis_of_river_water_and.md",
+    "paper_name": "Rapid direct analysis of river water and machine learning assisted suspect screening of emerging contaminants in passive sampler extracts",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Rapid_direct_analysis_of_river_water_and.md",
+    "oa_http_status": 403,
+    "doi": "10.1039/d0ay02013c",
+    "resolved_url": "https://doi.org/10.1039/d0ay02013c",
+    "oa_pdf": "https://pubs.rsc.org/en/content/articlepdf/2021/ay/d0ay02013c"
+  },
+  {
+    "file": "Remote_Estimation_of_Water_Quality_Param.md",
+    "paper_name": "Remote Estimation of Water Quality Parameters of Medium- and Small-Sized Inland Rivers Using Sentinel-2 Imagery",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Remote_Estimation_of_Water_Quality_Param.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w12113124",
+    "resolved_url": "https://doi.org/10.3390/w12113124",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/12/11/3124/pdf?version=1604740368"
+  },
+  {
+    "file": "Remote_Identification_of_Oil_Films_on_Water_via_Laser-Induced_Fluorescence_LiDAR.md",
+    "paper_name": "Remote Identification of Oil Films on Water via Laser-Induced Fluorescence LiDAR",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Remote_Identification_of_Oil_Films_on_Water_via_Laser-Induced_Fluorescence_LiDAR.md",
+    "doi": "10.1109/jsen.2023.3271370",
+    "resolved_url": "https://doi.org/10.1109/jsen.2023.3271370",
+    "oa_pdf": null
+  },
+  {
+    "file": "Remote_Sensing_of_Water_Quality_Paramete.md",
+    "paper_name": "Remote Sensing of Water Quality Parameters over Lake Balaton by Using Sentinel-3 OLCI",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Remote_Sensing_of_Water_Quality_Paramete.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w10101428",
+    "resolved_url": "https://doi.org/10.3390/w10101428",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/10/10/1428/pdf?version=1539508487"
+  },
+  {
+    "file": "Research on Identification of Wood Species by Mid-Infrared Spectroscopy Based on CA-SDP-DenseNet.md",
+    "paper_name": "Research on Identification of Wood Species by Mid-Infrared Spectroscopy Based on CA-SDP-DenseNet",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Research on Identification of Wood Species by Mid-Infrared Spectroscopy Based on CA-SDP-DenseNet.md",
+    "doi": "10.1080/20426445.2016.1242270",
+    "resolved_url": "https://doi.org/10.1080/20426445.2016.1242270",
+    "oa_pdf": null
+  },
+  {
+    "file": "s00216-021-03800-y.md",
+    "paper_name": "Detection of multi‑resistant clinical strains of E. coli with Raman spectroscopy",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s00216-021-03800-y.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s00216-021-03800-y.pdf",
+    "doi": "10.1007/s00216-021-03800-y",
+    "resolved_url": "https://doi.org/10.1007/s00216-021-03800-y",
+    "oa_pdf": "https://link.springer.com/content/pdf/10.1007/s00216-021-03800-y.pdf"
+  },
+  {
+    "file": "s00217-022-04008-9.md",
+    "paper_name": "Classification of Sidr honey and detection of sugar adulteration using right angle fluorescence spectroscopy and chemometrics",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s00217-022-04008-9.md",
+    "oa_http_status": 200,
+    "doi": "10.1007/s00217-022-04008-9",
+    "resolved_url": "https://doi.org/10.1007/s00217-022-04008-9",
+    "oa_pdf": "https://link.springer.com/content/pdf/10.1007/s00217-022-04008-9.pdf"
+  },
+  {
+    "file": "s00380-023-02292-3.md",
+    "paper_name": "Towards a point-of-care multimodal spectroscopy instrument for the evaluation of human cardiac tissue",
+    "status": "oa_fulltext",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s00380-023-02292-3.md",
+    "oa_http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s00380-023-02292-3.pdf",
+    "doi": "10.1007/s00380-023-02292-3",
+    "resolved_url": "https://doi.org/10.1007/s00380-023-02292-3",
+    "oa_pdf": "https://link.springer.com/content/pdf/10.1007/s00380-023-02292-3.pdf"
+  },
+  {
+    "file": "s11036-023-02184-w.md",
+    "paper_name": "Non‑Invasive In Vivo Type 2 Diabetes Mellitus Diagnosis Using Raman Spectroscopy in Combination with Machine Learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s11036-023-02184-w.md",
+    "doi": "10.1007/s11036-023-02184-w",
+    "resolved_url": "https://doi.org/10.1007/s11036-023-02184-w",
+    "oa_pdf": null
+  },
+  {
+    "file": "s11694-023-01999-1.md",
+    "paper_name": "Fast recognition of the harvest period of Porphyra haitanensis based on mid-infrared spectroscopy and chemometrics",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s11694-023-01999-1.md",
+    "doi": "10.1007/s11694-023-01999-1",
+    "resolved_url": "https://doi.org/10.1007/s11694-023-01999-1",
+    "oa_pdf": null
+  },
+  {
+    "file": "s12230-022-09899-8.md",
+    "paper_name": "Assessing the Effectiveness of Reflectance Spectroscopy Analysis to Determine Ploidy in Potato",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s12230-022-09899-8.md",
+    "doi": "10.1007/s12230-022-09899-8",
+    "resolved_url": "https://doi.org/10.1007/s12230-022-09899-8",
+    "oa_pdf": null
+  },
+  {
+    "file": "s13287-021-02619-9.md",
+    "paper_name": "Single cell Raman spectroscopy to identify different stages of proliferating human hepatocytes for cell therapy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s13287-021-02619-9.md",
+    "doi": "10.21203/rs.3.rs-421582/v1",
+    "resolved_url": "https://doi.org/10.21203/rs.3.rs-421582/v1",
+    "oa_pdf": null
+  },
+  {
+    "file": "s40430-022-03645-1.md",
+    "paper_name": "Online near‑infrared spectroscopy for automatic polymeric material identification",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/s40430-022-03645-1.md",
+    "doi": "10.1007/s40430-022-03645-1",
+    "resolved_url": "https://doi.org/10.1007/s40430-022-03645-1",
+    "oa_pdf": null
+  },
+  {
+    "file": "Satellite-derived bathymetry using machine learning and optimal Sentinel-2 imagery in South-West Florida coastal waters.md",
+    "paper_name": "Satellite-derived bathymetry using machine learning and optimal Sentinel-2 imagery in South-West Florida coastal waters",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Satellite-derived bathymetry using machine learning and optimal Sentinel-2 imagery in South-West Florida coastal waters.md",
+    "doi": "10.1080/15481603.2022.2100597",
+    "resolved_url": "https://doi.org/10.1080/15481603.2022.2100597",
+    "oa_pdf": null
+  },
+  {
+    "file": "sensors-22-00596.md",
+    "paper_name": "Machine Learning-Based Heavy Metal Ion Detection Using Surface-Enhanced Raman Spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/sensors-22-00596.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/s22020596",
+    "resolved_url": "https://doi.org/10.3390/s22020596",
+    "oa_pdf": "https://www.mdpi.com/1424-8220/22/1/596/pdf"
+  },
+  {
+    "file": "sensors-22-07239.md",
+    "paper_name": "Domain Adaptation for In-Line Allergen Classification of Agri-Food Powders Using Near-Infrared Spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/sensors-22-07239.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/s22197239",
+    "resolved_url": "https://doi.org/10.3390/s22197239",
+    "oa_pdf": "https://www.mdpi.com/1424-8220/22/1/7239/pdf"
+  },
+  {
+    "file": "sensors-23-01065-v2.md",
+    "paper_name": "Estimation of Sugar Content in Wine Grapes via In Situ VNIR–SWIR Point Spectroscopy Using Explainable Artificial Intelligence Techniques",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/sensors-23-01065-v2.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/s23031065",
+    "resolved_url": "https://doi.org/10.3390/s23031065",
+    "oa_pdf": "https://www.mdpi.com/1424-8220/23/1/1065/pdf"
+  },
+  {
+    "file": "sensors-23-05149.md",
+    "paper_name": "Rapid Assessment of Fish Freshness for Multiple Supply-Chain Nodes Using Multi-Mode Spectroscopy and Fusion-Based Artificial Intelligence",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/sensors-23-05149.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/s23115149",
+    "resolved_url": "https://doi.org/10.3390/s23115149",
+    "oa_pdf": "https://www.mdpi.com/1424-8220/23/1/5149/pdf"
+  },
+  {
+    "file": "Study on Soil Water Retrieval Technology of Yellow River Source Based on SPA Algorithm and Machine Learning.md",
+    "paper_name": "算 法 与 机 器 学 习 的 黄 河 源 土 壤 水 分 反 演",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Study on Soil Water Retrieval Technology of Yellow River Source Based on SPA Algorithm and Machine Learning.md",
+    "doi": null,
+    "resolved_url": null,
+    "oa_pdf": null
+  },
+  {
+    "file": "thnov12p5351.md",
+    "paper_name": "Raman spectroscopy reveals phenotype switches in breast cancer metastasis",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/thnov12p5351.md",
+    "doi": "10.1101/2021.06.02.446487",
+    "resolved_url": "https://doi.org/10.1101/2021.06.02.446487",
+    "oa_pdf": null
+  },
+  {
+    "file": "Total_and_Hot-Water_Extractable_Organic_.md",
+    "paper_name": "Total and Hot-Water Extractable Organic Carbon and Nitrogen in Organic Soil Amendments: Their Prediction Using Portable Mid-Infrared Spectroscopy with Support Vector Machines",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Total_and_Hot-Water_Extractable_Organic_.md",
+    "doi": "10.3390/agronomy11040659",
+    "resolved_url": "https://doi.org/10.3390/agronomy11040659",
+    "oa_pdf": null
+  },
+  {
+    "file": "Using_Machine_Learning_Algorithms_With_In_Situ_Hyperspectral_Reflectance_Data_to_Assess_Comprehensive_Water_Quality_of_Urban_Rivers.md",
+    "paper_name": "Using Machine Learning Algorithms With In Situ Hyperspectral Reflectance Data to Assess Comprehensive Water Quality of Urban Rivers",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Using_Machine_Learning_Algorithms_With_In_Situ_Hyperspectral_Reflectance_Data_to_Assess_Comprehensive_Water_Quality_of_Urban_Rivers.md",
+    "doi": "10.1109/tgrs.2022.3147695",
+    "resolved_url": "https://doi.org/10.1109/tgrs.2022.3147695",
+    "oa_pdf": null
+  },
+  {
+    "file": "Water Quality Classification Using Convolution Neural Network Based on UV-Vis Spectroscopy.md",
+    "paper_name": "卷积神经网络的紫外可见光谱水质分类方法",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Water Quality Classification Using Convolution Neural Network Based on UV-Vis Spectroscopy.md",
+    "doi": "10.3788/lop251417",
+    "resolved_url": "https://doi.org/10.3788/lop251417",
+    "oa_pdf": null
+  },
+  {
+    "file": "Water Resources Research - 2023 - Dralle - Mapping Surface Water Presence and Hyporheic Flow Properties of Headwater Stream.md",
+    "paper_name": "Mapping Surface Water Presence and Hyporheic Flow Properties of Headwater Stream Networks With Multispectral Satellite Imagery",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Water Resources Research - 2023 - Dralle - Mapping Surface Water Presence and Hyporheic Flow Properties of Headwater Stream.md",
+    "doi": "10.1029/2022wr034169",
+    "resolved_url": "https://doi.org/10.1029/2022wr034169",
+    "oa_pdf": null
+  },
+  {
+    "file": "water-13-02553-v2.md",
+    "paper_name": "A Cloud-Based Framework for Large-Scale Monitoring of Ocean Plastics Using Multi-Spectral Satellite Imagery and Generative Adversarial Network",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-13-02553-v2.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w13182553",
+    "resolved_url": "https://doi.org/10.3390/w13182553",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/13/1/2553/pdf"
+  },
+  {
+    "file": "water-14-00244.md",
+    "paper_name": "Application of Artificial Neural Networks for Mangrove Mapping Using Multi-Temporal and Multi-Source Remote Sensing Imagery",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-14-00244.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w14020244",
+    "resolved_url": "https://doi.org/10.3390/w14020244",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/14/1/244/pdf"
+  },
+  {
+    "file": "water-14-01732-v2.md",
+    "paper_name": "Machine Learning Algorithms for Biophysical Classification of Lithuanian Lakes Based on Remote Sensing Data",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-14-01732-v2.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w14111732",
+    "resolved_url": "https://doi.org/10.3390/w14111732",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/14/1/1732/pdf"
+  },
+  {
+    "file": "water-14-02784-v3.md",
+    "paper_name": "An Indirect Inversion Scheme for Retrieving Toxic Metal Concentrations Using Ground-Based Spectral Data in a Reclamation Coal Mine, China",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-14-02784-v3.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w14182784",
+    "resolved_url": "https://doi.org/10.3390/w14182784",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/14/1/2784/pdf"
+  },
+  {
+    "file": "water-14-04080.md",
+    "paper_name": "Estimating Chlorophyll-a Concentration from Hyperspectral Data Using Various Machine Learning Techniques: A Case Study at Paldang Dam, South Korea",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-14-04080.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w14244080",
+    "resolved_url": "https://doi.org/10.3390/w14244080",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/14/1/4080/pdf"
+  },
+  {
+    "file": "water-15-00880.md",
+    "paper_name": "Detection of Water Hyacinth (Eichhornia crassipes) in Lake Tana, Ethiopia, Using Machine Learning Algorithms",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-15-00880.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w15050880",
+    "resolved_url": "https://doi.org/10.3390/w15050880",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/15/1/880/pdf"
+  },
+  {
+    "file": "water-15-01532-v2.md",
+    "paper_name": "Mapping Specific Constituents of an Ochre-Coloured Watercourse Based on In Situ and Airborne Hyperspectral Remote Sensing Data",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-15-01532-v2.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w15081532",
+    "resolved_url": "https://doi.org/10.3390/w15081532",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/15/1/1532/pdf"
+  },
+  {
+    "file": "water-15-02726.md",
+    "paper_name": "Prediction of Soil Water Content Based on Hyperspectral Reflectance Combined with Competitive Adaptive Reweighted Sampling and Random Frog Feature Extraction and the Back-Propagation Artificial Neural Network Method",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/water-15-02726.md",
+    "oa_http_status": 403,
+    "doi": "10.3390/w15152726",
+    "resolved_url": "https://doi.org/10.3390/w15152726",
+    "oa_pdf": "https://www.mdpi.com/2073-4441/15/1/2726/pdf"
+  },
+  {
+    "file": "Water-absorption-trough_dewatering_machi.md",
+    "paper_name": "Water-absorption-trough dewatering machine for estimation of organic carbon in moist soil",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Water-absorption-trough_dewatering_machi.md",
+    "doi": "10.1016/j.envpol.2021.117445",
+    "resolved_url": "https://doi.org/10.1016/j.envpol.2021.117445",
+    "oa_pdf": null
+  },
+  {
+    "file": "xie-et-al-2023-automatic-identification-of-individual-nanoplastics-by-raman-spectroscopy-based-on-machine-learning.md",
+    "paper_name": "Automatic Identification of Individual Nanoplastics by Raman Spectroscopy Based on Machine Learning",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/xie-et-al-2023-automatic-identification-of-individual-nanoplastics-by-raman-spectroscopy-based-on-machine-learning.md",
+    "doi": "10.1021/acs.est.3c03210.s001",
+    "resolved_url": "https://doi.org/10.1021/acs.est.3c03210.s001",
+    "oa_pdf": null
+  },
+  {
+    "file": "zhang-et-al-2022-discrimination-of-periodontal-pathogens-using-raman-spectroscopy-combined-with-machine-learning.md",
+    "paper_name": "Discrimination of periodontal pathogens using Raman spectroscopy combined with machine learning algorithms",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/zhang-et-al-2022-discrimination-of-periodontal-pathogens-using-raman-spectroscopy-combined-with-machine-learning.md",
+    "doi": "10.1142/s1793545822400016",
+    "resolved_url": "https://doi.org/10.1142/s1793545822400016",
+    "oa_pdf": null
+  },
+  {
+    "file": "下载.md",
+    "paper_name": "Classification of chocolate according to its cocoa percentage by using Terahertz timedomain spectroscopy",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/下载.md",
+    "doi": "10.1590/fst.89222",
+    "resolved_url": "https://doi.org/10.1590/fst.89222",
+    "oa_pdf": null
+  },
+  {
+    "file": "PLS_regression_algorithms_in_the_presence_of_nonlinearity.md",
+    "paper_name": "PLS regression algorithms in the presence of nonlinearity",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/PLS_regression_algorithms_in_the_presence_of_nonlinearity.md",
+    "http_status": 403,
+    "doi": "10.1016/j.chemolab.2021.104307",
+    "resolved_url": "https://www.sciencedirect.com/science/article/pii/S0169743921000757?utm_source=chatgpt.com",
+    "oa_pdf": null
+  },
+  {
+    "file": "Support_vector_regression_for_functional_data_in_multivariate_calibration_problems.md",
+    "paper_name": "Support vector regression for functional data in multivariate calibration problems",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Support_vector_regression_for_functional_data_in_multivariate_calibration_problems.md",
+    "http_status": 403,
+    "doi": "10.1016/j.aca.2008.10.063",
+    "resolved_url": "https://www.sciencedirect.com/science/article/pii/S0003267008018205",
+    "oa_pdf": null
+  },
+  {
+    "file": "Determination_of_corn_protein_content_using_near-infrared_spectroscopy_combined_with_A-CARS-PLS.md",
+    "paper_name": "Determination of corn protein content using near-infrared spectroscopy combined with A-CARS-PLS",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Determination_of_corn_protein_content_using_near-infrared_spectroscopy_combined_with_A-CARS-PLS.md",
+    "http_status": 403,
+    "doi": "10.1016/j.fochx.2023.100666",
+    "resolved_url": "https://www.sciencedirect.com/science/article/pii/S2590157523001086",
+    "oa_pdf": null
+  },
+  {
+    "file": "Consensual_Regression_of_Lasso-Sparse_PLS_models_for_Near-Infrared_Spectra_of_Food.md",
+    "paper_name": "Consensual Regression of Lasso-Sparse PLS models for Near-Infrared Spectra of Food",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Consensual_Regression_of_Lasso-Sparse_PLS_models_for_Near-Infrared_Spectra_of_Food.md",
+    "http_status": 403,
+    "doi": "10.3390/agriculture12111804",
+    "resolved_url": "https://www.mdpi.com/2077-0472/12/11/1804",
+    "oa_pdf": null
+  },
+  {
+    "file": "Improved_prediction_of_tablet_properties_with_near-infrared_spectroscopy_by_a_fusion_of_scatter_corr.md",
+    "paper_name": "Improved prediction of tablet properties with near-infrared spectroscopy by a fusion of scatter correction techniques",
+    "status": "metadata_only",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Improved_prediction_of_tablet_properties_with_near-infrared_spectroscopy_by_a_fusion_of_scatter_corr.md",
+    "http_status": 403,
+    "doi": "10.1016/j.jpba.2020.113684",
+    "resolved_url": "https://www.sciencedirect.com/science/article/pii/S0731708520315703",
+    "oa_pdf": null
+  },
+  {
+    "file": "Development_of_an_NIR_Method_for_Determining_the_Active_Ingredient_in_Tablets.md",
+    "paper_name": "Development of an NIR Method for Determining the Active Ingredient in Tablets",
+    "status": "fulltext_pdf",
+    "path": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Development_of_an_NIR_Method_for_Determining_the_Active_Ingredient_in_Tablets.md",
+    "http_status": 200,
+    "pdf": "/Users/jiangshengping/wwwroot/shenzhen/spectrum/LUMIR-an-LLM/docs/LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main/Papers/md/Development_of_an_NIR_Method_for_Determining_the_Active_Ingredient_in_Tablets.pdf",
+    "doi": "10.1255/nirn.510",
+    "resolved_url": "https://eigenvector.com/whitepapers/Active_in_tablets.pdf",
+    "oa_pdf": null
+  }
+]

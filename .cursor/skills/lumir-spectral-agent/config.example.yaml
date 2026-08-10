@@ -1,0 +1,32 @@
+# 复制为 config.yaml 后按需修改。API Key 请用环境变量，不要写入本文件。
+#   cp config.example.yaml config.yaml
+#   export LUMIR_API_KEY=sk-...   # 或 DEEPSEEK_API_KEY
+#
+# 本 Skill 已自包含 knowledge_base/ + data/ + Papers/，可整目录 zip 到其它 Agent 客户端。
+
+llm:
+  api_key_env:
+    - LUMIR_API_KEY
+    - DEEPSEEK_API_KEY
+    - OPENAI_API_KEY
+  base_url: https://api.deepseek.com
+  model: deepseek-chat
+  temperature_entity: 0.1
+  temperature_method: 0.1
+  temperature_infer: 0.5
+
+knowledge_base:
+  # auto = Skill 内 knowledge_base/structured_papers1.json
+  primary: auto
+  extra: ./knowledge_base/extra_papers.json
+  top_k: 2
+
+pipeline:
+  skip_method_llm: false
+  few_shot: 8
+  test_ratio: 0.2
+  max_test_samples: 16
+  random_seed: 42
+
+datasets:
+  default: chenpi

@@ -1,0 +1,13 @@
+[
+  {
+    "paper_name": "Example: near-infrared analysis of my custom material",
+    "paper_url": "",
+    "research_object": "my custom material",
+    "preprocessing_method": "SNV, Savitzky-Golay smoothing",
+    "best_preprocessing_method": "SNV",
+    "feature_extracting_method": "PCA",
+    "best_feature_extracting_method": "PCA",
+    "machine_learning_method": "SVM",
+    "best_machine_learning_method": "SVM"
+  }
+]
