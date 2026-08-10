@@ -12,7 +12,7 @@
 - **HOST**：`http://127.0.0.1:28800`
 - **命令**：完善 #40/#42 后复测 + sync_api_test_checklist
 - **汇总**：HTTP 200 = **45/45**；`success=true` = **45/45**
-- **可运行且产出 files**：**11/11**
+- **可运行且产出 files**：**12/12**
 
 | # | ID | 状态 | HTTP | success | implemented | files |
 |---|----|------|------|---------|-------------|-------|
@@ -52,7 +52,7 @@
 | 34 | `34_svm_rf_classify` | 可运行 | 200 | True | True | 有 |
 | 35 | `35_spectral_matching` | 骨架 | 200 | True | False | 无 |
 | 36 | `36_cnn1d_classify` | 骨架 | 200 | True | False | 无 |
-| 37 | `37_cnn3d_classify` | 骨架 | 200 | True | False | 无 |
+| 37 | `37_cnn3d_classify` | 可运行 | 200 | True | True | 有 |
 | 38 | `38_transformer_classify` | 骨架 | 200 | True | False | 无 |
 | 39 | `39_few_shot_classify` | 骨架 | 200 | True | False | 无 |
 | 40 | `40_detect_segment` | 可运行 | 200 | True | True | 有 |
@@ -109,7 +109,7 @@
 | 34 | `34_svm_rf_classify` | SVM/随机森林分类 | L3 | 可运行 | ✅ |
 | 35 | `35_spectral_matching` | 光谱匹配分类(SAM) | L3 | 骨架 | ✅ |
 | 36 | `36_cnn1d_classify` | 1D-CNN/RNN光谱分类 | L3 | 骨架 | ✅ |
-| 37 | `37_cnn3d_classify` | 2D/3D-CNN空谱分类 | L3 | 骨架 | ✅ |
+| 37 | `37_cnn3d_classify` | 2D/3D-CNN空谱分类 | L3 | 可运行 | ✅ |
 | 38 | `38_transformer_classify` | Transformer/GCN分类 | L3 | 骨架 | ✅ |
 | 39 | `39_few_shot_classify` | 少样本/迁移学习分类 | L3 | 骨架 | ✅ |
 | 40 | `40_detect_segment` | 语义分割/目标检测 | L3 | 可运行 | ✅ |
@@ -1128,6 +1128,21 @@ curl -X POST "http://127.0.0.1:28800/api/v1/39_few_shot_classify/run" \
 | **数据输入** | Cube 和/或 RGB、框/掩膜标注 |
 | **数据输出** | 检测框、分割掩膜、斑块矢量（shp） |
 
+#### 当前示例数据说明
+
+- **解决什么问题**：植保场景需要知道「病斑/胁迫/杂草在哪一块」，而不是整幅只给出作物类别。本示例演示：从多波段反射率立方体中自动找出低长势斑块，并输出可上图的掩膜与矢量边界，便于后续精准喷药或人工复核。
+- **本示例输入什么**：
+  - `file` → `input.tif`：模拟 **16×16×8** 波段反射率 GeoTIFF（EPSG:4326）
+  - 左半区为较高 NDVI 植被；在像素窗 `[行 4:10, 列 2:8]` 人为写入一块低 NDVI「胁迫斑」（压低近红外、抬高红光）
+  - `file2` → `file2.geojson`：可选标注/AOI（属性 `label=weed`），接口会记录路径与要素数，不强制参与阈值
+  - `params`：`red_band=2`、`nir_band=3` 算 NDVI；`percentile=20` 取低值阈值；`min_pixels=4` 剔除碎斑
+- **本示例输出什么**：
+  - `files.score_tif`：检测得分图（NDVI 低于阈值的程度）
+  - `files.mask_tif`：二值分割掩膜（1=候选斑块）
+  - `files.polygons_geojson`：连通斑块多边形（含 `object_id`、`area_pixels`）
+  - `files.preview_png`：得分预览图
+  - `data`：阈值、斑块数 `n_objects`、阳性像素数等；当前样例通常约 **1 个斑块 / 数十像素**
+
 - **主文件 file**：`algorithms/40_detect_segment/testdata/input.tif`
 - **第二文件 file2**：`algorithms/40_detect_segment/testdata/file2.geojson`
 - **params**：`{"red_band": 2, "nir_band": 3, "percentile": 20, "min_pixels": 4}`
@@ -1179,6 +1194,18 @@ curl -X POST "http://127.0.0.1:28800/api/v1/41_unmixing/run" \
 | **使用场景** | 病虫害爆发点、污染点、未知目标初筛 |
 | **数据输入** | 单时相 Cube |
 | **数据输出** | 异常得分图 / 告警点位 |
+
+#### 当前示例数据说明
+
+- **解决什么问题**：无充分标注时，需要先找出光谱上「不像周围大多数」的像元，用于病虫害爆发点、污染点等初筛告警。
+- **本示例输入什么**：
+  - `file` → `input.tif`：模拟多波段反射率 GeoTIFF（16×16×8）
+  - `params`：`percentile=95` 将高 RX 得分判为异常；`min_pixels=2` 去掉过小噪点
+- **本示例输出什么**：
+  - `files.score_tif`：RX 异常得分图
+  - `files.mask_tif`：告警二值掩膜
+  - `files.preview_png`：预览图
+  - `data`：阈值、异常像素数、得分统计
 
 - **主文件 file**：`algorithms/42_anomaly_detect/testdata/input.tif`
 - **第二文件 file2**：无
@@ -1285,4 +1312,4 @@ curl -X POST "http://127.0.0.1:28800/api/v1/45_parcel_zonal_stats/run" \
 
 可运行清单：`12_panel_reflectance`、`20_bad_band_remove`、`21_savgol_smooth`、`22_normalize`、`23_pca`、`27_ndvi`、`28_ndre`、`34_svm_rf_classify`、`40_detect_segment`、`42_anomaly_detect`、`45_parcel_zonal_stats`
 
-介绍来源：[采集到算法-算法清单.md](./采集到算法-算法清单.md)（同步生成于 2026-08-09 19:17）
+介绍来源：[采集到算法-算法清单.md](./采集到算法-算法清单.md)（同步生成于 2026-08-09 22:12）
