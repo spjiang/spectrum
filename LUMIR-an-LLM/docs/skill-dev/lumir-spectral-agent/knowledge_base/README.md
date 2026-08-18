@@ -8,12 +8,6 @@ knowledge_base/structured_papers1.json
 
 约 129 条。`primary: auto` 即指向此文件。整包 zip Skill 时**必须带上**。
 
-## 演示数据（已内嵌）
-
-```text
-data/Chenpi|milk|CN_medicine|corn|tecator|H2O|...
-```
-
 ## 文献溯源（可选）
 
 ```text

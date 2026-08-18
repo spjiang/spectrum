@@ -3,7 +3,7 @@
 ## 流水线示意
 
 ```
-自然语言问题 + 光谱数组
+用户光谱路径 + 自然语言问题
         │
         ▼
 1. LLM 实体抽取 → research_object, task_type
@@ -29,11 +29,12 @@
 | `config.yaml` | 本地配置（gitignore，勿提交密钥） |
 | `.env.example` | API Key / base_url / model 示例 |
 | `knowledge_base/README.md` | 主库 + 追加库说明 |
-| `scripts/run_e2e.py` | 端到端测试入口 |
-| `scripts/demo_pipeline.py` | 离线冒烟 |
+| `scripts/job_input.py` | `--data` / `--label` 校验 |
+| `scripts/run_e2e.py` | 端到端作业入口 |
+| `scripts/run_offline.py` | 离线作业 |
 | `配置说明.md` | 配置手册 |
-| `测试说明.md` | **演示文档**（讲解节奏、命令、话术） |
-| `runs/` | E2E JSON 报告 |
+| `测试说明.md` | 验收节奏与命令 |
+| `runs/` | JSON 报告（含 `data_path`） |
 
 DeepSeek 默认：
 
@@ -43,22 +44,25 @@ DeepSeek 默认：
 
 ## 知识库
 
-- **主库**：源码目录 `structured_papers1.json`（SDAAP 结构化文献，约 129 条）
-- **追加**：`knowledge_base/extra_papers.json`（可选，同字段数组）
+- **主库**：`knowledge_base/structured_papers1.json`（SDAAP 结构化文献，约 129 条）
+- **追加**：`knowledge_base/extra_papers.json`（可选）
 - 检索字段主要用 `paper_name` + `research_object`
 - 方法字段：`preprocessing_method` / `feature_extracting_method`
 
-测试牛奶/陈皮/中药材/Corn 等：**先用主库，不必自建。**
+## 作业数据
 
-## 数据集（`data/`）
+生产入口只接受用户文件：
 
-| 名称 | 文件 | 典型 shape | 任务 |
-|------|------|------------|------|
-| milk | `milk/milk_data.npy` | (9, 40, 601) | 分类 |
-| chenpi (CRP) | `Chenpi/chenpi.npy` | (8, 30, 800) | 分类 |
-| chinese medicine | `CN_medicine/cnm.npy` | (3, 40, 228) | 分类 |
-| tecator | `tecator/*` | (215, 100) | 回归 |
-| corn | `corn/*` | (80, 700) | 回归 |
+```bash
+--data /path/to/spectra.npy
+--label /path/to/labels.npy   # 回归必填
+--task classification|regression|anomaly_detection
+--object "<研究对象>"
+```
+
+OpenClaw：使用用户上传文件的绝对路径作为 `--data`。未提供路径则停止询问，不得回退样本文件。
+
+数组约定：`.npy`；2D 视为 `(n_samples, n_bands)`，自动升为 `(1, n_samples, n_bands)`；3D 分类常见 `(n_classes, n_per_class, n_bands)`。
 
 ## 文献引导方法表（Table 4）
 
@@ -66,7 +70,7 @@ DeepSeek 默认：
 |------|--------|------|
 | Milk | SG | PCA |
 | Chinese medicinal herbs | SNV+FD | PCA |
-| CRP / chenpi | SNV | PCA |
+| CRP | SNV | PCA |
 | Wastewater | BC (AsLS) | Pearson |
 | Tecator | SNV | PLS |
 | Corn | SNV | PLS |
@@ -83,7 +87,7 @@ DeepSeek 默认：
 ## 常见问题
 
 1. **没配 Key**：`run_e2e.py` 会提示设置 `LUMIR_API_KEY`。
-2. **步骤3映射失败**：自动回退 Table4；或加 `--skip-method-llm`。
-3. **新材料检索不准**：向 `extra_papers.json` 追加同结构条目。
-4. **省费用**：`--stop-after features` 跳过 few-shot。
-5. **路径**：原 notebook 的 Windows 反斜杠在 macOS/Linux 需改用 `pathlib`。
+2. **没给数据**：`job_input` 以非零退出，要求 `--data`。
+3. **步骤3映射失败**：自动回退 Table4；或加 `--skip-method-llm`。
+4. **新材料检索不准**：向 `extra_papers.json` 追加同结构条目。
+5. **省费用**：`--stop-after features` 跳过 few-shot。

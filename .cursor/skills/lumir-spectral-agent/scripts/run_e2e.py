@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""LUMIR 端到端测试入口（DeepSeek / OpenAI 兼容）。
+"""LUMIR 端到端作业入口（DeepSeek / OpenAI 兼容）。
 
 五步流水线：
 1. LLM 实体抽取
@@ -8,6 +8,8 @@
 3. LLM 方法映射 + 多数投票（可跳过）
 4. 本地预处理 + 特征提取
 5. LLM few-shot 分类/回归（可选停在 features）
+
+光谱必须由 --data / --label 指向用户文件，禁止内置数据集名。
 """
 
 from __future__ import annotations
@@ -34,14 +36,17 @@ from sklearn.model_selection import train_test_split
 # 路径：Skill 目录自包含（可整包 zip 到其它 Agent 客户端）
 # ---------------------------------------------------------------------------
 SKILL_ROOT = Path(__file__).resolve().parents[1]
-BUNDLE_ROOT = SKILL_ROOT  # 数据/知识库均在 Skill 根下
+BUNDLE_ROOT = SKILL_ROOT
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+from job_input import add_job_input_args, parse_job_input  # noqa: E402
 
 
 def resolve_bundle_root() -> Path:
-    """优先用 Skill 内嵌资源；兼容旧布局（仓库旁 LUMIR 源码）。"""
+    """优先用 Skill 内嵌知识库；兼容旧布局。"""
     local_kb = SKILL_ROOT / "knowledge_base" / "structured_papers1.json"
-    local_data = SKILL_ROOT / "data"
-    if local_kb.is_file() and local_data.is_dir():
+    if local_kb.is_file():
         return SKILL_ROOT
     name = "LLM-Agent-for-Automated-Infrared-Spectral-Reasoning-main"
     here = Path(__file__).resolve()
@@ -53,7 +58,7 @@ def resolve_bundle_root() -> Path:
         if c.is_dir() and (c / "structured_papers1.json").is_file():
             return c
     raise SystemExit(
-        "找不到内嵌资源。请确认 Skill 目录含 knowledge_base/structured_papers1.json 与 data/。\n"
+        "找不到知识库。请确认 Skill 目录含 knowledge_base/structured_papers1.json。\n"
         f"  SKILL_ROOT={SKILL_ROOT}"
     )
 
@@ -74,46 +79,6 @@ LITERATURE_METHODS: Dict[str, Dict[str, List[str]]] = {
     },
     "tecator": {"preprocessing": ["standard_normal_variate"], "features": ["Partial_Least_Squares"]},
     "corn": {"preprocessing": ["standard_normal_variate"], "features": ["Partial_Least_Squares"]},
-}
-
-DATASET_SPECS = {
-    "chenpi": {
-        "question": "I'm going to classify the following Citri Reticulatae Pericarpium spectral data.",
-        "data": "Chenpi/chenpi.npy",
-        "task": "classification",
-        "object": "Citri Reticulatae Pericarpium",
-        "method_key": "citri reticulatae pericarpium",
-    },
-    "milk": {
-        "question": "I'm going to classify the following milk spectral data.",
-        "data": "milk/milk_data.npy",
-        "task": "classification",
-        "object": "milk",
-        "method_key": "milk",
-    },
-    "cn_medicine": {
-        "question": "I'm going to classify the following chinese medicine spectral data.",
-        "data": "CN_medicine/cnm.npy",
-        "task": "classification",
-        "object": "chinese medicine",
-        "method_key": "chinese medicine",
-    },
-    "corn": {
-        "question": "I'm going to predict the protein content in corn samples.",
-        "data": "corn/corn_data.npy",
-        "label": "corn/protein_label.npy",
-        "task": "regression",
-        "object": "corn",
-        "method_key": "corn",
-    },
-    "tecator": {
-        "question": "I'm going to predict the fat content in meat sample.",
-        "data": "tecator/tecator_data.npy",
-        "label": "tecator/tecator_label.npy",
-        "task": "regression",
-        "object": "tecator",
-        "method_key": "tecator",
-    },
 }
 
 ALL_PREPROCESS = [
@@ -424,12 +389,11 @@ def run_preprocess_feature(
 
 
 def load_xy(spec: Dict[str, Any]) -> Tuple[np.ndarray, Optional[np.ndarray]]:
-    data_root = SKILL_ROOT / "data" if (SKILL_ROOT / "data").is_dir() else LUMIR_ROOT / "data"
-    data_path = data_root / spec["data"]
-    data = np.load(data_path, allow_pickle=True)
+    """兼容旧调用：spec 含绝对路径 data / 可选 label。"""
+    data = np.load(spec["data"], allow_pickle=True)
     y = None
-    if "label" in spec:
-        y = np.load(data_root / spec["label"], allow_pickle=True)
+    if spec.get("label"):
+        y = np.load(spec["label"], allow_pickle=True)
     if data.ndim == 2:
         data = data.reshape(1, data.shape[0], data.shape[1])
     if y is not None:
@@ -551,8 +515,8 @@ def _parse_json_array(text: str) -> List[Any]:
 # 主流程
 # ---------------------------------------------------------------------------
 def main() -> None:
-    parser = argparse.ArgumentParser(description="LUMIR 端到端测试（DeepSeek）")
-    parser.add_argument("--dataset", default=None, choices=sorted(DATASET_SPECS.keys()))
+    parser = argparse.ArgumentParser(description="LUMIR 端到端作业（DeepSeek）")
+    add_job_input_args(parser)
     parser.add_argument("--config", type=Path, default=None, help="config.yaml 路径")
     parser.add_argument("--skip-method-llm", action="store_true", help="步骤3改用 Table4")
     parser.add_argument(
@@ -560,17 +524,15 @@ def main() -> None:
         choices=["entity", "retrieve", "methods", "features", "infer"],
         default="infer",
     )
-    parser.add_argument("--question", default=None, help="覆盖默认自然语言问题")
     args = parser.parse_args()
+    job = parse_job_input(args)
 
     cfg = load_config(args.config)
     llm_cfg = cfg.get("llm", {})
     kb_cfg = cfg.get("knowledge_base", {})
     pipe = cfg.get("pipeline", {})
 
-    dataset = args.dataset or (cfg.get("datasets") or {}).get("default", "chenpi")
-    spec = DATASET_SPECS[dataset]
-    question = args.question or spec["question"]
+    question = job.question
     skip_method_llm = args.skip_method_llm or bool(pipe.get("skip_method_llm", False))
     few_shot = int(pipe.get("few_shot", 8))
     test_ratio = float(pipe.get("test_ratio", 0.2))
@@ -585,7 +547,9 @@ def main() -> None:
 
     report: Dict[str, Any] = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "dataset": dataset,
+        "job_id": job.job_id,
+        "data_path": str(job.data_path),
+        "label_path": str(job.label_path) if job.label_path else None,
         "config_path": cfg.get("_config_path"),
         "llm": {"base_url": base_url, "model": model},
         "question": question,
@@ -595,7 +559,8 @@ def main() -> None:
     print("=" * 60)
     print("LUMIR E2E")
     print("=" * 60)
-    print(f"dataset={dataset}  model={model}  stop_after={args.stop_after}")
+    print(f"job={job.job_id}  model={model}  stop_after={args.stop_after}")
+    print(f"data={job.data_path}")
     print(f"SKILL_ROOT={SKILL_ROOT}")
     print(f"BUNDLE_ROOT={LUMIR_ROOT}")
 
@@ -604,8 +569,8 @@ def main() -> None:
     extracted = llm_extract_entities(
         client, model, float(llm_cfg.get("temperature_entity", 0.1)), question
     )
-    research_object = extracted.get("research_object") or spec["object"]
-    task_type = extracted.get("task_type") or spec["task"]
+    research_object = extracted.get("research_object") or job.research_object
+    task_type = extracted.get("task_type") or job.task
     report["steps"]["entity"] = {
         "research_object": research_object,
         "task_type": task_type,
@@ -639,7 +604,7 @@ def main() -> None:
     # ---- 3 方法 ----
     print("\n[3] 方法映射")
     method_source = "table4"
-    selected = table4_methods(spec["method_key"], research_object)
+    selected = table4_methods(research_object, research_object)
     methods_map: Dict[str, Any] = {}
     if not skip_method_llm:
         try:
@@ -650,12 +615,12 @@ def main() -> None:
             selected = select_by_majority(methods_map, paper_order)
             # 若投票结果空预处理，回退 Table4 预处理
             if not selected.get("preprocessing"):
-                fb = table4_methods(spec["method_key"], research_object)
+                fb = table4_methods(research_object, research_object)
                 selected["preprocessing"] = fb["preprocessing"]
             method_source = "llm_majority"
         except Exception as exc:  # noqa: BLE001
             print(f"[warn] LLM 方法映射失败，回退 Table4: {exc}")
-            selected = table4_methods(spec["method_key"], research_object)
+            selected = table4_methods(research_object, research_object)
             method_source = "table4_fallback"
     else:
         print("    --skip-method-llm / config: 使用 Table4")
@@ -671,7 +636,7 @@ def main() -> None:
 
     # ---- 4 特征 ----
     print("\n[4] 本地预处理 + 特征提取")
-    data, labels = load_xy(spec)
+    data, labels = job.load_xy()
     processed, features, used = run_preprocess_feature(data, selected, labels, task_type)
     feat_shapes = {k: list(v.shape) for k, v in features.items()}
     report["steps"]["features"] = {
@@ -735,7 +700,7 @@ def _save_and_exit(report: Dict[str, Any]) -> None:
     runs = SKILL_ROOT / "runs"
     runs.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    ds = report.get("dataset", "run")
+    ds = report.get("job_id") or "job"
     path = runs / f"e2e_{ds}_{ts}.json"
     with open(path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)

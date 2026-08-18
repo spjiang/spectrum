@@ -15,10 +15,8 @@
 
 | 资源 | 位置 | 说明 |
 |------|------|------|
-| 演示光谱 `data/` | Skill 根 `data/` | 未再拷进 vendor，避免体积翻倍 |
-| 文献溯源 `Papers/` | Skill 根 `Papers/` | 同上 |
-| 主知识库 | Skill 根 `knowledge_base/` | 运行时以此为准 |
-| 工程脚本 | Skill 根 `scripts/` | `demo_pipeline.py` / `run_e2e.py` |
+| 工程脚本 | Skill 根 `scripts/` | `run_offline.py` / `run_e2e.py` |
+| 用户光谱 | `--data` / `--label` | 生产作业不读取 vendor 内数据 |
 
 若需在 vendor 内按原 notebook 相对路径找数据，可自行：
 

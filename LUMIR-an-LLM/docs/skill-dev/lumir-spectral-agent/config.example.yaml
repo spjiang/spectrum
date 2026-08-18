@@ -2,7 +2,7 @@
 #   cp config.example.yaml config.yaml
 #   export LUMIR_API_KEY=sk-...   # 或 DEEPSEEK_API_KEY
 #
-# 本 Skill 已自包含 knowledge_base/ + data/ + Papers/，可整目录 zip 到其它 Agent 客户端。
+# 本 Skill 自包含 knowledge_base/；光谱由 --data / --label 指向用户文件。
 
 llm:
   api_key_env:
@@ -27,6 +27,3 @@ pipeline:
   test_ratio: 0.2
   max_test_samples: 16
   random_seed: 42
-
-datasets:
-  default: chenpi
