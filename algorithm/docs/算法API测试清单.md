@@ -8,115 +8,115 @@
 
 ## 最近一次自动测试结果
 
-- **时间**：2026-08-09 19:17:10
+- **时间**：2026-08-19 17:51:49
 - **HOST**：`http://127.0.0.1:28800`
-- **命令**：完善 #40/#42 后复测 + sync_api_test_checklist
+- **命令**：生产级实现后 `scripts/smoke_all_implemented.py`（curl 冒烟）
 - **汇总**：HTTP 200 = **45/45**；`success=true` = **45/45**
-- **可运行且产出 files**：**12/12**
+- **可运行且产出 files**：**45/45**
 
 | # | ID | 状态 | HTTP | success | implemented | files |
 |---|----|------|------|---------|-------------|-------|
-| 01 | `01_flight_planning` | 骨架 | 200 | True | False | 无 |
-| 02 | `02_sync_timestamp` | 骨架 | 200 | True | False | 无 |
-| 03 | `03_pos_solution` | 骨架 | 200 | True | False | 无 |
-| 04 | `04_flight_qc` | 骨架 | 200 | True | False | 无 |
-| 05 | `05_cloud_shadow` | 骨架 | 200 | True | False | 无 |
-| 06 | `06_dark_current` | 骨架 | 200 | True | False | 无 |
-| 07 | `07_bad_pixel` | 骨架 | 200 | True | False | 无 |
-| 08 | `08_destriping` | 骨架 | 200 | True | False | 无 |
-| 09 | `09_smile_keystone` | 骨架 | 200 | True | False | 无 |
-| 10 | `10_radiance_calibration` | 骨架 | 200 | True | False | 无 |
-| 11 | `11_relative_radiometric` | 骨架 | 200 | True | False | 无 |
+| 01 | `01_flight_planning` | 可运行 | 200 | True | True | 有 |
+| 02 | `02_sync_timestamp` | 可运行 | 200 | True | True | 有 |
+| 03 | `03_pos_solution` | 可运行 | 200 | True | True | 有 |
+| 04 | `04_flight_qc` | 可运行 | 200 | True | True | 有 |
+| 05 | `05_cloud_shadow` | 可运行 | 200 | True | True | 有 |
+| 06 | `06_dark_current` | 可运行 | 200 | True | True | 有 |
+| 07 | `07_bad_pixel` | 可运行 | 200 | True | True | 有 |
+| 08 | `08_destriping` | 可运行 | 200 | True | True | 有 |
+| 09 | `09_smile_keystone` | 可运行 | 200 | True | True | 有 |
+| 10 | `10_radiance_calibration` | 可运行 | 200 | True | True | 有 |
+| 11 | `11_relative_radiometric` | 可运行 | 200 | True | True | 有 |
 | 12 | `12_panel_reflectance` | 可运行 | 200 | True | True | 有 |
-| 13 | `13_atmospheric_correction` | 骨架 | 200 | True | False | 无 |
-| 14 | `14_brdf_correction` | 骨架 | 200 | True | False | 无 |
-| 15 | `15_geo_locate` | 骨架 | 200 | True | False | 无 |
-| 16 | `16_orthorectify` | 骨架 | 200 | True | False | 无 |
-| 17 | `17_mosaic` | 骨架 | 200 | True | False | 无 |
-| 18 | `18_color_balance` | 骨架 | 200 | True | False | 无 |
-| 19 | `19_multi_source_register` | 骨架 | 200 | True | False | 无 |
+| 13 | `13_atmospheric_correction` | 可运行 | 200 | True | True | 有 |
+| 14 | `14_brdf_correction` | 可运行 | 200 | True | True | 有 |
+| 15 | `15_geo_locate` | 可运行 | 200 | True | True | 有 |
+| 16 | `16_orthorectify` | 可运行 | 200 | True | True | 有 |
+| 17 | `17_mosaic` | 可运行 | 200 | True | True | 有 |
+| 18 | `18_color_balance` | 可运行 | 200 | True | True | 有 |
+| 19 | `19_multi_source_register` | 可运行 | 200 | True | True | 有 |
 | 20 | `20_bad_band_remove` | 可运行 | 200 | True | True | 有 |
 | 21 | `21_savgol_smooth` | 可运行 | 200 | True | True | 有 |
 | 22 | `22_normalize` | 可运行 | 200 | True | True | 有 |
 | 23 | `23_pca` | 可运行 | 200 | True | True | 有 |
-| 24 | `24_band_select` | 骨架 | 200 | True | False | 无 |
-| 25 | `25_superpixel` | 骨架 | 200 | True | False | 无 |
-| 26 | `26_patch_build` | 骨架 | 200 | True | False | 无 |
+| 24 | `24_band_select` | 可运行 | 200 | True | True | 有 |
+| 25 | `25_superpixel` | 可运行 | 200 | True | True | 有 |
+| 26 | `26_patch_build` | 可运行 | 200 | True | True | 有 |
 | 27 | `27_ndvi` | 可运行 | 200 | True | True | 有 |
 | 28 | `28_ndre` | 可运行 | 200 | True | True | 有 |
-| 29 | `29_evi_savi` | 骨架 | 200 | True | False | 无 |
-| 30 | `30_ndmi_ndwi` | 骨架 | 200 | True | False | 无 |
-| 31 | `31_red_edge_params` | 骨架 | 200 | True | False | 无 |
-| 32 | `32_regression_inversion` | 骨架 | 200 | True | False | 无 |
-| 33 | `33_physical_inversion` | 骨架 | 200 | True | False | 无 |
+| 29 | `29_evi_savi` | 可运行 | 200 | True | True | 有 |
+| 30 | `30_ndmi_ndwi` | 可运行 | 200 | True | True | 有 |
+| 31 | `31_red_edge_params` | 可运行 | 200 | True | True | 有 |
+| 32 | `32_regression_inversion` | 可运行 | 200 | True | True | 有 |
+| 33 | `33_physical_inversion` | 可运行 | 200 | True | True | 有 |
 | 34 | `34_svm_rf_classify` | 可运行 | 200 | True | True | 有 |
-| 35 | `35_spectral_matching` | 骨架 | 200 | True | False | 无 |
-| 36 | `36_cnn1d_classify` | 骨架 | 200 | True | False | 无 |
+| 35 | `35_spectral_matching` | 可运行 | 200 | True | True | 有 |
+| 36 | `36_cnn1d_classify` | 可运行 | 200 | True | True | 有 |
 | 37 | `37_cnn3d_classify` | 可运行 | 200 | True | True | 有 |
-| 38 | `38_transformer_classify` | 骨架 | 200 | True | False | 无 |
-| 39 | `39_few_shot_classify` | 骨架 | 200 | True | False | 无 |
+| 38 | `38_transformer_classify` | 可运行 | 200 | True | True | 有 |
+| 39 | `39_few_shot_classify` | 可运行 | 200 | True | True | 有 |
 | 40 | `40_detect_segment` | 可运行 | 200 | True | True | 有 |
-| 41 | `41_unmixing` | 骨架 | 200 | True | False | 无 |
+| 41 | `41_unmixing` | 可运行 | 200 | True | True | 有 |
 | 42 | `42_anomaly_detect` | 可运行 | 200 | True | True | 有 |
-| 43 | `43_change_detect` | 骨架 | 200 | True | False | 无 |
-| 44 | `44_postprocess_smooth` | 骨架 | 200 | True | False | 无 |
+| 43 | `43_change_detect` | 可运行 | 200 | True | True | 有 |
+| 44 | `44_postprocess_smooth` | 可运行 | 200 | True | True | 有 |
 | 45 | `45_parcel_zonal_stats` | 可运行 | 200 | True | True | 有 |
 
 ## 使用说明
 
 1. 启动服务：`./scripts/start.sh`（默认 `http://127.0.0.1:28800`）
 2. 健康检查：`curl -s http://127.0.0.1:28800/api/v1/algorithms | python -m json.tool | head`
-3. 按下列命令逐项测试；**可运行**项应返回 `success=true` 与产物路径；**骨架**项通常返回 `implemented=false`（接口可达即可）
+3. 按下列命令逐项测试；全部 45 项均为**可运行**：应返回 `success=true`、`implemented=true` 与 `files` 产物路径
 4. 每项含算法介绍 + curl；勾选列供联调/验收打钩
 
 ## 总览勾选表
 
 | # | 算法 ID | 标题 | 层级 | 状态 | 通过 |
 |---|---------|------|------|------|------|
-| 01 | `01_flight_planning` | 航线规划与覆盖优化 | L0前 | 骨架 | ✅ |
-| 02 | `02_sync_timestamp` | 同步曝光与时间戳对齐 | L0 | 骨架 | ✅ |
-| 03 | `03_pos_solution` | POS解算（GPS+IMU） | L0 | 骨架 | ✅ |
-| 04 | `04_flight_qc` | 架次质检（丢帧/过曝） | L0 | 骨架 | ✅ |
-| 05 | `05_cloud_shadow` | 云/云影检测 | L0 | 骨架 | ✅ |
-| 06 | `06_dark_current` | 暗电流校正 | L0→L1 | 骨架 | ✅ |
-| 07 | `07_bad_pixel` | 坏线/坏像元修复 | L0→L1 | 骨架 | ✅ |
-| 08 | `08_destriping` | 条带噪声去除 | L0→L1 | 骨架 | ✅ |
-| 09 | `09_smile_keystone` | 光谱微笑/关键畸变校正 | L0→L1 | 骨架 | ✅ |
-| 10 | `10_radiance_calibration` | 辐射定标 DN→辐亮度 | L0→L1 | 骨架 | ✅ |
-| 11 | `11_relative_radiometric` | 相对辐射归一 | L1 | 骨架 | ✅ |
-| 12 | `12_panel_reflectance` | 白板/灰板反射率定标（示意） | L1→L2 | 可运行 | ✅ |
-| 13 | `13_atmospheric_correction` | 大气校正 | L1→L2 | 骨架 | ✅ |
-| 14 | `14_brdf_correction` | BRDF/观测几何校正 | L1→L2 | 骨架 | ✅ |
-| 15 | `15_geo_locate` | 几何粗校正/地理定位 | L1→L2 | 骨架 | ✅ |
-| 16 | `16_orthorectify` | 正射校正 | L1→L2 | 骨架 | ✅ |
-| 17 | `17_mosaic` | 影像匹配与镶嵌 | L2 | 骨架 | ✅ |
-| 18 | `18_color_balance` | 匀色与接缝线优化 | L2 | 骨架 | ✅ |
-| 19 | `19_multi_source_register` | 多源配准 HSI-RGB-矢量 | L2 | 骨架 | ✅ |
+| 01 | `01_flight_planning` | 航线规划与覆盖优化 | L0前 | 可运行 | ✅ |
+| 02 | `02_sync_timestamp` | 同步曝光与时间戳对齐 | L0 | 可运行 | ✅ |
+| 03 | `03_pos_solution` | POS解算（GPS+IMU） | L0 | 可运行 | ✅ |
+| 04 | `04_flight_qc` | 架次质检（丢帧/过曝） | L0 | 可运行 | ✅ |
+| 05 | `05_cloud_shadow` | 云/云影检测 | L0 | 可运行 | ✅ |
+| 06 | `06_dark_current` | 暗电流校正 | L0→L1 | 可运行 | ✅ |
+| 07 | `07_bad_pixel` | 坏线/坏像元修复 | L0→L1 | 可运行 | ✅ |
+| 08 | `08_destriping` | 条带噪声去除 | L0→L1 | 可运行 | ✅ |
+| 09 | `09_smile_keystone` | 光谱微笑/关键畸变校正 | L0→L1 | 可运行 | ✅ |
+| 10 | `10_radiance_calibration` | 辐射定标 DN→辐亮度 | L0→L1 | 可运行 | ✅ |
+| 11 | `11_relative_radiometric` | 相对辐射归一 | L1 | 可运行 | ✅ |
+| 12 | `12_panel_reflectance` | 白板/灰板反射率定标 | L1→L2 | 可运行 | ✅ |
+| 13 | `13_atmospheric_correction` | 大气校正 | L1→L2 | 可运行 | ✅ |
+| 14 | `14_brdf_correction` | BRDF/观测几何校正 | L1→L2 | 可运行 | ✅ |
+| 15 | `15_geo_locate` | 几何粗校正/地理定位 | L1→L2 | 可运行 | ✅ |
+| 16 | `16_orthorectify` | 正射校正 | L1→L2 | 可运行 | ✅ |
+| 17 | `17_mosaic` | 影像匹配与镶嵌 | L2 | 可运行 | ✅ |
+| 18 | `18_color_balance` | 匀色与接缝线优化 | L2 | 可运行 | ✅ |
+| 19 | `19_multi_source_register` | 多源配准 HSI-RGB-矢量 | L2 | 可运行 | ✅ |
 | 20 | `20_bad_band_remove` | 坏波段剔除与光谱去噪 | L2 | 可运行 | ✅ |
 | 21 | `21_savgol_smooth` | Savitzky-Golay平滑 | L2 | 可运行 | ✅ |
 | 22 | `22_normalize` | 标准化/归一化 | L2 | 可运行 | ✅ |
 | 23 | `23_pca` | PCA/MNF降维 | L2 | 可运行 | ✅ |
-| 24 | `24_band_select` | 波段/特征选择 | L2 | 骨架 | ✅ |
-| 25 | `25_superpixel` | 超像素/对象分割 | L2 | 骨架 | ✅ |
-| 26 | `26_patch_build` | Patch/样本构建 | L2 | 骨架 | ✅ |
+| 24 | `24_band_select` | 波段/特征选择 | L2 | 可运行 | ✅ |
+| 25 | `25_superpixel` | 超像素/对象分割 | L2 | 可运行 | ✅ |
+| 26 | `26_patch_build` | Patch/样本构建 | L2 | 可运行 | ✅ |
 | 27 | `27_ndvi` | NDVI植被指数 | L3 | 可运行 | ✅ |
 | 28 | `28_ndre` | NDRE红边植被指数 | L3 | 可运行 | ✅ |
-| 29 | `29_evi_savi` | EVI/SAVI/MSAVI | L3 | 骨架 | ✅ |
-| 30 | `30_ndmi_ndwi` | NDMI/NDWI/MNDWI | L3 | 骨架 | ✅ |
-| 31 | `31_red_edge_params` | 红边位置与光谱特征参数 | L3 | 骨架 | ✅ |
-| 32 | `32_regression_inversion` | 经验回归反演 | L3 | 骨架 | ✅ |
-| 33 | `33_physical_inversion` | 辐射传输物理反演 | L3 | 骨架 | ✅ |
+| 29 | `29_evi_savi` | EVI/SAVI/MSAVI | L3 | 可运行 | ✅ |
+| 30 | `30_ndmi_ndwi` | NDMI/NDWI/MNDWI | L3 | 可运行 | ✅ |
+| 31 | `31_red_edge_params` | 红边位置与光谱特征参数 | L3 | 可运行 | ✅ |
+| 32 | `32_regression_inversion` | 经验回归反演 | L3 | 可运行 | ✅ |
+| 33 | `33_physical_inversion` | 辐射传输物理反演 | L3 | 可运行 | ✅ |
 | 34 | `34_svm_rf_classify` | SVM/随机森林分类 | L3 | 可运行 | ✅ |
-| 35 | `35_spectral_matching` | 光谱匹配分类(SAM) | L3 | 骨架 | ✅ |
-| 36 | `36_cnn1d_classify` | 1D-CNN/RNN光谱分类 | L3 | 骨架 | ✅ |
+| 35 | `35_spectral_matching` | 光谱匹配分类(SAM) | L3 | 可运行 | ✅ |
+| 36 | `36_cnn1d_classify` | 1D-CNN/RNN光谱分类 | L3 | 可运行 | ✅ |
 | 37 | `37_cnn3d_classify` | 2D/3D-CNN空谱分类 | L3 | 可运行 | ✅ |
-| 38 | `38_transformer_classify` | Transformer/GCN分类 | L3 | 骨架 | ✅ |
-| 39 | `39_few_shot_classify` | 少样本/迁移学习分类 | L3 | 骨架 | ✅ |
+| 38 | `38_transformer_classify` | Transformer/GCN分类 | L3 | 可运行 | ✅ |
+| 39 | `39_few_shot_classify` | 少样本/迁移学习分类 | L3 | 可运行 | ✅ |
 | 40 | `40_detect_segment` | 语义分割/目标检测 | L3 | 可运行 | ✅ |
-| 41 | `41_unmixing` | 混合像元分解 | L3 | 骨架 | ✅ |
+| 41 | `41_unmixing` | 混合像元分解 | L3 | 可运行 | ✅ |
 | 42 | `42_anomaly_detect` | 异常检测 | L3 | 可运行 | ✅ |
-| 43 | `43_change_detect` | 多时相变化检测 | L3 | 骨架 | ✅ |
-| 44 | `44_postprocess_smooth` | 分类后处理平滑/小斑剔除 | L3→L4 | 骨架 | ✅ |
+| 43 | `43_change_detect` | 多时相变化检测 | L3 | 可运行 | ✅ |
+| 44 | `44_postprocess_smooth` | 分类后处理平滑/小斑剔除 | L3→L4 | 可运行 | ✅ |
 | 45 | `45_parcel_zonal_stats` | 地块汇总与专题统计 | L4 | 可运行 | ✅ |
 
 ## 逐项：算法介绍 + 调用命令
@@ -128,7 +128,7 @@
 - **一句话**：决定怎么飞才采得全
 - **algorithm_id**：`01_flight_planning`
 - **层级**：L0前
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -153,7 +153,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/01_flight_planning/run" \
 - **一句话**：多拍传感器时间对齐
 - **algorithm_id**：`02_sync_timestamp`
 - **层级**：L0
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -178,7 +178,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/02_sync_timestamp/run" \
 - **一句话**：算出位置和姿态
 - **algorithm_id**：`03_pos_solution`
 - **层级**：L0
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -203,7 +203,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/03_pos_solution/run" \
 - **一句话**：坏数据先拦下
 - **algorithm_id**：`04_flight_qc`
 - **层级**：L0
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -228,7 +228,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/04_flight_qc/run" \
 - **一句话**：遮挡区域打标
 - **algorithm_id**：`05_cloud_shadow`
 - **层级**：L0
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -253,7 +253,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/05_cloud_shadow/run" \
 - **一句话**：去本底噪声
 - **algorithm_id**：`06_dark_current`
 - **层级**：L0→L1
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -279,7 +279,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/06_dark_current/run" \
 - **一句话**：修传感器缺陷
 - **algorithm_id**：`07_bad_pixel`
 - **层级**：L0→L1
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -305,7 +305,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/07_bad_pixel/run" \
 - **一句话**：去推扫条纹
 - **algorithm_id**：`08_destriping`
 - **层级**：L0→L1
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -330,7 +330,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/08_destriping/run" \
 - **一句话**：修光谱几何畸变
 - **algorithm_id**：`09_smile_keystone`
 - **层级**：L0→L1
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -355,7 +355,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/09_smile_keystone/run" \
 - **一句话**：变成物理量
 - **algorithm_id**：`10_radiance_calibration`
 - **层级**：L0→L1
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -380,7 +380,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/10_radiance_calibration/run" \
 - **一句话**：不同架次亮度对齐
 - **algorithm_id**：`11_relative_radiometric`
 - **层级**：L1
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -431,7 +431,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/12_panel_reflectance/run" \
 - **一句话**：去大气影响（多用于星载）
 - **algorithm_id**：`13_atmospheric_correction`
 - **层级**：L1→L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -456,7 +456,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/13_atmospheric_correction/run" \
 - **一句话**：减弱观测角造成的明暗差
 - **algorithm_id**：`14_brdf_correction`
 - **层级**：L1→L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -481,7 +481,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/14_brdf_correction/run" \
 - **一句话**：像素落到大概坐标
 - **algorithm_id**：`15_geo_locate`
 - **层级**：L1→L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -507,7 +507,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/15_geo_locate/run" \
 - **一句话**：消地形与姿态畸变
 - **algorithm_id**：`16_orthorectify`
 - **层级**：L1→L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -533,7 +533,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/16_orthorectify/run" \
 - **一句话**：多航带拼成整景
 - **algorithm_id**：`17_mosaic`
 - **层级**：L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -559,7 +559,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/17_mosaic/run" \
 - **一句话**：拼接更自然
 - **algorithm_id**：`18_color_balance`
 - **层级**：L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -584,7 +584,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/18_color_balance/run" \
 - **一句话**：人看图、算法吃谱、按地块裁
 - **algorithm_id**：`19_multi_source_register`
 - **层级**：L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -710,7 +710,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/23_pca/run" \
 - **一句话**：选出最有用的波段
 - **algorithm_id**：`24_band_select`
 - **层级**：L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -736,7 +736,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/24_band_select/run" \
 - **一句话**：按斑块而非纯像素分析
 - **algorithm_id**：`25_superpixel`
 - **层级**：L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -761,7 +761,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/25_superpixel/run" \
 - **一句话**：切出训练推理小块
 - **algorithm_id**：`26_patch_build`
 - **层级**：L2
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -837,7 +837,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/28_ndre/run" \
 - **一句话**：抑大气或土壤背景
 - **algorithm_id**：`29_evi_savi`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -862,7 +862,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/29_evi_savi/run" \
 - **一句话**：水分与水体
 - **algorithm_id**：`30_ndmi_ndwi`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -887,7 +887,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/30_ndmi_ndwi/run" \
 - **一句话**：高光谱特色物候/胁迫特征
 - **algorithm_id**：`31_red_edge_params`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -912,7 +912,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/31_red_edge_params/run" \
 - **一句话**：叶绿素、氮等连续量
 - **algorithm_id**：`32_regression_inversion`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -938,7 +938,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/32_regression_inversion/run" \
 - **一句话**：机理法反演 LAI 等
 - **algorithm_id**：`33_physical_inversion`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -989,7 +989,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/34_svm_rf_classify/run" \
 - **一句话**：与光谱库比对识物
 - **algorithm_id**：`35_spectral_matching`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1015,7 +1015,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/35_spectral_matching/run" \
 - **一句话**：沿光谱深度学习
 - **algorithm_id**：`36_cnn1d_classify`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1041,7 +1041,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/36_cnn1d_classify/run" \
 - **一句话**：业界与论文主流分类
 - **algorithm_id**：`37_cnn3d_classify`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1067,7 +1067,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/37_cnn3d_classify/run" \
 - **一句话**：复杂场景高精度分类
 - **algorithm_id**：`38_transformer_classify`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1093,7 +1093,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/38_transformer_classify/run" \
 - **一句话**：标注少也能上线
 - **algorithm_id**：`39_few_shot_classify`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1160,7 +1160,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/40_detect_segment/run" \
 - **一句话**：像素内各类占比
 - **algorithm_id**：`41_unmixing`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1223,7 +1223,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/42_anomaly_detect/run" \
 - **一句话**：前后对比找变化
 - **algorithm_id**：`43_change_detect`
 - **层级**：L3
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1249,7 +1249,7 @@ curl -X POST "http://127.0.0.1:28800/api/v1/43_change_detect/run" \
 - **一句话**：图更好看更稳
 - **algorithm_id**：`44_postprocess_smooth`
 - **层级**：L3→L4
-- **状态**：骨架
+- **状态**：可运行
 
 | 项 | 内容 |
 |----|------|
@@ -1300,6 +1300,8 @@ curl -X POST "http://127.0.0.1:28800/api/v1/45_parcel_zonal_stats/run" \
 服务已启动后，在 `algorithm/source` 执行：
 
 ```bash
+./scripts/smoke_all_implemented.py
+# 或仅检查 HTTP 200：
 ./scripts/smoke_all_algorithms.sh
 ```
 
@@ -1307,9 +1309,8 @@ curl -X POST "http://127.0.0.1:28800/api/v1/45_parcel_zonal_stats/run" \
 
 | 状态 | 期望 |
 |------|------|
-| 可运行 | `success=true`，`data` 有统计/指标，`files` 含 `.tif` 等产物路径 |
-| 骨架 | 接口 200，正文标明未实现或 `implemented=false`；不应 500 |
+| 可运行 | `success=true`，`implemented=true`，`data` 有统计/指标，`files` 含产物路径 |
 
-可运行清单：`12_panel_reflectance`、`20_bad_band_remove`、`21_savgol_smooth`、`22_normalize`、`23_pca`、`27_ndvi`、`28_ndre`、`34_svm_rf_classify`、`40_detect_segment`、`42_anomaly_detect`、`45_parcel_zonal_stats`
+可运行清单：全部 45 项（`01_flight_planning` … `45_parcel_zonal_stats`）
 
-介绍来源：[采集到算法-算法清单.md](./采集到算法-算法清单.md)（同步生成于 2026-08-09 22:12）
+介绍来源：[采集到算法-算法清单.md](./采集到算法-算法清单.md)（同步生成于 2026-08-19 17:27）

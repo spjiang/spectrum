@@ -62,9 +62,16 @@ chmod +x scripts/start.sh
 
 ## 已实现（可运行）
 
-`12_panel_reflectance` · `20_bad_band_remove` · `21_savgol_smooth` · `22_normalize` · `23_pca` · `27_ndvi` · `28_ndre` · `34_svm_rf_classify` · `40_detect_segment` · `42_anomaly_detect` · `45_parcel_zonal_stats`
+清单 **45 项全部可运行**（`implemented: true`，均有 `files` 产物）。
 
-其余为骨架（`implemented: false`），接口形状一致，可在对应目录补 `service.py`。
+实现按业界方法：经验线/DOS2、Ross-Li、共线方程+DEM 正射、PROSAIL、FCLS/ACE、MNF、IR-MAD、HybridSN/SpectralFormer 等。不含 MODTRAN 与多视空三（需外部商业软件）。
+
+冒烟：
+
+```bash
+./scripts/start.sh
+python scripts/smoke_all_implemented.py
+```
 
 ## 测试数据（业界格式）
 

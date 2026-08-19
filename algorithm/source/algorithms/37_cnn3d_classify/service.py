@@ -1,4 +1,4 @@
-"""2D/3D-CNN 空谱分类：轻量 PyTorch 3D-CNN（PCA + patch），对齐小模型库思路。"""
+"""2D/3D-CNN 空谱分类：HybridSN（Roy et al. 2020）。"""
 from __future__ import annotations
 
 import json
@@ -83,7 +83,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="轻量 3D-CNN 空谱分类完成；输出分类 GeoTIFF；测试集给出 OA/AA/Kappa",
+        message="HybridSN（Roy 2020）空谱分类完成；测试集给出 OA/AA/Kappa",
         data={
             "oa": result["oa"],
             "aa": result["aa"],
@@ -93,10 +93,11 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
             "classes": result["classes"],
             "device": result["device"],
             "bands_after_pca": result["bands_after_pca"],
+            "architecture": result.get("architecture", "HybridSN"),
             "patch_size": patch_size,
             "epochs": epochs,
             "format": "GeoTIFF",
-            "backend": "PyTorch Tiny3DCNN（对齐 hyper-spectral-small-modes 空谱 CNN 思路）",
+            "backend": "PyTorch HybridSN",
         },
         files={"pred_map_tif": str(pred_path.resolve()), "preview_png": str(png_path.resolve())},
     )

@@ -1,8 +1,4 @@
-"""语义分割/目标检测（教学实现）：基于 NDVI 低值斑块检测病斑/胁迫候选区。
-
-输入多波段 GeoTIFF；可选 file2 GeoJSON（记录 AOI/标注，不强制）。
-输出：得分图、二值掩膜 GeoTIFF、斑块 GeoJSON、预览 PNG。
-"""
+"""语义分割/目标检测：ACE 自适应余弦估计（高光谱目标探测标准）。"""
 from __future__ import annotations
 
 import json
@@ -21,6 +17,7 @@ from common.io import (
     save_upload,
 )
 from common.response import err_response, ok_response
+from common.rs.target import ace_score, detect_mask
 
 ALGORITHM_ID = "40_detect_segment"
 TITLE = "语义分割/目标检测"
@@ -98,23 +95,17 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     red = cube[:, :, red_i]
     nir = cube[:, :, nir_i]
     ndvi = (nir - red) / (nir + red + 1e-12)
-    # 低 NDVI → 胁迫/病斑/裸土等候选；得分越高表示越异常偏低
     thr = float(np.percentile(ndvi, percentile))
-    score = np.clip(thr - ndvi, 0, None)
+    # 低 NDVI 像元均值作为胁迫目标光谱，再做 ACE（高光谱目标探测标准）
+    seed = ndvi <= thr
+    if int(seed.sum()) < 3:
+        seed = ndvi <= float(np.percentile(ndvi, min(percentile + 20, 50)))
+    target = cube[seed].mean(axis=0) if seed.any() else cube.reshape(-1, b).mean(axis=0)
+    from common.rs.target import ace_score, detect_mask
 
-    mask = ndvi <= thr
-    # 小图跳过强开运算，避免样例数据斑块被抹掉
-    if h >= 32 and w >= 32:
-        mask = ndi.binary_opening(mask, structure=np.ones((3, 3), dtype=bool))
-    else:
-        mask = ndi.binary_opening(mask, structure=np.ones((2, 2), dtype=bool))
-    labeled, n_raw = ndi.label(mask)
-    keep = np.zeros_like(mask)
-    for i in range(1, n_raw + 1):
-        area = int((labeled == i).sum())
-        if area >= min_pixels:
-            keep[labeled == i] = True
-    mask = keep
+    score = ace_score(cube, target)
+    ace_pct = float(params.get("ace_percentile", 90))
+    mask = detect_mask(score, percentile=ace_pct, min_pixels=min_pixels)
     labeled, n_obj = ndi.label(mask)
 
     transform = profile.get("transform") if profile else None
@@ -144,7 +135,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     save_geotiff(score.astype(np.float32), score_tif, profile=profile)
     save_geotiff(mask.astype(np.uint8), mask_tif, profile=profile)
     geojson_path.write_text(json.dumps(geojson, ensure_ascii=False, indent=2), encoding="utf-8")
-    save_preview_png(score, png_path, title="Detect score (low-NDVI)")
+    save_preview_png(score, png_path, title="ACE detect score")
 
     files.update(
         {
@@ -159,13 +150,14 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="已完成低 NDVI 斑块检测/分割（教学实现）；输出得分图、掩膜与斑块 GeoJSON",
+        message="ACE 目标探测完成（胁迫光谱为端元）",
         data={
-            "method": "ndvi_low_blob",
+            "method": "ACE",
             "red_band": red_i,
             "nir_band": nir_i,
-            "percentile": percentile,
+            "seed_ndvi_percentile": percentile,
             "threshold_ndvi": thr,
+            "ace_percentile": ace_pct,
             "min_pixels": min_pixels,
             "n_objects": int(n_obj),
             "n_positive_pixels": int(mask.sum()),

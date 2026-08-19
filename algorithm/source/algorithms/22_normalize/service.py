@@ -1,13 +1,13 @@
-"""标准化 / 归一化。输入/输出 GeoTIFF。"""
+"""标准化：Z-score / MinMax / SNV（光谱学生产预处理）。"""
 from __future__ import annotations
-
-import json
 
 import numpy as np
 from fastapi import UploadFile
 
+from common.impl import parse_params
 from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_upload
 from common.response import err_response, ok_response
+from common.rs.preprocess import l2_normalize, snv
 
 ALGORITHM_ID = "22_normalize"
 TITLE = "标准化/归一化"
@@ -16,13 +16,12 @@ LEVEL = "L2"
 
 
 async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
-    """params.method: zscore | minmax"""
-    try:
-        params = json.loads(params_json or "{}")
-    except json.JSONDecodeError:
-        return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message="params 不是合法 JSON")
-
-    method = str(params.get("method", "zscore")).lower()
+    """params.method: zscore | minmax | snv | l2"""
+    _ = file2
+    params, err = parse_params(params_json)
+    if err:
+        return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message=err)
+    method = str(params.get("method", "snv")).lower()
     job = new_job_dir(ALGORITHM_ID)
     path = await save_upload(file, job)
     arr, profile = load_raster(path)
@@ -31,18 +30,22 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         mn = cube.min(axis=(0, 1), keepdims=True)
         mx = cube.max(axis=(0, 1), keepdims=True)
         out_arr = (cube - mn) / (mx - mn + 1e-12)
-    else:
+    elif method == "zscore":
         mean = cube.mean(axis=(0, 1), keepdims=True)
         std = cube.std(axis=(0, 1), keepdims=True) + 1e-12
         out_arr = (cube - mean) / std
-        method = "zscore"
+    elif method == "l2":
+        out_arr = l2_normalize(cube)
+    else:
+        out_arr = snv(cube)
+        method = "snv"
     out = job / "cube_norm.tif"
     save_geotiff(out_arr.astype(np.float32), out, profile=profile)
     return ok_response(
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message=f"已完成 {method} 标准化，输出 GeoTIFF",
+        message=f"已完成 {method} 标准化",
         data={
             "method": method,
             "shape": list(out_arr.shape),

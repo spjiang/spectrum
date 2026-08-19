@@ -1,14 +1,12 @@
-"""PCA 降维。输入/输出 GeoTIFF。"""
+"""PCA / MNF 降维。默认 MNF（Green et al. 1988）。"""
 from __future__ import annotations
 
-import json
-
-import numpy as np
 from fastapi import UploadFile
-from sklearn.decomposition import PCA
 
+from common.impl import parse_params
 from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_upload
 from common.response import err_response, ok_response
+from common.rs.mnf import mnf_transform, pca_transform
 
 ALGORITHM_ID = "23_pca"
 TITLE = "PCA/MNF降维"
@@ -17,33 +15,29 @@ LEVEL = "L2"
 
 
 async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
-    """params.n_components: 主成分数，默认 3。"""
-    try:
-        params = json.loads(params_json or "{}")
-    except json.JSONDecodeError:
-        return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message="params 不是合法 JSON")
-
+    """params.method: mnf | pca；params.n_components 默认 3。"""
+    _ = file2
+    params, err = parse_params(params_json)
+    if err:
+        return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message=err)
     n = int(params.get("n_components", 3))
+    method = str(params.get("method", "mnf")).lower()
     job = new_job_dir(ALGORITHM_ID)
     path = await save_upload(file, job)
     arr, profile = load_raster(path)
-    cube = as_cube(arr.astype(np.float64))
-    h, w, b = cube.shape
-    n = max(1, min(n, b, h * w))
-    x = cube.reshape(-1, b)
-    pca = PCA(n_components=n)
-    z = pca.fit_transform(x).reshape(h, w, n).astype(np.float32)
-    out = job / "pca_cube.tif"
+    cube = as_cube(arr.astype(float))
+    if method == "pca":
+        z, meta = pca_transform(cube, n)
+    else:
+        z, meta = mnf_transform(cube, n)
+        method = "mnf"
+    out = job / f"{method}_cube.tif"
     save_geotiff(z, out, profile=profile)
     return ok_response(
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message=f"PCA 降维至 {n} 维，输出 GeoTIFF",
-        data={
-            "shape": list(z.shape),
-            "explained_variance_ratio": [float(v) for v in pca.explained_variance_ratio_],
-            "format": "GeoTIFF",
-        },
+        message=f"{method.upper()} 降维至 {z.shape[2]} 维",
+        data={**meta, "shape": list(z.shape), "format": "GeoTIFF"},
         files={"pca_tif": str(out.resolve())},
     )

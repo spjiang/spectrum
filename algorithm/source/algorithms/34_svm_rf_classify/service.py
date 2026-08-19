@@ -7,6 +7,7 @@ import numpy as np
 from fastapi import UploadFile
 from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 
 from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_preview_png, save_upload
@@ -45,6 +46,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
 
     test_size = float(params.get("test_size", 0.3))
     kernel = str(params.get("kernel", "rbf"))
+    model_name = str(params.get("model", "svm")).lower()
     job = new_job_dir(ALGORITHM_ID)
     cube_path = await save_upload(file, job)
     gt_path = await save_upload(file2, job)
@@ -68,7 +70,11 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     x_train, x_test, y_train, y_test = train_test_split(
         x, y, test_size=test_size, random_state=42, stratify=y if len(np.unique(y)) > 1 else None
     )
-    clf = SVC(kernel=kernel, gamma="scale")
+    if model_name == "rf":
+        clf = RandomForestClassifier(n_estimators=int(params.get("n_estimators", 200)), random_state=42, n_jobs=-1)
+    else:
+        clf = SVC(kernel=kernel, gamma="scale")
+        model_name = "svm"
     clf.fit(x_train, y_train)
     y_pred_test = clf.predict(x_test)
     oa = float(accuracy_score(y_test, y_pred_test))
@@ -88,7 +94,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="SVM 分类完成；输出分类 GeoTIFF；测试集给出 OA/AA/Kappa",
+        message=f"{model_name.upper()} 分类完成；输出分类 GeoTIFF；测试集给出 OA/AA/Kappa",
         data={
             "oa": oa,
             "aa": aa,
@@ -96,7 +102,8 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
             "n_train": int(len(y_train)),
             "n_test": int(len(y_test)),
             "classes": [int(c) for c in np.unique(y)],
-            "kernel": kernel,
+            "model": model_name,
+            "kernel": kernel if model_name == "svm" else None,
             "format": "GeoTIFF",
         },
         files={"pred_map_tif": str(pred_path.resolve()), "preview_png": str(png_path.resolve())},
