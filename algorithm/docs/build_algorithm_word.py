@@ -245,11 +245,11 @@ def build_diagrams(asset_dir: Path) -> dict[str, Path]:
     fig, ax = plt.subplots(figsize=(12, 5.6))
     ax.axis("off")
     layers = [
-        ("L0 原始采集", "DN帧 · POS · 日志\n#1–5", "#DCE6F1"),
-        ("L1 传感器产品", "辐亮度 · 初始定位\n#6–11", "#D9EAD3"),
-        ("L2 标准分析底图", "反射率正射Cube\n#12–26", "#FFF2CC"),
-        ("L3 信息产品", "指数 · 分类 · 检测\n#27–43", "#FCE5CD"),
-        ("L4 决策产品", "地块统计 · 告警\n#44–45", "#EADCF8"),
+        ("L0 采集质检", "DN帧 · POS · 日志\n#1–5", "#DCE6F1"),
+        ("L1 辐射校正", "辐亮度 · 初始定位\n#6–11", "#D9EAD3"),
+        ("L2 反射率、镶嵌与特征", "反射率正射Cube\n#12–26", "#FFF2CC"),
+        ("L3 指数与识别", "指数 · 分类 · 检测\n#27–43", "#FCE5CD"),
+        ("L4 地块汇总", "地块统计 · 告警\n#44–45", "#EADCF8"),
     ]
     for i, (title, desc, color) in enumerate(layers):
         x = 0.02 + i * 0.195
@@ -260,7 +260,7 @@ def build_diagrams(asset_dir: Path) -> dict[str, Path]:
         if i < 4:
             ax.annotate("", xy=(x + 0.193, 0.54), xytext=(x + 0.168, 0.54), arrowprops={"arrowstyle": "->", "lw": 2, "color": "#1F4E78"})
     ax.text(0.5, 0.88, "高光谱数据产品 L0–L4 全链路与 45 项算法分布", ha="center", fontsize=18, weight="bold", color="#1F4E78")
-    ax.text(0.5, 0.16, "原始计数 → 物理辐亮度 → 可分析的反射率立方体 → 信息提取 → 业务决策", ha="center", fontsize=12, color="#555555")
+    ax.text(0.5, 0.16, "采集质检 → 辐射校正 → 反射率与正射 → 指数与识别 → 地块汇总", ha="center", fontsize=12, color="#555555")
     assets["pipeline"] = save_figure(fig, asset_dir / "l0-l4-pipeline.png")
 
     # 服务封装架构
@@ -591,7 +591,7 @@ def build_document(items: list[dict[str, Any]], assets: dict[str, Path], output_
 
     add_heading(doc, "一、执行摘要", 1)
     doc.add_paragraph(
-        "本报告将高光谱数据从采集到业务决策划分为 L0–L4 五级产品，形成 45 项算法/工程能力清单，并以单进程 FastAPI 服务提供统一 HTTP 入口。"
+        "本报告将高光谱数据从采集到地块汇总划分为 L0–L4 五级，并与控制台九段菜单对齐，形成 45 项算法/工程能力清单，并以单进程 FastAPI 服务提供统一 HTTP 入口。"
         "根据 2026-08-09 最近一次自动测试记录，45/45 接口返回 HTTP 200 且 success=true；其中 12 项已有可运行实现并产出文件，33 项为统一契约骨架。"
     )
     p = doc.add_paragraph()
@@ -601,7 +601,7 @@ def build_document(items: list[dict[str, Any]], assets: dict[str, Path], output_
     add_key_value_table(
         doc,
         [
-            ("能力覆盖", "45 项，覆盖航前规划、传感器校正、L2 标准产品、L3 信息提取和 L4 业务交付"),
+            ("能力覆盖", "45 项，覆盖航线规划、采集质检、辐射校正、反射率与正射、镶嵌与特征、指数与识别、图斑整理和地块汇总"),
             ("当前实现", "12 项可运行；33 项骨架"),
             ("接口验证", "HTTP 200 = 45/45；success=true = 45/45；可运行项产出 files = 12/12"),
             ("服务定位", "当前适合培训、联调与能力地图；生产化需补鉴权、异步调度、监控、算法精度验收"),

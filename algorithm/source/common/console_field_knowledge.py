@@ -1,0 +1,855 @@
+"""控制台字段专业知识库：统一字段名称、选值方法、影响与风险。"""
+
+from __future__ import annotations
+
+from copy import deepcopy
+from typing import Any
+
+
+def _field(
+    label: str,
+    *,
+    unit: str = "—",
+    range_text: str = "由输入数据或算法实现决定",
+    default_reason: str = "示例值来自该算法内置 testdata，仅用于复现实例。",
+    selection_guide: str,
+    effect: str = "该字段改变会直接影响算法输入或计算结果。",
+    risk: str,
+    example: str = "",
+) -> dict[str, Any]:
+    return {
+        "label": label,
+        "unit": unit,
+        "range": range_text,
+        "defaultReason": default_reason,
+        "selectionGuide": selection_guide,
+        "effect": effect,
+        "risk": risk,
+        "example": example,
+    }
+
+
+COMMON: dict[str, dict[str, Any]] = {
+    "file": _field(
+        "主输入文件",
+        selection_guide=(
+            "选择与当前算法要求的数据级别、波段数、空间尺寸和坐标参考一致的主数据。"
+            "GeoTIFF 应保留有效仿射变换、坐标系、NoData 和波长元数据。"
+        ),
+        effect="主文件决定算法处理对象、可用波段和输出空间范围。",
+        risk=(
+            "数据级别错误（例如把 DN 当反射率）、波段顺序错误、坐标系缺失或 NoData 未声明，"
+            "会使结果失去物理意义或空间位置错误。"
+        ),
+    ),
+    "file2": _field(
+        "辅助输入文件",
+        selection_guide=(
+            "按当前算法要求选择与主文件配套的标签、暗帧、DEM、第二时相、端元库或地块矢量；"
+            "需要像元对应的数据必须与主文件尺寸、网格和坐标参考一致。"
+        ),
+        effect="辅助文件提供校正基准、监督信息、几何约束或对比时相。",
+        risk="辅助文件类型或空间对齐错误会引入系统偏差；即使程序能够运行，结果也可能不可解释。",
+    ),
+    "red_band": _field(
+        "红光波段索引",
+        unit="波段索引（从 0 开始）",
+        range_text="0 至波段数−1；推荐对应 620–680 nm",
+        selection_guide=(
+            "填写红光反射率在数组中的位置，索引从 0 开始，不是波长值；不能直接填写 660。"
+            "应读取影像 wavelength 元数据，选择最接近 620–680 nm 的有效波段。"
+        ),
+        effect="红光反射率越高，NDVI 等归一化植被指数通常越低。",
+        risk="误选红边或近红外会改变指数物理意义；示例默认索引不能照搬到其他传感器。",
+        example="若第 5 个波段中心波长为 660 nm，则填写 4。",
+    ),
+    "nir_band": _field(
+        "近红外波段索引",
+        unit="波段索引（从 0 开始）",
+        range_text="0 至波段数−1；植被应用通常对应 760–900 nm",
+        selection_guide=(
+            "填写近红外反射率在数组中的位置，索引从 0 开始，不是波长值。"
+            "应避开强水汽吸收区和传感器边缘低信噪比波段。"
+        ),
+        effect="健康植被近红外反射率较高，通常会提高 NDVI、NDRE 等指数。",
+        risk="选成红边、短波红外或低信噪比波段会造成指数偏差和噪声放大。",
+        example="若第 4 个波段中心波长为 800 nm，则填写 3。",
+    ),
+    "re_band": _field(
+        "红边波段索引",
+        unit="波段索引（从 0 开始）",
+        range_text="0 至波段数−1；推荐对应 700–740 nm",
+        selection_guide=(
+            "选择红光吸收谷向近红外高反射平台过渡区的波段，索引从 0 开始。"
+            "优先根据目标作物和传感器响应选择约 705、720 或 735 nm 波段。"
+        ),
+        effect="红边位置越靠长波，通常对高叶绿素和密冠层更敏感。",
+        risk="没有真实红边通道时，不应使用相邻红光或近红外索引替代。",
+    ),
+    "blue_band": _field(
+        "蓝光波段索引",
+        unit="波段索引（从 0 开始）",
+        range_text="0 至波段数−1；推荐对应 450–510 nm",
+        selection_guide="根据波长元数据选择蓝光有效波段，避开严重噪声和大气散射残差波段。",
+        effect="EVI 使用蓝光项抑制残余大气与背景影响，蓝光变化会明显影响分母。",
+        risk="蓝光辐射定标不稳定时，EVI 可能比 NDVI 更不稳定。",
+    ),
+    "green_band": _field(
+        "绿光波段索引",
+        unit="波段索引（从 0 开始）",
+        range_text="0 至波段数−1；推荐对应 520–600 nm",
+        selection_guide="根据波长元数据选择绿光反射峰附近的有效波段。",
+        effect="水体指数中绿光与近红外或短波红外的反差决定指数大小。",
+        risk="藻类、悬浮物、底质和太阳耀斑会改变绿光反射，不能只凭单一阈值判水。",
+    ),
+    "swir_band": _field(
+        "短波红外波段索引",
+        unit="波段索引（从 0 开始）",
+        range_text="0 至波段数−1；常用约 1.55–1.75 μm 或 2.1–2.3 μm",
+        selection_guide=(
+            "确认传感器确有短波红外通道，再按波长元数据选择目标吸收区附近且信噪比可靠的波段。"
+        ),
+        effect="叶片和水体含水量变化会显著改变短波红外反射率。",
+        risk="VNIR 传感器没有真实 SWIR 波段；用最后一个近红外波段替代会使 NDMI/MNDWI 无物理意义。",
+    ),
+    "cruise_speed_m_s": _field(
+        "巡航速度",
+        unit="m/s",
+        range_text="大于 0；应同时满足曝光、帧频和航向采样间距要求",
+        selection_guide="依据飞行平台安全速度、相机帧频、曝光时间和目标航向 GSD 联合确定。",
+        effect="速度增大可缩短航时，但会拉大航向采样间距并增加运动模糊风险。",
+        risk="速度过高会导致欠采样、条带间空隙或模糊；过低会增加航时和光照变化。",
+    ),
+    "max_saturated_ratio": _field(
+        "过曝比例告警阈值",
+        unit="比例（0–1）",
+        range_text="0–1",
+        selection_guide="根据位深满量程和业务容忍度设置；严格质检可降低阈值。",
+        effect="阈值降低会增加告警数量，阈值升高会放过更多局部过曝。",
+        risk="阈值不是传感器性能指标；未结合高亮目标类型时可能产生误报或漏报。",
+    ),
+    "gain": _field(
+        "辐射增益系数",
+        unit="辐亮度单位 / DN",
+        range_text="由实验室辐射定标报告逐波段给出",
+        selection_guide="使用与相机、积分时间、增益档位和定标日期匹配的逐波段系数。",
+        effect="输出辐亮度与增益近似成正比。",
+        risk="使用其他设备或其他曝光设置的增益会造成整波段尺度错误。",
+    ),
+    "offset": _field(
+        "辐射偏置系数",
+        unit="辐亮度单位",
+        range_text="由实验室辐射定标报告逐波段给出",
+        selection_guide="使用与 gain 同一套定标模型的偏置，确认公式是 gain×DN+offset。",
+        effect="偏置主要影响低信号区域和暗目标。",
+        risk="偏置符号、单位或定标模型不匹配会导致负辐亮度或暗部系统偏差。",
+    ),
+    "scale": _field(
+        "反射率缩放系数",
+        unit="无量纲",
+        range_text="大于 0；常见为 1、100 或 10000 的编码换算",
+        selection_guide="依据输入像元的反射率存储尺度选择，先核对元数据和样本数值范围。",
+        effect="该系数整体缩放输出反射率。",
+        risk="把 0–10000 编码误当 0–1 会使反射率和后续指数、反演全部失真。",
+    ),
+    "solar_zenith": _field(
+        "太阳天顶角",
+        unit="度（°）",
+        range_text="0–90；0 表示太阳位于天顶方向",
+        selection_guide="由采集时间、经纬度计算或从飞行元数据读取，使用影像采集时刻而非处理时刻。",
+        effect="角度改变会改变 BRDF 核值和照明校正幅度。",
+        risk="把太阳高度角直接当天顶角会产生互余角错误。",
+    ),
+    "view_zenith": _field(
+        "观测天顶角",
+        unit="度（°）",
+        range_text="通常 0–90；0 表示垂直下视",
+        selection_guide="依据传感器视线与局部天顶方向夹角设置；推扫边缘像元可具有不同观测角。",
+        effect="离轴角增大时方向反射差异通常更明显。",
+        risk="整景只用单一角度会忽略宽视场内部角度变化。",
+    ),
+    "drop_bands": _field(
+        "强制剔除波段列表",
+        unit="波段索引列表（从 0 开始）",
+        range_text="JSON 整数数组；每项为 0 至波段数−1",
+        selection_guide="填写已知坏波段、传感器边缘波段或强吸收区索引，并与自动 SNR 判定结果复核。",
+        effect="列表越长，保留特征越少但可减少明显噪声。",
+        risk="误删关键吸收或红边波段会损失分类、反演信息；索引不可写成波长。",
+    ),
+    "window_length": _field(
+        "SG 平滑窗口长度",
+        unit="波段数",
+        range_text="正奇数，且大于 polyorder、不得超过光谱波段数",
+        selection_guide="根据光谱采样间隔和希望保留的最窄吸收特征选择；高光谱分辨率可使用更宽窗口。",
+        effect="窗口增大可增强降噪，但会削弱窄吸收峰和红边斜率。",
+        risk="窗口过小降噪不足，过大会过度平滑；偶数或不满足阶数约束会运行失败。",
+    ),
+    "polyorder": _field(
+        "SG 多项式阶数",
+        unit="阶",
+        range_text="非负整数，且小于 window_length",
+        selection_guide="常用 2 或 3 阶；在样本有限时避免使用接近窗口长度的高阶。",
+        effect="阶数提高可拟合更复杂局部形状，也更容易保留噪声振荡。",
+        risk="阶数过高会过拟合噪声，且数值稳定性下降。",
+    ),
+    "method": _field(
+        "处理方法",
+        range_text="由当前算法下拉选项限定",
+        selection_guide="根据当前算法目标选择方法，并保持训练、推理和跨时相处理的一致性。",
+        effect="不同方法的尺度、统计假设和输出解释可能完全不同。",
+        risk="方法选择与下游模型预处理不一致会造成分布偏移。",
+    ),
+    "n_components": _field(
+        "保留成分数",
+        unit="个",
+        range_text="1 至原始波段数",
+        selection_guide="结合累计解释方差、噪声水平和下游任务验证结果选择，而非只追求更高维度。",
+        effect="成分增多可保留更多信息，同时增加噪声、存储和计算量。",
+        risk="过少会丢失小目标或窄吸收信息，过多会保留噪声并削弱降维意义。",
+    ),
+    "n_segments": _field(
+        "目标超像素数量",
+        unit="个",
+        range_text="正整数，且明显小于影像像元数",
+        selection_guide="根据目标对象的典型面积与空间分辨率估算，使超像素尺度小于主要地物对象。",
+        effect="数量增大产生更细对象，数量减小产生更大、更平滑对象。",
+        risk="过少会跨越真实边界，过多会退化为像元级碎片。",
+    ),
+    "patch_size": _field(
+        "邻域窗口边长",
+        unit="像元",
+        range_text="正奇数",
+        selection_guide="结合空间分辨率和目标尺寸选择，确保窗口中心与标签定义一致。",
+        effect="窗口增大可引入更多空间上下文，也增加混合像元和计算量。",
+        risk="窗口过大可能跨类别边界并造成标签污染；偶数窗口中心定义不明确。",
+    ),
+    "test_size": _field(
+        "测试集比例",
+        unit="比例（0–1）",
+        range_text="大于 0 且小于 1",
+        selection_guide="在保证每类测试样本足够的前提下设置；空间影像应优先按地块或区域划分。",
+        effect="比例增大可提高评估样本量，但减少训练数据。",
+        risk="像元随机划分会因空间自相关造成数据泄漏，使精度虚高。",
+    ),
+    "kernel": _field(
+        "SVM 核函数",
+        range_text="rbf 或 linear",
+        selection_guide="样本较少且关系非线性时可选 RBF；高维近线性且需可解释性时可比较 linear。",
+        effect="RBF 可形成非线性边界但需调参；linear 更简单、训练更快。",
+        risk="未标准化特征或未调节 RBF 参数时，分类边界可能由尺度主导。",
+    ),
+    "shots": _field(
+        "每类支持样本数",
+        unit="个/类",
+        range_text="正整数，且不超过该类可用标注数",
+        selection_guide="保证每类使用相同或明确记录的支持样本数，并多次随机重复评估。",
+        effect="样本数增加通常使类别原型更稳定。",
+        risk="只报告一次抽样结果会高估稳定性；异常样本会明显拉偏少样本原型。",
+    ),
+    "percentile": _field(
+        "百分位阈值",
+        unit="百分位（0–100）",
+        range_text="0–100",
+        selection_guide="依据得分方向和允许告警面积选择，必须结合当前影像分布与人工核查。",
+        effect="阈值变化会改变掩膜面积和误报/漏报平衡。",
+        risk="百分位是相对阈值，不同影像之间不能直接代表相同物理强度。",
+    ),
+    "min_pixels": _field(
+        "最小连通斑块像元数",
+        unit="像元",
+        range_text="正整数",
+        selection_guide="根据空间分辨率换算为最小可信目标面积，再确定像元数。",
+        effect="数值增大可抑制碎斑，但会删除更小目标。",
+        risk="未按 GSD 换算时，同一数值在不同影像上代表不同实际面积。",
+    ),
+    "mode": _field(
+        "统计数据模式",
+        range_text="continuous 或 categorical",
+        selection_guide="连续指数、反演量选择 continuous；离散分类标签选择 categorical。",
+        effect="模式决定输出均值分位数还是类别面积/比例等统计口径。",
+        risk="模式选错会得到没有业务意义的统计量，例如对类别编码求平均。",
+    ),
+    "roi": _field(
+        "像素窗口范围",
+        unit="像素坐标 [r0,r1,c0,c1]",
+        range_text="四个整数，满足 0≤r0<r1≤高、0≤c0<c1≤宽",
+        selection_guide="仅在没有地块矢量或需要快速试算时使用；范围采用前闭后开像素窗口。",
+        effect="ROI 决定参与统计的空间区域。",
+        risk="行列顺序、边界或坐标体系理解错误会统计到错误区域；有 GeoJSON 时应以矢量为主。",
+    ),
+}
+
+# 以下参数均由 service.py 的 params.get 实际调用反向核对，避免用空泛说明兜底。
+COMMON.update(
+    {
+        "L": _field(
+            "SAVI 土壤调节系数",
+            unit="无量纲",
+            range_text="0–1；高植被覆盖趋近 0，稀疏植被常取 0.5",
+            selection_guide="依据植被覆盖度和土壤背景亮度选取，并用地面样方验证指数稳定性。",
+            effect="L 增大可增强对土壤背景的抑制，同时改变 SAVI 数值尺度。",
+            risk="跨时相随意改变 L 会破坏指数可比性；密冠层使用过大值会降低敏感度。",
+            example="中等覆盖度地块可从 0.5 开始验证。",
+        ),
+        "ace_percentile": _field(
+            "ACE 目标得分阈值百分位",
+            unit="百分位（0–100）",
+            range_text="0–100；通常取分布高端",
+            selection_guide="结合目标漏检成本、背景误报率和人工核验样本选择上尾百分位。",
+            effect="提高百分位会减少候选目标，降低误报但增加弱目标漏检。",
+            risk="场景背景组成变化会改变百分位对应的绝对 ACE 得分，不能跨景机械复用。",
+            example="先以 90 百分位生成候选区，再用标注样本校核。",
+        ),
+        "alpha": _field(
+            "姿态互补滤波权重",
+            unit="无量纲",
+            range_text="0–1",
+            selection_guide="根据陀螺短期稳定性与加速度计低频可信度调节，并用静态段和转弯段验证。",
+            effect="数值增大时更依赖陀螺积分，减小时更快跟随加速度计修正。",
+            risk="过大易累积漂移，过小会把机动加速度误当重力并引入姿态抖动。",
+            example="小型无人机平稳航段可从 0.85 开始。",
+        ),
+        "alt_m": _field(
+            "相对航高",
+            unit="m",
+            range_text="大于 0，且符合空域、地形净空与任务许可",
+            selection_guide="根据目标 GSD、焦距、像元尺寸、地形起伏和安全净空联合确定。",
+            effect="航高增大会扩大覆盖范围并增大 GSD，降低地面细节分辨能力。",
+            risk="未区分相对航高、海拔和椭球高会造成航线规划或地理定位尺度错误。",
+            example="平坦区域可用 120 m 相对航高进行任务估算。",
+        ),
+        "batch_size": _field(
+            "训练批大小",
+            unit="样本/批",
+            range_text="正整数，受显存和样本数量限制",
+            selection_guide="在不触发显存溢出的前提下逐步增大，并同步检查学习稳定性和类别采样。",
+            effect="批量增大可提高吞吐并平滑梯度，但会增加显存占用。",
+            risk="批量过大可能降低泛化能力，过小则训练波动大且归一化统计不稳定。",
+            example="先以 64 测试显存和收敛情况。",
+        ),
+        "bit_depth": _field(
+            "传感器有效位深",
+            unit="bit",
+            range_text="正整数；常见 8、10、12、14 或 16",
+            selection_guide="读取相机采集配置中的有效位深，不应直接使用文件容器 dtype 位数。",
+            effect="位深决定饱和满量程，直接影响过曝像元判定。",
+            risk="把 12 bit 数据按 uint16 的 16 bit 判断会严重漏报过曝。",
+            example="12 bit 数据的理论满量程为 4095。",
+        ),
+        "bright_percentile": _field(
+            "参考板亮像元百分位",
+            unit="百分位（0–100）",
+            range_text="0–100；通常使用高百分位",
+            selection_guide="根据参考板 ROI 内阴影、污渍和高光比例选择，结合像元分布图确认。",
+            effect="提高百分位会更偏向最亮板面像元，并改变提取的入射辐亮度。",
+            risk="过高会选中镜面高光或饱和像元，过低会混入阴影和背景。",
+            example="均匀参考板可从 99 百分位开始。",
+        ),
+        "brightness": _field(
+            "Wallis 目标亮度",
+            unit="归一化亮度",
+            range_text="通常 0–1",
+            selection_guide="根据镶嵌整体目标均值和输入数据尺度设置，并保持各景一致。",
+            effect="数值增大会整体提高匀色结果的局部均值。",
+            risk="设置过高可能导致高亮区域饱和，过低会压暗阴影细节。",
+            example="归一化影像可从 0.5 开始。",
+        ),
+        "compactness": _field(
+            "SLIC 紧致度",
+            unit="无量纲",
+            range_text="大于 0",
+            selection_guide="纹理复杂或需贴合边界时取较小值，重视规则形状和空间连续性时取较大值。",
+            effect="增大紧致度会强化空间距离权重，使超像素更规则。",
+            risk="过大可能跨越光谱边界，过小会产生不规则碎片并对噪声敏感。",
+            example="可从 10 开始比较边界贴合度。",
+        ),
+        "contrast": _field(
+            "Wallis 对比度系数",
+            unit="无量纲",
+            range_text="通常 0–1",
+            selection_guide="根据接缝两侧局部标准差和目标纹理保真度选择。",
+            effect="数值增大会增强局部对比度和纹理，也会放大噪声。",
+            risk="过高会造成噪声、边缘光晕和不同景之间的过度拉伸。",
+            example="自然影像可从 0.8 开始。",
+        ),
+        "dark_percentile": _field(
+            "暗目标提取百分位",
+            unit="百分位（0–100）",
+            range_text="0–100；通常使用低百分位",
+            selection_guide="依据场景暗目标数量、阴影污染和噪声底选择，并检查逐波段暗值曲线。",
+            effect="百分位提高会纳入更多较亮像元，增加估计的路径辐射或暗基线。",
+            risk="场景缺少真实暗目标时，DOS 或参考板暗基线会产生系统偏差。",
+            example="可从最低 1 百分位估计暗目标。",
+        ),
+        "delta": _field(
+            "FCLS 和为一约束惩罚",
+            unit="无量纲",
+            range_text="大于 0",
+            selection_guide="根据端元条件数、噪声水平及丰度和偏差验证，逐级比较约束残差。",
+            effect="增大 delta 会更强地约束各端元丰度之和接近 1。",
+            risk="过大可能导致数值病态，过小则丰度和偏离 1、失去物理解释。",
+            example="可从 10 开始检查丰度和残差。",
+        ),
+        "doy": _field(
+            "年积日",
+            unit="天",
+            range_text="1–365；闰年可为 366",
+            selection_guide="由影像实际采集日期计算，跨时区任务应以采集地日期为准。",
+            effect="年积日影响日地距离校正和大气校正辐照度尺度。",
+            risk="使用处理日期或月份序号会引入季节性辐射尺度误差。",
+            example="6 月 29 日在平年约为第 180 天。",
+        ),
+        "epochs": _field(
+            "训练轮数",
+            unit="轮",
+            range_text="正整数",
+            selection_guide="结合独立验证集损失、早停曲线和重复实验确定，不以训练精度单独判断。",
+            effect="轮数增多可继续拟合训练数据，同时增加计算时间和过拟合风险。",
+            risk="轮数过少会欠拟合，过多会记忆训练样本并降低跨区域泛化。",
+            example="先运行 8 轮观察验证曲线。",
+        ),
+        "f_geo": _field(
+            "BRDF 几何散射核系数",
+            unit="反射率权重",
+            range_text="由多角度拟合或先验模型确定",
+            selection_guide="使用同地物类型、多角度观测拟合 Li-Sparse 几何核系数。",
+            effect="该系数控制冠层阴影和几何光学散射对方向反射的贡献。",
+            risk="借用不同地物或季节系数会造成过校正及视角残差反转。",
+            example="缺少拟合数据时可用 0.05 作敏感性试验。",
+        ),
+        "f_iso": _field(
+            "BRDF 各向同性项系数",
+            unit="反射率基线",
+            range_text="由多角度拟合或先验模型确定",
+            selection_guide="由同一地物的多角度观测与体散射、几何散射项联合回归。",
+            effect="该系数定义方向反射模型的基础反射率水平。",
+            risk="与 f_vol、f_geo 分开估计会产生参数耦合和不稳定解。",
+            example="可用 0.2 作无标定条件下的初始试验值。",
+        ),
+        "f_vol": _field(
+            "BRDF 体散射核系数",
+            unit="反射率权重",
+            range_text="由多角度拟合或先验模型确定",
+            selection_guide="使用 Ross-Thick 核与多角度反射率联合拟合，按波段或地物类型校准。",
+            effect="该系数控制冠层体散射随太阳和观测几何的变化幅度。",
+            risk="固定单一系数会忽略不同波段、冠层结构和物候的方向性差异。",
+            example="可用 0.1 作敏感性分析起点。",
+        ),
+        "focal_mm": _field(
+            "镜头焦距",
+            unit="mm",
+            range_text="大于 0",
+            selection_guide="使用任务实际镜头的标定焦距，优先采用相机内参报告而非镜头标称值。",
+            effect="焦距增大会缩小视场和 GSD，并改变几何投影尺度。",
+            risk="单位混淆或使用标称焦距会产生系统性位置与尺度误差。",
+            example="相机标定焦距为 8.03 mm 时填写 8.03。",
+        ),
+        "gsd_m": _field(
+            "地面采样距离",
+            unit="m/像元",
+            range_text="大于 0",
+            selection_guide="优先由航高、像元尺寸和标定焦距计算，已有正射产品则读取其仿射变换。",
+            effect="GSD 决定像元对应地面尺度和粗定位覆盖范围。",
+            risk="把厘米/像元直接当米/像元会导致百倍尺度错误。",
+            example="5 cm/像元应填写 0.05。",
+        ),
+        "inner": _field(
+            "局部 RX 内窗边长",
+            unit="像元",
+            range_text="正奇数，且小于 win",
+            selection_guide="按异常目标最大尺寸设置，使内窗覆盖目标并从背景协方差估计中排除。",
+            effect="内窗增大会排除更大中心区域，减少目标对背景统计的污染。",
+            risk="内窗过小会把目标混入背景，过大则有效背景样本不足。",
+            example="外窗 7 时可先使用内窗 3。",
+        ),
+        "k": _field(
+            "保留波段数量",
+            unit="个",
+            range_text="1 至原始波段数",
+            selection_guide="结合交叉验证性能、波段冗余、传感器可实现性和计算预算选择。",
+            effect="k 增大可保留更多信息，也会增加共线性、噪声和计算量。",
+            risk="只按单变量得分选取会忽略波段组合冗余和空间泄漏。",
+            example="先比较保留 3、5、10 个波段的验证表现。",
+        ),
+        "lat": _field(
+            "中心纬度",
+            unit="十进制度",
+            range_text="-90–90",
+            selection_guide="使用 WGS84 经度纬度坐标中的纬度，并核对坐标轴顺序。",
+            effect="纬度与经度共同决定粗定位输出的地理中心。",
+            risk="经纬颠倒、度分秒未转换或使用投影坐标会导致位置严重偏移。",
+            example="深圳区域可填写约 22.54。",
+        ),
+        "lever_e_m": _field(
+            "杆臂东向分量",
+            unit="m",
+            range_text="可正可负，符号遵循 ENU 坐标系",
+            selection_guide="由 GNSS 天线相位中心到成像中心的实测杆臂向量换算。",
+            effect="该分量修正姿态变化下的东西向传感器位置。",
+            risk="起终点方向、机体系到 ENU 变换或符号错误会造成系统定位偏差。",
+            example="成像中心位于天线东侧 0.10 m 时填写 0.10。",
+        ),
+        "lever_n_m": _field(
+            "杆臂北向分量",
+            unit="m",
+            range_text="可正可负，符号遵循 ENU 坐标系",
+            selection_guide="由 GNSS 天线相位中心到成像中心的实测杆臂向量换算。",
+            effect="该分量修正姿态变化下的南北向传感器位置。",
+            risk="将机头方向直接当北向会在航向变化时产生错误修正。",
+            example="成像中心位于天线北侧 0.05 m 时填写 0.05。",
+        ),
+        "lever_u_m": _field(
+            "杆臂天向分量",
+            unit="m",
+            range_text="可正可负，向上为正",
+            selection_guide="实测 GNSS 天线相位中心到成像中心的垂直距离并统一 ENU 符号。",
+            effect="该分量修正成像中心高度并影响投影尺度。",
+            risk="把向下距离填为正值会加倍垂直杆臂误差。",
+            example="成像中心低于天线 0.20 m 时填写 -0.20。",
+        ),
+        "lon": _field(
+            "中心经度",
+            unit="十进制度",
+            range_text="-180–180",
+            selection_guide="使用 WGS84 经度纬度坐标中的经度，并核对东西经符号。",
+            effect="经度与纬度共同决定粗定位输出的地理中心。",
+            risk="经纬颠倒、投影坐标误填或东西经符号错误会使影像落到错误区域。",
+            example="深圳区域可填写约 114.06。",
+        ),
+        "max_iter": _field(
+            "最大迭代次数",
+            unit="次",
+            range_text="正整数",
+            selection_guide="根据 IR-MAD 收敛曲线和处理时限设置，确认达到稳定而非只用固定轮数。",
+            effect="增加上限可改善慢收敛数据的解，同时增加计算时间。",
+            risk="过小会提前停止，过大不能修复配准或辐射不一致导致的不收敛。",
+            example="可从 15 次开始检查收敛。",
+        ),
+        "model": _field(
+            "监督分类器",
+            range_text="svm 或 rf",
+            selection_guide="小样本高维数据优先比较 SVM；非线性、混合特征和需特征重要性时比较随机森林。",
+            effect="模型选择改变决策边界、训练时间和输出概率特性。",
+            risk="不使用同一空间独立验证集比较会因数据泄漏得出错误模型结论。",
+            example="先以 svm 建立基线，再与 rf 对比。",
+        ),
+        "n_cols": _field(
+            "传感器横向像元数",
+            unit="像元",
+            range_text="正整数",
+            selection_guide="读取实际成像有效列数，裁边或 binning 后应使用处理后的尺寸。",
+            effect="列数与像元尺寸、焦距共同决定横向视场和航带宽度。",
+            risk="使用传感器标称全幅尺寸会在裁切数据上高估覆盖宽度。",
+            example="有效横向采样为 1024 像元时填写 1024。",
+        ),
+        "n_estimators": _field(
+            "随机森林树数量",
+            unit="棵",
+            range_text="正整数",
+            selection_guide="逐步增加树数，直到独立验证或袋外误差趋于稳定，并权衡推理成本。",
+            effect="树数增加通常降低方差并提高稳定性，同时增加内存和计算量。",
+            risk="更多树不能修复错标、类别不平衡或空间泄漏。",
+            example="可从 200 棵开始检查误差是否稳定。",
+        ),
+        "n_rows": _field(
+            "传感器纵向像元数",
+            unit="像元",
+            range_text="正整数",
+            selection_guide="读取实际成像有效行数，确认推扫方向和帧式相机定义。",
+            effect="行数参与纵向视场或任务覆盖尺度计算。",
+            risk="混淆影像行数与光谱波段数会得到错误覆盖范围。",
+            example="有效纵向采样为 1024 像元时填写 1024。",
+        ),
+        "overlap": _field(
+            "航向重叠率",
+            unit="比例（0–1）",
+            range_text="大于 0 且小于 1",
+            selection_guide="根据地形起伏、姿态稳定性、匹配纹理和正射要求设置，复杂地形适当提高。",
+            effect="提高重叠率会增加同地物观测次数、航线长度和数据量。",
+            risk="过低会造成匹配断裂和覆盖空洞；百分数 70 不可直接填写为 70。",
+            example="70% 航向重叠填写 0.7。",
+        ),
+        "panel_reflectance": _field(
+            "参考板标称反射率",
+            unit="无量纲反射率",
+            range_text="0–1；可为标量或逐波段数组",
+            selection_guide="使用参考板在当前波长范围内的校准证书值，逐波段曲线优先于单一标称值。",
+            effect="输出反射率与参考板反射率成比例。",
+            risk="把 60% 填成 60、忽略板面老化或使用不匹配波长曲线会造成尺度错误。",
+            example="均匀 60% 灰板填写 0.6。",
+        ),
+        "panel_roi": _field(
+            "参考板像素区域",
+            unit="像素窗口",
+            range_text="实现支持的 ROI 坐标序列；必须位于影像范围内",
+            selection_guide="圈定板面内部均匀区域，避开边缘、阴影、污渍、饱和点和背景像元。",
+            effect="ROI 决定用于经验线定标的参考板辐亮度样本。",
+            risk="混入背景或高光会把局部污染传播为整景反射率系统偏差。",
+            example="应按当前影像板面位置填写对应像素窗口。",
+        ),
+        "pca_components": _field(
+            "3D-CNN 前置 PCA 成分数",
+            unit="个",
+            range_text="1 至原始波段数",
+            selection_guide="依据累计解释方差、分类验证结果和网络输入尺寸选择，PCA 只在训练集拟合。",
+            effect="成分数控制空谱网络的光谱维度、显存占用和保留信息量。",
+            risk="全数据拟合 PCA 会泄漏测试信息；成分过少会丢失窄吸收特征。",
+            example="可先保留 8 个成分比较验证精度。",
+        ),
+        "pitch": _field(
+            "俯仰角",
+            unit="度（°）",
+            range_text="-180–180，符号按姿态系统约定",
+            selection_guide="读取曝光时刻插值后的姿态，并统一机体系、旋转顺序和正方向。",
+            effect="俯仰角改变沿航向投影位置与地面覆盖。",
+            risk="弧度度数混淆或旋转顺序错误会产生明显几何偏移。",
+            example="水平姿态可填写 0°。",
+        ),
+        "pixel_um": _field(
+            "像元物理尺寸",
+            unit="μm",
+            range_text="大于 0",
+            selection_guide="读取传感器规格或标定报告，若使用 binning 应乘以合并倍率。",
+            effect="像元尺寸与航高成正比影响 GSD，与焦距共同决定视场采样。",
+            risk="把毫米或米值直接填入微米字段会造成数量级错误。",
+            example="5.5 μm 像元填写 5.5。",
+        ),
+        "preprocess": _field(
+            "回归光谱预处理",
+            range_text="当前实现支持 snv",
+            selection_guide="训练和推理必须使用相同预处理；仅在散射变化明显且绝对尺度不是目标信息时使用 SNV。",
+            effect="SNV 会逐样本移除均值并按标准差缩放，改变绝对反射率尺度。",
+            risk="目标与绝对幅值相关时，SNV 可能删除有效信息。",
+            example="当前实现填写 snv。",
+        ),
+        "relative_azimuth": _field(
+            "相对方位角",
+            unit="度（°）",
+            range_text="通常 0–180；以实现约定为准",
+            selection_guide="由太阳方位角与传感器观测方位角计算，并归一到 BRDF 模型要求的范围。",
+            effect="相对方位改变体散射和几何散射核值。",
+            risk="直接相减后未处理 360° 周期或前后向散射约定会产生错误核值。",
+            example="太阳与观测方位相同可取 0°。",
+        ),
+        "roll": _field(
+            "横滚角",
+            unit="度（°）",
+            range_text="-180–180，符号按姿态系统约定",
+            selection_guide="读取曝光时刻姿态，核对右手系、机体轴定义和安装角校准。",
+            effect="横滚角主要改变跨航向投影位置和边缘视角。",
+            risk="符号反转会把几何偏移校正到相反方向。",
+            example="水平姿态可填写 0°。",
+        ),
+        "sidelap": _field(
+            "旁向重叠率",
+            unit="比例（0–1）",
+            range_text="大于 0 且小于 1",
+            selection_guide="依据地形、侧风、航迹控制误差和镶嵌匹配需求设置。",
+            effect="提高旁向重叠率会缩小航线间距并增加航线数量。",
+            risk="过低会因侧风或地形产生航带空洞；60% 应填写 0.6。",
+            example="60% 旁向重叠填写 0.6。",
+        ),
+        "snr_ratio": _field(
+            "相对中位 SNR 阈值",
+            unit="比例",
+            range_text="大于等于 0",
+            selection_guide="基于校准数据或代表性场景的逐波段 SNR 分布设置，并人工复核吸收区。",
+            effect="阈值提高会判定更多波段为坏波段。",
+            risk="场景纹理可能影响统计 SNR，单景自动阈值会误删真实低反射吸收特征。",
+            example="低于中位 SNR 的 0.4 倍可标记为候选坏波段。",
+        ),
+        "wavelengths_nm": _field(
+            "波段中心波长",
+            unit="nm",
+            range_text="长度等于光谱波段数的严格递增数值数组",
+            selection_guide="使用该传感器当前标定文件中的中心波长，并在裁波段后同步裁切数组。",
+            effect="波长数组决定大气吸收窗口、光谱重采样及物理模型的波段对应关系。",
+            risk="长度不符、单位为 μm 或波段顺序错位会使物理校正和特征解释错误。",
+            example="可填写 [450.0, 455.0, 460.0] 这类与波段一一对应的数组。",
+        ),
+        "win": _field(
+            "局部 RX 外窗边长",
+            unit="像元",
+            range_text="正奇数，且大于 inner",
+            selection_guide="按背景空间变化尺度设置，使窗口包含足够背景样本且不跨越大面积不同地物。",
+            effect="外窗增大可增加协方差样本，也降低对局部背景变化的适应性。",
+            risk="窗口过小会导致协方差不稳定，过大则混入异质背景。",
+            example="小目标检测可从 7 像元外窗开始。",
+        ),
+        "window": _field(
+            "空间处理窗口边长",
+            unit="像元",
+            range_text="正奇数",
+            selection_guide="根据算法对象尺寸和 GSD 换算；匀色窗口应覆盖局部亮度趋势，众数窗口应小于主要对象。",
+            effect="窗口增大可增强平滑或局部统计稳定性，但会削弱边缘和小目标。",
+            risk="偶数窗口中心不明确；过大会跨类别边界或产生局部光晕。",
+            example="可从 3 或 7 像元奇数窗口开始比较。",
+        ),
+        "wl_end_nm": _field(
+            "红边搜索终止波长",
+            unit="nm",
+            range_text="大于 wl_start_nm，且不超过传感器有效波长上限",
+            selection_guide="覆盖近红外平台并避开传感器边缘低信噪比区，结合目标植被波段范围设置。",
+            effect="终止波长决定红边拟合和导数搜索使用的长波边界。",
+            risk="范围过窄可能截断红边，过宽会引入无关吸收区和噪声。",
+            example="VNIR 数据可使用 850 nm。",
+        ),
+        "wl_start_nm": _field(
+            "红边搜索起始波长",
+            unit="nm",
+            range_text="位于传感器有效波长范围内，且小于 wl_end_nm",
+            selection_guide="覆盖红光吸收谷前的可见光基线，并避开传感器短波端低信噪比区。",
+            effect="起始波长决定红边特征计算纳入的短波范围。",
+            risk="起点过长会丢失吸收谷基线，过短会增加无关噪声。",
+            example="VNIR 数据可使用 450 nm。",
+        ),
+        "yaw": _field(
+            "航向角",
+            unit="度（°）",
+            range_text="按姿态系统约定为 0–360 或 -180–180",
+            selection_guide="读取曝光时刻航向并统一真北/磁北、顺逆时针和零方向定义。",
+            effect="航向角控制影像在水平面的旋转方向。",
+            risk="磁偏角、角度周期或旋转方向处理错误会使影像整体旋转偏移。",
+            example="正北为零的系统中向东飞行约为 90°。",
+        ),
+        "z_thr": _field(
+            "坏像元稳健 Z 分数阈值",
+            unit="标准差倍数",
+            range_text="大于 0；常用 3–8",
+            selection_guide="依据暗帧或均匀场坏点统计选择，并抽查被标记像元的空间持续性。",
+            effect="阈值降低会检出更多热/死像元，同时增加正常极值误报。",
+            risk="非均匀场景中的真实高反射目标可能被误判为坏像元。",
+            example="可从 6σ 开始。",
+        ),
+    }
+)
+
+
+ALGORITHM_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
+    (
+        "22_normalize",
+        "method",
+    ): _field(
+        "归一化方法",
+        range_text="snv、zscore、minmax 或 l2",
+        selection_guide=(
+            "SNV 适合逐像元去除乘性与加性散射；zscore 适合统一各波段统计尺度；"
+            "minmax 适合需要固定范围的模型；l2 适合比较光谱方向。"
+        ),
+        effect="方法会改变光谱幅值、均值和方差，必须与模型训练预处理一致。",
+        risk="错误方法可能消除有用的绝对反射率信息，或造成训练与推理分布不一致。",
+    ),
+    (
+        "40_detect_segment",
+        "percentile",
+    ): _field(
+        "植被候选阈值百分位",
+        unit="百分位（0–100）",
+        range_text="0–100",
+        selection_guide="当前实现按场景指数分布生成候选区；应结合目标覆盖率和人工样本校核。",
+        effect="阈值改变会改变进入后续 ACE 探测和分割的候选像元范围。",
+        risk="它不是跨场景固定 NDVI 阈值；背景组成变化会改变对应的实际指数值。",
+    ),
+    (
+        "42_anomaly_detect",
+        "percentile",
+    ): _field(
+        "异常得分告警百分位",
+        unit="百分位（0–100）",
+        range_text="0–100；通常使用高百分位",
+        selection_guide="根据允许误报率选择得分分布上尾阈值，并对高分目标进行人工或先验验证。",
+        effect="百分位提高会减少告警、降低误报，同时可能漏掉弱异常。",
+        risk="异常是相对背景的统计概念，高分不等于已知目标或真实故障。",
+    ),
+}
+
+
+FILE_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
+    ("06_dark_current", "file2"): _field(
+        "暗帧参考影像",
+        selection_guide="使用同设备、同增益、同积分时间和相近温度条件下遮光采集的暗帧。",
+        effect="暗帧决定被扣除的暗电流与固定图样背景。",
+        risk="曝光或温度不匹配会导致过校正、负值或残余列噪声。",
+    ),
+    ("11_relative_radiometric", "file2"): _field(
+        "辐射参考影像",
+        selection_guide="选择覆盖稳定地物且与主影像有足够重叠的参考景，优先使用辐射质量更高的一景。",
+        effect="参考影像定义相对归一后的直方图与亮度基准。",
+        risk="参考景存在云影、物候变化或真实地物变化时，会把差异错误归一掉。",
+    ),
+    ("16_orthorectify", "file2"): _field(
+        "数字高程模型（DEM）",
+        unit="高程单位通常为米",
+        selection_guide="使用覆盖完整、坐标系与垂直基准明确、分辨率与目标精度匹配的 DEM。",
+        effect="DEM 控制地形起伏引起的位移校正。",
+        risk="水平或垂直基准不一致、空洞和过粗分辨率会造成正射位置偏差。",
+    ),
+    ("19_multi_source_register", "file2"): _field(
+        "待配准辅助影像",
+        selection_guide="选择与主高光谱影像有共同覆盖、相近时相且存在可匹配结构的 RGB 或其他源影像。",
+        effect="辅助影像被变换到主影像的空间参考。",
+        risk="尺度、旋转、投影或地物变化超出当前平移模型能力时，亚像元平移不能完成可靠配准。",
+    ),
+    ("32_regression_inversion", "file2"): _field(
+        "连续真值栅格",
+        selection_guide="使用与主立方体同网格、同时间尺度且单位明确的叶绿素、氮含量等连续真值。",
+        effect="真值定义回归目标、数值单位和可学习范围。",
+        risk="尺寸错位、时间不同步或空间泄漏会造成虚高精度和错误反演。",
+    ),
+    ("34_svm_rf_classify", "file2"): _field(
+        "训练标签栅格",
+        selection_guide="标签应与主影像像元严格对齐，0 作为背景，正整数表示稳定且有定义的类别。",
+        effect="标签决定监督分类器学习的类别边界。",
+        risk="错位、错标、类别不平衡和空间随机划分会显著高估或破坏分类性能。",
+    ),
+    ("35_spectral_matching", "file2"): _field(
+        "端元光谱库",
+        selection_guide="端元应与影像使用相同波长采样、反射率尺度和预处理，必要时先做光谱重采样。",
+        effect="端元库定义可匹配的已知类别。",
+        risk="波长错位、单位不同或库中缺少真实类别时，硬分类仍会把像元强制归入某一端元。",
+    ),
+    ("43_change_detect", "file2"): _field(
+        "第二时相影像",
+        selection_guide="选择与第一时相同传感器或已完成辐射归一、波段一致和亚像元配准的影像。",
+        effect="两时相差异共同决定变化分量和变化幅度。",
+        risk="配准误差、光照差异和物候差异会被误判为真实变化。",
+    ),
+    ("45_parcel_zonal_stats", "file2"): _field(
+        "地块边界 GeoJSON",
+        selection_guide="使用有效闭合多边形，坐标系应能与栅格正确转换，并包含稳定的地块标识字段。",
+        effect="多边形决定每个分区参与统计的像元集合。",
+        risk="无效几何、坐标系错误、小于像元的地块或边界像元规则不清会造成面积和均值偏差。",
+    ),
+}
+
+
+def get_field_detail(
+    algorithm_id: str,
+    key: str,
+    value: object = None,
+    *,
+    default_source: str | None = None,
+) -> dict[str, Any]:
+    """返回字段的专业解释；算法专属定义优先于通用定义。"""
+    detail = deepcopy(COMMON.get(key, {}))
+    if key in {"file", "file2"}:
+        detail.update(deepcopy(FILE_OVERRIDES.get((algorithm_id, key), {})))
+    detail.update(deepcopy(ALGORITHM_OVERRIDES.get((algorithm_id, key), {})))
+
+    if not detail:
+        detail = _field(
+            key,
+            selection_guide="依据当前算法说明、数据单位和业务目标选择，并记录实际取值。",
+            risk="缺少业务依据或超出算法支持范围会使结果不可复现或难以解释。",
+        )
+
+    if default_source == "service":
+        detail["defaultReason"] = (
+            "默认值来自 service.py 的实际执行逻辑；更换传感器、场景或业务目标时需重新验证。"
+            if value is not None
+            else "service.py 未提供可静态求值的常量默认值，运行前应依据数据元信息显式设置。"
+        )
+    detail["default"] = value
+    if value is not None and not detail.get("example"):
+        detail["example"] = str(value)
+    return detail

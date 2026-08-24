@@ -1,0 +1,68 @@
+<h2>选择输出说明的页面布局</h2>
+<p class="subtitle">以 NDVI 为例，比较运行前学习与运行后效果解读的组织方式。点击选择你更认可的布局。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f6f8f5">
+      <div style="font-size:12px;color:#647067;margin-bottom:8px">运行前 · 主要输出</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:white;border:1px solid #dbe2db;border-radius:8px;padding:10px">
+          <strong>NDVI 定量图</strong><small style="display:block;color:#657166">GeoTIFF · 无量纲 · −1～1</small>
+          <p style="font-size:11px;margin:7px 0 0">效果：高值通常表现为健康植被，低值多为裸土、水体或阴影。</p>
+        </div>
+        <div style="background:white;border:1px solid #dbe2db;border-radius:8px;padding:10px">
+          <strong>预览图</strong><small style="display:block;color:#657166">PNG · 仅供快速检查</small>
+          <p style="font-size:11px;margin:7px 0 0">效果：快速查看冠层连续性与异常斑块，不用于定量分析。</p>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#647067;margin:14px 0 8px">运行后 · 实际结果 + 对应解读</div>
+      <div style="display:grid;grid-template-columns:42% 1fr;gap:8px;background:white;border:1px solid #dbe2db;border-radius:8px;padding:10px">
+        <div class="placeholder" style="min-height:92px">NDVI 结果图</div>
+        <div style="font-size:11px">
+          <strong>本次效果</strong>
+          <p>均值 0.63，主体区域连续；未见大面积 NaN。</p>
+          <span style="color:#26734d">质量判断：结果范围合理</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · 前后呼应卡片（推荐）</h3>
+      <p>运行前先认识每项产物，运行后在图旁显示本次指标、效果和质量判断。学习路径最清晰。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f6f8f5">
+      <div style="background:white;border:1px solid #dbe2db;border-radius:8px;padding:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>预期输出：2 个文件、4 个核心指标</strong>
+          <button class="mock-button">查看说明</button>
+        </div>
+      </div>
+      <div class="placeholder" style="min-height:120px;margin-top:10px">运行结果可视化</div>
+      <div style="margin-top:8px;background:#eef5ef;border-radius:8px;padding:10px;font-size:11px">
+        NDVI 均值 0.63 · 范围 −0.12～0.91 · 质量正常
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 紧凑摘要 + 抽屉</h3>
+      <p>主页面更简洁，详细说明集中在抽屉；适合熟练用户，但领导和学习者需要额外点击。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f6f8f5">
+      <div class="mock-nav">文件产物　|　核心指标　|　质量检查　|　下游应用</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">
+        <div class="placeholder" style="min-height:84px">产物结构</div>
+        <div class="placeholder" style="min-height:84px">效果解释</div>
+        <div class="placeholder" style="min-height:84px">质检规则</div>
+      </div>
+      <div class="placeholder" style="min-height:62px;margin-top:8px">实际结果</div>
+    </div>
+    <div class="card-body">
+      <h3>C · 专家分析工作台</h3>
+      <p>信息最完整，以标签页组织输出结构、指标和质检；专业性强，但页面学习成本与开发复杂度最高。</p>
+    </div>
+  </div>
+</div>

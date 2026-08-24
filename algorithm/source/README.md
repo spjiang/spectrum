@@ -38,7 +38,11 @@ chmod +x scripts/start.sh
 
 - 文档：http://127.0.0.1:28800/docs  
 - 算法列表：http://127.0.0.1:28800/api/v1/algorithms  
+- 控制台 API：http://127.0.0.1:28800/api/v1/console/algorithms  
+- 可视化前端（独立 Vite）：`../web`，开发页 http://127.0.0.1:5173（proxy `/api` → 28800）  
 - 端口可在 `common/config.py` 的 `APP_PORT` 修改  
+
+给领导演示时开两个进程：`./scripts/start.sh`（28800）+ `cd ../web && npm run dev`（5173）。
 
 ## 接口约定
 
