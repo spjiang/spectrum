@@ -25,6 +25,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import * as echarts from "echarts";
 import L from "leaflet";
 import { fetchJson, fetchRasterMeta, fetchSpectrum, fetchText } from "../api";
+import { rasterClickToCell } from "../rasterClick";
 import type { TestdataHttp } from "../types";
 
 const props = defineProps<{
@@ -239,12 +240,22 @@ async function onClickRaster(ev: MouseEvent) {
   const img = imgEl.value;
   if (!img) return;
   const rect = img.getBoundingClientRect();
-  const x = (ev.clientX - rect.left) / rect.width;
-  const y = (ev.clientY - rect.top) / rect.height;
   try {
     const meta = await fetchRasterMeta(props.asset.url);
-    const col = Math.min(meta.width - 1, Math.max(0, Math.floor(x * meta.width)));
-    const row = Math.min(meta.height - 1, Math.max(0, Math.floor(y * meta.height)));
+    const cell = rasterClickToCell(
+      ev.clientX,
+      ev.clientY,
+      { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      img.naturalWidth,
+      img.naturalHeight,
+      meta.width,
+      meta.height,
+    );
+    if (!cell) {
+      spectrumHint.value = `数据立方体 ${meta.width}×${meta.height}×${meta.bands}。请点彩色格子，不要点两侧黑边。`;
+      return;
+    }
+    const { row, col } = cell;
     const spec = await fetchSpectrum(props.asset.url, row, col);
     spectrumReady.value = true;
     await nextTick();

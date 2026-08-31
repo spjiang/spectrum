@@ -82,24 +82,10 @@
         @click="openDrawer('json')"
       >
         {{ result.success ? "执行成功" : "执行失败" }} · {{ result.message }}
-        <span class="status-more">查看返回数据</span>
+        <span class="status-more">查看原始接口返回</span>
       </button>
 
-      <div class="compare single">
-        <div>
-          <VisPanel
-            v-for="item in outputAssets"
-            :key="item.key"
-            :title="`输出 · ${item.asset.name}`"
-            :asset="item.asset"
-            :algorithm-id="algo.id"
-          />
-          <div v-if="!outputAssets.length" class="vis-box">
-            <h5>输出结果</h5>
-            <div class="empty">尚未执行。加载示例或选择文件后点击「执行」，结果将在此展示。</div>
-          </div>
-        </div>
-      </div>
+      <OutputWorkbench :algo="algo" :result="result" />
     </div>
     </template>
     <Teleport to="body">
@@ -125,7 +111,7 @@
             :disabled="!result"
             @click="drawerTab = 'json'"
           >
-            返回数据
+            原始接口返回
           </button>
         </nav>
         <div class="drawer-body">
@@ -174,7 +160,14 @@
               </details>
             </article>
           </div>
-          <pre v-else class="data">{{ JSON.stringify(result?.data || {}, null, 2) }}</pre>
+          <div v-else class="workbench-api-drawer">
+            <p class="kicker">原始接口返回</p>
+            <p class="workbench-hint">仅含算法服务信封：success、algorithm_id、algorithm、implemented、message、data、files。</p>
+            <pre class="data">{{ JSON.stringify(originalApiPayload(result), null, 2) }}</pre>
+            <p class="kicker">控制台派生字段</p>
+            <p class="workbench-hint">files_http 与 job_id 由控制台附加，用于预览，不是算法原始返回。</p>
+            <pre class="data">{{ JSON.stringify({ job_id: result?.job_id ?? null, files_http: result?.files_http ?? {} }, null, 2) }}</pre>
+          </div>
         </div>
       </aside>
     </Teleport>
@@ -185,8 +178,8 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import VisPanel from "../components/VisPanel.vue";
 import RunForm from "../components/RunForm.vue";
+import OutputWorkbench from "../components/OutputWorkbench.vue";
 import PrinciplePanel from "../components/PrinciplePanel.vue";
 import ProductPanel from "../components/ProductPanel.vue";
 import AbbrGlossary from "../components/AbbrGlossary.vue";
@@ -195,6 +188,7 @@ import { getAlgorithm } from "../api";
 import { groupTitle } from "../levels";
 import { termsForAlgorithm } from "../glossary";
 import { getPrinciple } from "../principles";
+import { originalApiPayload } from "../outputWorkbench";
 import type { AlgorithmCard, FieldRow, RunResult } from "../types";
 
 const props = defineProps<{ id: string }>();
@@ -247,11 +241,6 @@ const headTerms = computed(() => {
   const a = algo.value;
   if (!a) return [];
   return termsForAlgorithm(a.id, a.title, a.method, a.purpose);
-});
-
-const outputAssets = computed(() => {
-  const http = result.value?.files_http || {};
-  return Object.entries(http).map(([key, asset]) => ({ key, asset }));
 });
 
 function onRunResult(value: RunResult) {

@@ -8,6 +8,7 @@ from pathlib import Path
 from common.catalog import ALGORITHMS
 from common.config import SOURCE_ROOT
 from common.console_field_knowledge import get_field_detail
+from common.console_output_knowledge import get_algorithm_output_knowledge
 from common.console_params import (
     get_service_param_type,
     get_service_params,
@@ -207,6 +208,19 @@ OUTPUT_VIS = {
     "ranking_json": ("json_table", "波段得分排序"),
     "manifest_json": ("json_table", "Patch 清单"),
     "patches_npz": ("png", "样本立方体（配合预览图）"),
+}
+
+FRONTEND_VIS_KINDS = {
+    "raster_falsecolor",
+    "raster_index",
+    "raster_class",
+    "geojson_map",
+    "csv_track",
+    "csv_spectrum",
+    "csv_table",
+    "json_table",
+    "png",
+    "none",
 }
 
 
@@ -480,30 +494,62 @@ def _output_fields(algorithm_id: str, doc_output: str) -> list[dict]:
         "44_postprocess_smooth": ["labels_tif", "preview_png"],
         "45_parcel_zonal_stats": ["report_json", "parcel_geojson"],
     }.get(algorithm_id, [])
+    knowledge = get_algorithm_output_knowledge(algorithm_id)
+    known_outputs = knowledge.get("outputs", {})
     rows = []
     for k in keys:
         vis, desc = OUTPUT_VIS.get(k, ("none", k))
+        path = f"files.{k}"
+        detail = known_outputs.get(path)
+        if detail:
+            # 算法专属知识必须覆盖旧的格式级泛化说明。
+            detail_vis = detail.get("vis")
+            rows.append(
+                {
+                    "name": path,
+                    "type": "file",
+                    **detail,
+                    "vis": detail_vis if detail_vis in FRONTEND_VIS_KINDS else vis,
+                    "selectionGuide": detail["interpretation"],
+                    "knowledgeSource": "algorithm",
+                }
+            )
+            continue
+        fallback = _output_detail(desc, vis)
         rows.append(
             {
-                "name": f"files.{k}",
+                "name": path,
                 "type": "file",
                 "description": desc,
                 "vis": vis,
-                **_output_detail(desc, vis),
+                **fallback,
+                "effect": desc,
+                "businessMeaning": fallback["downstreamUse"],
+                "interpretation": _output_selection_guide(desc, vis),
+                "abnormalSigns": ["缺少算法专属输出知识，需人工核对产物。"],
+                "misuseWarning": "当前仅有格式级回退说明，不得据此作专业结论。",
                 "selectionGuide": _output_selection_guide(desc, vis),
+                "knowledgeSource": "fallback",
             }
         )
-    data_description = doc_output or "统计量与方法元数据（见本次响应）"
-    rows.append(
-        {
-            "name": "data",
-            "type": "object",
-            "description": data_description,
-            "vis": "json_table",
-            **_output_detail("结构化结果数据", "json_table"),
-            "selectionGuide": _output_selection_guide(data_description, "json_table"),
-        }
-    )
+    for path, detail in known_outputs.items():
+        if not path.startswith("data."):
+            continue
+        rows.append(
+            {
+                "name": path,
+                "type": "value",
+                **detail,
+                # data 的抽象知识类型不直接传给前端可视化分发器。
+                "vis": (
+                    detail.get("vis")
+                    if detail.get("vis") in FRONTEND_VIS_KINDS
+                    else "none"
+                ),
+                "selectionGuide": detail["interpretation"],
+                "knowledgeSource": "algorithm",
+            }
+        )
     return rows
 
 
@@ -511,6 +557,7 @@ def build_item(meta: dict, doc: dict) -> dict:
     """组装单个算法的控制台元数据。"""
     aid = meta["id"]
     td = _testdata_block(aid)
+    output_knowledge = get_algorithm_output_knowledge(aid)
     return {
         "id": aid,
         "title": meta["title"],
@@ -521,6 +568,7 @@ def build_item(meta: dict, doc: dict) -> dict:
         "scenario": doc.get("scenario", ""),
         "doc_input": doc.get("doc_input", ""),
         "doc_output": doc.get("doc_output", ""),
+        "output_summary": output_knowledge.get("summary", {}),
         "method": METHODS.get(aid, ""),
         "endpoint": f"POST /api/v1/{aid}/run",
         "console_run": f"POST /api/v1/console/run/{aid}",

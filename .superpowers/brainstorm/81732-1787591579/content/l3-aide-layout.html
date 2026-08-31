@@ -1,0 +1,78 @@
+<h2>L3 AI 参谋 · 独立站点布局</h2>
+<p class="subtitle">站点会落在仓库 <code>ai-web/</code>，单独打开，不占用 45 算法控制台。默认场景：密植水稻 · MAX-S810 · 要不要补氮。点选一种领导演示时更好用的排法。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#eef3f6">
+      <div style="background:#102428;color:#e8eef1;border-radius:8px 8px 0 0;padding:10px 12px;display:flex;justify-content:space-between;font-size:11px">
+        <strong>中达瑞和 × AI 团队</strong>
+        <span style="opacity:.7">L3 参谋 · 长势链</span>
+      </div>
+      <div style="background:#fff;padding:10px 12px;font-size:11px;border:1px solid #dce5ec;border-top:0">
+        <div style="color:#5b6878">① 问题</div>
+        <strong>密植水稻要不要补氮？</strong>
+        <div style="margin-top:8px;color:#5b6878">② 选型</div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <span style="background:#c7ebe6;padding:3px 7px;border-radius:999px">主：NDRE</span>
+          <span style="background:#f4f7f9;padding:3px 7px;border-radius:999px">对照：NDVI</span>
+          <span style="opacity:.55;padding:3px 7px">不上 SAVI</span>
+        </div>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div class="placeholder" style="min-height:64px">NDRE 图 + 解读</div>
+          <div class="placeholder" style="min-height:64px">NDVI 对照：易饱和</div>
+        </div>
+        <div style="margin-top:8px;background:#eef5ef;border-radius:8px;padding:8px">
+          <strong>④ 建议</strong>
+          <p style="margin:4px 0 0">按 NDRE 分区关注；不是施肥处方。定量需化验与 L4。</p>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · 一页四段故事（推荐）</h3>
+      <p>领导和资本方从上往下听完：问题、为什么选 NDRE、图怎么读、建议说到哪一层。演示不用翻页，AI 多出来的那段一眼能指到。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#eef3f6">
+      <div style="background:#102428;color:#e8eef1;border-radius:8px 8px 0 0;padding:10px 12px;font-size:11px">中达瑞和 × AI 团队</div>
+      <div style="display:grid;grid-template-columns:38% 1fr;background:#fff;border:1px solid #dce5ec;border-top:0;min-height:210px">
+        <div style="padding:10px;border-right:1px solid #dce5ec;font-size:11px">
+          <div style="color:#5b6878">场景</div>
+          <p style="margin:4px 0 10px"><strong>密植水稻 · MAX</strong><br>问：要不要补氮</p>
+          <div style="color:#5b6878">选型</div>
+          <p style="margin:4px 0">主 NDRE · 对照 NDVI</p>
+        </div>
+        <div style="padding:10px;font-size:11px">
+          <div style="background:#114e4b;color:#f4fbfa;border-radius:8px;padding:8px;margin-bottom:8px">
+            <strong>建议（始终可见）</strong>
+            <p style="margin:4px 0 0;opacity:.9">分区关注，不是处方</p>
+          </div>
+          <div class="placeholder" style="min-height:88px">指数图 + 质量解读</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 左场景、右结论置顶</h3>
+      <p>建议永远在右上，适合强调「AI 能拍板到哪一步」。故事顺序被拆开，现场讲解要来回指。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#eef3f6">
+      <div style="background:#102428;color:#e8eef1;border-radius:8px 8px 0 0;padding:10px 12px;font-size:11px">步骤 2 / 4 · 选型</div>
+      <div style="background:#fff;padding:12px;border:1px solid #dce5ec;border-top:0;font-size:11px">
+        <div style="display:flex;gap:8px;margin-bottom:10px;color:#5b6878">
+          <span>1 问题</span><strong style="color:#114e4b">2 选型</strong><span>3 出图</span><span>4 建议</span>
+        </div>
+        <p>密冠层：主跑 NDRE，用 NDVI 做对照。</p>
+        <div class="placeholder" style="min-height:72px;margin:8px 0">当前步骤内容</div>
+        <button class="mock-button">下一步</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · 四步向导</h3>
+      <p>每屏只做一件事，开发最简单。领导看不到整条链，现场要连点四次，叙事容易断。</p>
+    </div>
+  </div>
+</div>

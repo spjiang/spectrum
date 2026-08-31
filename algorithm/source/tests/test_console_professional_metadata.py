@@ -2,12 +2,90 @@
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 import unittest
 
 from common import console_params, console_router
 from common.console_catalog import get_console_algorithm, list_console_algorithms
 from common.console_params import get_service_params
+
+FRONTEND_VIS_KINDS = {
+    "raster_falsecolor",
+    "raster_index",
+    "raster_class",
+    "geojson_map",
+    "csv_track",
+    "csv_spectrum",
+    "csv_table",
+    "json_table",
+    "png",
+    "none",
+}
+
+
+def _dict_constant_keys(node: ast.AST) -> set[str]:
+    """提取字典常量中的字符串键。"""
+    if not isinstance(node, ast.Dict):
+        return set()
+    return {
+        key.value
+        for key in node.keys
+        if isinstance(key, ast.Constant) and isinstance(key.value, str)
+    }
+
+
+def _extract_ok_response_file_keys(source: str) -> set[str]:
+    """静态提取 ok_response 的直接或变量形式 files 键。"""
+    tree = ast.parse(source)
+    keys: set[str] = set()
+    file_variables: set[str] = set()
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        function_name = (
+            node.func.id
+            if isinstance(node.func, ast.Name)
+            else node.func.attr
+            if isinstance(node.func, ast.Attribute)
+            else ""
+        )
+        if function_name != "ok_response":
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != "files":
+                continue
+            keys.update(_dict_constant_keys(keyword.value))
+            if isinstance(keyword.value, ast.Name):
+                file_variables.add(keyword.value.id)
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            value = node.value
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id in file_variables:
+                    keys.update(_dict_constant_keys(value))
+                if (
+                    isinstance(target, ast.Subscript)
+                    and isinstance(target.value, ast.Name)
+                    and target.value.id in file_variables
+                    and isinstance(target.slice, ast.Constant)
+                    and isinstance(target.slice.value, str)
+                ):
+                    keys.add(target.slice.value)
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        owner = node.func.value
+        if (
+            node.func.attr == "update"
+            and isinstance(owner, ast.Name)
+            and owner.id in file_variables
+            and node.args
+        ):
+            keys.update(_dict_constant_keys(node.args[0]))
+    return keys
 
 
 class ConsoleProfessionalMetadataTests(unittest.TestCase):
@@ -20,6 +98,19 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
         "effect",
         "risk",
         "example",
+    }
+    REQUIRED_OUTPUT_DETAILS = {
+        "label",
+        "description",
+        "effect",
+        "businessMeaning",
+        "interpretation",
+        "qualityCheck",
+        "abnormalSigns",
+        "downstreamUse",
+        "misuseWarning",
+        "selectionGuide",
+        "knowledgeSource",
     }
 
     def test_all_algorithms_expose_professional_field_metadata(self) -> None:
@@ -183,11 +274,83 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
 
     def test_every_output_explains_interpretation_and_quality_check(self) -> None:
         for item in list_console_algorithms():
+            self.assertEqual(
+                {"what", "value", "caution"},
+                set(item["output_summary"]),
+                item["id"],
+            )
             for row in item["fields"]["outputs"]:
                 with self.subTest(algorithm_id=item["id"], field=row["name"]):
-                    self.assertTrue(row.get("selectionGuide"))
-                    self.assertTrue(row.get("qualityCheck"))
-                    self.assertTrue(row.get("downstreamUse"))
+                    self.assertTrue(self.REQUIRED_OUTPUT_DETAILS <= row.keys())
+                    self.assertEqual("algorithm", row["knowledgeSource"])
+                    for detail_key in self.REQUIRED_OUTPUT_DETAILS - {
+                        "abnormalSigns"
+                    }:
+                        self.assertTrue(row[detail_key], detail_key)
+                    self.assertTrue(row["abnormalSigns"])
+
+    def test_all_output_vis_values_match_frontend_contract(self) -> None:
+        """防止知识库抽象 vis 泄漏到前端，并保留文件产物的正确预览类型。"""
+        items = list_console_algorithms()
+        rows = [
+            (item["id"], row)
+            for item in items
+            for row in item["fields"]["outputs"]
+        ]
+        self.assertEqual(305, len(rows))
+        for algorithm_id, row in rows:
+            with self.subTest(algorithm_id=algorithm_id, path=row["name"]):
+                self.assertIn(row["vis"], FRONTEND_VIS_KINDS)
+
+        expected_file_vis = {
+            ("01_flight_planning", "files.waypoints_geojson"): "geojson_map",
+            ("03_pos_solution", "files.pos_csv"): "csv_track",
+            ("05_cloud_shadow", "files.cloud_mask_tif"): "raster_class",
+            ("06_dark_current", "files.cube_tif"): "raster_falsecolor",
+            ("27_ndvi", "files.ndvi_tif"): "raster_index",
+            ("34_svm_rf_classify", "files.pred_map_tif"): "raster_class",
+            ("45_parcel_zonal_stats", "files.report_json"): "json_table",
+        }
+        catalog_rows = {
+            (item["id"], row["name"]): row
+            for item in items
+            for row in item["fields"]["outputs"]
+        }
+        for key, expected_vis in expected_file_vis.items():
+            with self.subTest(algorithm_id=key[0], path=key[1]):
+                self.assertEqual(expected_vis, catalog_rows[key]["vis"])
+
+    def test_service_file_key_extractor_handles_variable_and_conditional_append(self) -> None:
+        """证明 AST 提取器覆盖变量初始化、条件追加及批量更新。"""
+        source = """
+def run(include_optional):
+    files: dict[str, str] = {"base": "base.tif"}
+    if include_optional:
+        files["optional"] = "optional.geojson"
+    files.update({"preview": "preview.png"})
+    return ok_response(files=files)
+"""
+        self.assertEqual(
+            {"base", "optional", "preview"},
+            _extract_ok_response_file_keys(source),
+        )
+
+    def test_catalog_file_keys_match_service_ok_response(self) -> None:
+        """防止 service 新增或重命名文件键后 catalog 骨架未同步。"""
+        source_root = Path(__file__).parents[1]
+        for item in list_console_algorithms():
+            algorithm_id = item["id"]
+            service_path = source_root / "algorithms" / algorithm_id / "service.py"
+            service_keys = _extract_ok_response_file_keys(
+                service_path.read_text(encoding="utf-8")
+            )
+            catalog_keys = {
+                row["name"].removeprefix("files.")
+                for row in item["fields"]["outputs"]
+                if row["name"].startswith("files.")
+            }
+            with self.subTest(algorithm_id=algorithm_id):
+                self.assertEqual(service_keys, catalog_keys)
 
     def test_parameter_controls_have_accessible_names(self) -> None:
         component = (
@@ -209,6 +372,40 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
             '<button\n        v-if="result"\n        class="status-line"',
             component,
         )
+
+    def test_run_page_uses_accessible_output_workbench(self) -> None:
+        view = (
+            Path(__file__).parents[2] / "web" / "src" / "views" / "AlgoView.vue"
+        ).read_text(encoding="utf-8")
+        workbench = (
+            Path(__file__).parents[2]
+            / "web"
+            / "src"
+            / "components"
+            / "OutputWorkbench.vue"
+        ).read_text(encoding="utf-8")
+        self.assertIn('<OutputWorkbench :algo="algo" :result="result" />', view)
+        self.assertNotIn("outputAssets", view)
+        for label in ("原始返回", "字段解读", "综合分析"):
+            self.assertIn(label, workbench)
+        self.assertNotIn('label: "文件产物"', workbench)
+        self.assertIn("原始接口返回", workbench)
+        self.assertIn("知识库说明", workbench)
+        self.assertIn("flattenApiFields", workbench)
+        self.assertIn("originalApiPayload", workbench)
+        self.assertIn('role="tablist"', workbench)
+        self.assertIn('role="tab"', workbench)
+        self.assertIn('role="tabpanel"', workbench)
+        self.assertIn(":aria-selected", workbench)
+        self.assertIn("resolveOutputValue", workbench)
+        self.assertIn("output_summary", workbench)
+
+    def test_result_drawer_shows_original_api_envelope(self) -> None:
+        view = (
+            Path(__file__).parents[2] / "web" / "src" / "views" / "AlgoView.vue"
+        ).read_text(encoding="utf-8")
+        self.assertIn("originalApiPayload(result)", view)
+        self.assertNotIn("JSON.stringify(result?.data || {}, null, 2)", view)
 
 
 if __name__ == "__main__":

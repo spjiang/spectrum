@@ -16,20 +16,27 @@ if str(ROOT) not in sys.path:
 from common.catalog import ALGORITHMS  # noqa: E402
 from common.config import APP_HOST, APP_PORT, OUTPUT_DIR  # noqa: E402
 from common.console_router import router as console_router  # noqa: E402
+from common.l3_aide.router import router as l3_aide_router  # noqa: E402
 
 app = FastAPI(
     title="高光谱算法服务",
     description=(
         "单服务聚合业界算法清单（45 项）。"
         "每个算法独立目录；统一 POST /api/v1/{algorithm_id}/run ；"
-        "可视化控制台 API 位于 /api/v1/console/* 。"
+        "可视化控制台 API 位于 /api/v1/console/* ；"
+        "L3 AI 参谋位于 /api/v1/l3-aide/* 。"
     ),
     version="0.3.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:5174",
+        "http://localhost:5174",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,6 +57,7 @@ def _register_algorithms() -> None:
 
 _register_algorithms()
 app.include_router(console_router)
+app.include_router(l3_aide_router)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount(
     "/api/v1/console/outputs",

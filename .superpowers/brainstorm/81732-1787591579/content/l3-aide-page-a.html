@@ -1,0 +1,71 @@
+<h2>四段页面里具体放什么</h2>
+<p class="subtitle">这是 <code>ai-web/</code> 领导演示页的完成态。看叙事是否讲得通：硬件会算指数，AI 决定用哪个、怎么读、建议说到哪一层。若整体没问题，回「可以」。</p>
+
+<div class="mockup">
+  <div class="mockup-header">Preview: ai-web · L3 参谋</div>
+  <div class="mockup-body" style="padding:0;background:#f4f7f9;font-size:13px;line-height:1.45">
+    <div style="background:#102428;color:#e8eef1;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px">
+      <div>
+        <div style="font-size:11px;letter-spacing:.12em;opacity:.65">中达瑞和 × AI 团队</div>
+        <div style="font-size:18px;font-weight:650;margin-top:2px">L3 参谋 · 长势与氮素</div>
+      </div>
+      <div style="font-size:11px;opacity:.7;text-align:right">独立站点 · 不算图，只选型、解读、建议<br>分类 / 水质同一编排器，本期不接</div>
+    </div>
+
+    <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <section style="background:#fff;border:1px solid #dce5ec;border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;color:#1a7c75;letter-spacing:.08em">① 问题</div>
+        <h3 style="margin:4px 0 8px;font-size:16px">密植水稻，MAX-S810 刚采完，要不要补氮？</h3>
+        <p style="margin:0;color:#5b6878">作物：水稻 · 冠层：密植封垄 · 相机：MAX-S810（7 通道，含 720/750 nm 红边）· 任务：氮素辅助判断</p>
+        <p style="margin:8px 0 0;font-size:12px;color:#5b6878">对方机载已经会出 NDVI/NDRE。本页要证明的是：AI 团队决定「这场用哪个」，并挡住误用。</p>
+      </section>
+
+      <section style="background:#fff;border:1px solid #dce5ec;border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;color:#1a7c75;letter-spacing:.08em">② 选型 · 规则权威，大模型只写理由</div>
+        <h3 style="margin:4px 0 10px;font-size:16px">密冠层主看 NDRE，NDVI 只做对照</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div style="background:#e8f6f3;border:1px solid #9ad4cc;border-radius:8px;padding:10px">
+            <strong>主跑 28 NDRE</strong>
+            <p style="margin:6px 0 0;font-size:12px">红边对叶绿素更敏感，封垄后不易饱和。MAX 的 720/750 就是为这条准备的。</p>
+          </div>
+          <div style="background:#f4f7f9;border:1px solid #dce5ec;border-radius:8px;padding:10px">
+            <strong>对照 27 NDVI</strong>
+            <p style="margin:6px 0 0;font-size:12px">用来当面指出：密冠层 NDVI 容易顶满，不能单独当补氮依据。</p>
+          </div>
+          <div style="background:#fff;border:1px dashed #b8c5d0;border-radius:8px;padding:10px;color:#5b6878">
+            <strong>不跑 29 SAVI/EVI</strong>
+            <p style="margin:6px 0 0;font-size:12px">土壤背景不重。苗期稀疏才上 SAVI；分类/水质换插件，不在本链。</p>
+          </div>
+        </div>
+      </section>
+
+      <section style="background:#fff;border:1px solid #dce5ec;border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;color:#1a7c75;letter-spacing:.08em">③ 出图解释 · 调用现有算法 API，原始影像不进大模型</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+          <div>
+            <div class="placeholder" style="min-height:110px">NDRE 专题图</div>
+            <p style="margin:8px 0 0"><strong>均值 0.28 · 范围 0.06～0.41</strong></p>
+            <p style="margin:4px 0 0;font-size:12px">质量：落在红边指数合理区间。低值斑块优先当「相对弱区」看，不能换算成公斤/亩。</p>
+            <p style="margin:4px 0 0;color:#0f7a56;font-size:12px">判断：可作为分区关注的主图</p>
+          </div>
+          <div>
+            <div class="placeholder" style="min-height:110px">NDVI 对照图</div>
+            <p style="margin:8px 0 0"><strong>均值 0.71 · 高值区接近饱和</strong></p>
+            <p style="margin:4px 0 0;font-size:12px">同景 NDVI 偏高且空间反差弱，说明封垄后绿度指数不够用。这就是硬件「会出 NDVI」仍不够的原因。</p>
+            <p style="margin:4px 0 0;color:#c2410c;font-size:12px">判断：本场景不能当补氮主依据</p>
+          </div>
+        </div>
+      </section>
+
+      <section style="background:#114e4b;color:#f4fbfa;border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;letter-spacing:.08em;opacity:.8">④ 建议 · 辅助，不是处方</div>
+        <h3 style="margin:4px 0 8px;font-size:16px;color:#fff">按 NDRE 低值区做分区巡田；本次不给施肥剂量</h3>
+        <ul style="margin:0;padding-left:18px;font-size:13px">
+          <li>主依据是 NDRE 相对空间格局，不是 NDVI，也不是机载实时绿度一条数。</li>
+          <li>建议停留在「哪里先看、哪里可能更弱」。没有地面化验，不输出公斤/亩。</li>
+          <li>要亩均报表和告警，下一层接 L4 地块汇总（45），本期演示只点到这里。</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
