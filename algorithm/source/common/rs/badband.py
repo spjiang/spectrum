@@ -1,4 +1,4 @@
-"""坏波段自动检测：SNR + 大气吸收窗口。"""
+"""坏波段自动检测：场景像元均值/标准差比 + 大气吸收窗口。"""
 from __future__ import annotations
 
 import numpy as np
@@ -33,8 +33,8 @@ def auto_drop_bands(
     snr_ratio: float = 0.4,
 ) -> tuple[list[int], list[int], dict]:
     """
-    剔除：手动指定 ∪ 低 SNR ∪ 吸收带。
-    至少保留 2 个最高 SNR 波段。
+    剔除：手动指定 ∪ 低场景像元均值/标准差比 ∪ 吸收带。
+    至少保留 2 个比值最高的波段。
     返回 (drop, keep, meta)。
     """
     b = cube.shape[2]

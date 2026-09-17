@@ -1,4 +1,4 @@
-# testdata · 少样本/迁移学习分类
+# testdata · SAM均值原型少样本分类
 
 Cube + 标签 GeoTIFF。
 

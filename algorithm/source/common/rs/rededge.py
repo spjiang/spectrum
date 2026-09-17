@@ -1,4 +1,4 @@
-"""红边位置：Guyot 线性内插（Guyot & Baret 1991）+ SG 一阶导数峰值。"""
+"""红边位置：Guyot 线性内插（Guyot & Baret 1988）+ SG 一阶导数峰值。"""
 from __future__ import annotations
 
 import numpy as np
@@ -36,7 +36,7 @@ def guyot_rep(cube: np.ndarray, wavelength_nm: np.ndarray | None = None) -> tupl
 
 
 def derivative_rep(cube: np.ndarray, wavelength_nm: np.ndarray | None = None) -> np.ndarray:
-    """SG 一阶导数在 680–750 nm 的峰值波长。"""
+    """SG 一阶导数在半开窗口 [680, 760) nm 的峰值波长。"""
     b = cube.shape[2]
     wl = np.asarray(wavelength_nm) if wavelength_nm is not None else default_wavelengths(b)
     win = min(b if b % 2 == 1 else b - 1, 5)

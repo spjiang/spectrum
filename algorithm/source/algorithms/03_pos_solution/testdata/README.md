@@ -1,4 +1,4 @@
-# testdata · POS解算（GPS+IMU）
+# testdata · POS轨迹平滑与杠杆臂校正
 
 GPS/IMU 轨迹 CSV（POS 常用落盘形态之一）。
 

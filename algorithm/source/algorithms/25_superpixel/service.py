@@ -1,4 +1,4 @@
-"""超像素：SLIC（Achanta 2012，业界面向对象分割标准实现）。"""
+"""超像素：在前三个原始光谱波段上运行 SLIC。"""
 from __future__ import annotations
 
 from fastapi import UploadFile
@@ -15,7 +15,7 @@ LEVEL = "L2"
 
 
 async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
-    """在前三主成分（或前三波段）上运行 SLIC。"""
+    """在前三原始波段上运行 SLIC，不把光谱特征转换为 Lab。"""
     _ = file2
     params, err = parse_params(params_json)
     if err:
@@ -40,6 +40,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         compactness=compactness,
         start_label=1,
         channel_axis=-1,
+        convert2lab=False,
     ).astype("int32")
     tif = job / "superpixel_labels.tif"
     png = job / "superpixel_preview.png"

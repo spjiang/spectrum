@@ -1,6 +1,6 @@
 <template>
   <div class="story">
-    <p class="story-one">一句话：无人机把地飞一遍，后面的人把「看不懂的数字」变成「这块地长势如何」。</p>
+    <p class="story-one">业务链路：航线采集 → 辐射与几何校正 → 指数/分类制图 → 地块分区统计。</p>
 
     <div class="story-strip">
       <button type="button" class="scene" @click="go('01_flight_planning')">
@@ -17,9 +17,9 @@
           <circle cx="128" cy="48" r="3" fill="var(--viz-warm)" />
           <line x1="140" y1="52" x2="148" y2="78" stroke="var(--ink-soft)" stroke-width="1" />
         </svg>
-        <em>1. 飞</em>
-        <strong>按航线把地扫完</strong>
-        <span>飞手关心：有没有漏飞、姿态能不能对上图。</span>
+        <em>1. 采集</em>
+        <strong>按航线完成测区覆盖</strong>
+        <span>检查航带覆盖、重叠度与姿态是否满足后续几何定位。</span>
       </button>
 
       <button type="button" class="scene" @click="go('10_radiance_calibration')">
@@ -36,7 +36,7 @@
           <g transform="translate(176,36)">
             <rect width="76" height="72" fill="#d4ece8" stroke="var(--forest-2)" />
             <rect x="10" y="14" width="56" height="44" fill="#7fa37a" />
-            <text x="6" y="92" fill="var(--forest-2)" font-size="11">变成「光有多强」</text>
+            <text x="6" y="92" fill="var(--forest-2)" font-size="11">辐亮度</text>
           </g>
           <defs>
             <marker id="bizArr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
@@ -44,9 +44,9 @@
             </marker>
           </defs>
         </svg>
-        <em>2. 校</em>
-        <strong>把仪器数字校正成物理量</strong>
-        <span>处理关心：暗电流、定标、正射。否则后面指数是假的。</span>
+        <em>2. 校正</em>
+        <strong>将仪器计数转换为物理量</strong>
+        <span>暗电流、辐射定标与正射未完成时，指数不可定量使用。</span>
       </button>
 
       <button type="button" class="scene" @click="go('27_ndvi')">
@@ -60,9 +60,9 @@
           <circle cx="218" cy="74" r="6" fill="var(--paper)" />
           <path d="M200 92 Q210 100 220 92" stroke="var(--gold-soft)" fill="none" />
         </svg>
-        <em>3. 看图</em>
-        <strong>从底图里抽出「长势 / 类别」</strong>
-        <span>分析师做 L3：绿是旺、黄是弱，或哪块是作物。</span>
+        <em>3. 制图</em>
+        <strong>由反射率立方体生成指数或分类图</strong>
+        <span>L3 输出植被指数、分类或其他专题图。</span>
       </button>
 
       <button type="button" class="scene" @click="go('45_parcel_zonal_stats')">
@@ -76,14 +76,14 @@
           <rect x="154" y="48" width="80" height="64" fill="#d4ece8" stroke="var(--forest-2)" />
           <path d="M162 88 L186 56 L206 96 L226 70" fill="none" stroke="var(--forest-2)" />
         </svg>
-        <em>4. 出表</em>
-        <strong>按田块给出领导能用的数</strong>
-        <span>客户不问立方体，只问「3 号田平均 NDVI 多少」。</span>
+        <em>4. 统计</em>
+        <strong>按地块输出分区统计</strong>
+        <span>将栅格结果汇总为地块均值等统计量，供业务系统引用。</span>
       </button>
     </div>
 
     <p class="story-foot">
-      点任意一格进入代表算法。L3 的 17 项都发生在第 3 格「看图」——前面没校准，这里再精也没用。
+      点击任一环节进入代表算法。L3 指数与识别位于制图环节；上游辐射与几何处理未完成时，指数与分类结果不可定量使用。
     </p>
   </div>
 </template>

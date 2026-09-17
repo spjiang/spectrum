@@ -6,17 +6,53 @@ import type {
   TestdataHttp,
 } from "./types";
 
-/** 质量状态与界面文案分离，禁止把 unknown 写成“通过” */
+/** 质量状态与界面文案分离；unknown 表示未设自动门槛，不是合格 */
 export const OUTPUT_STATUS_LABEL: Record<OutputStatus, string> = {
-  pass: "通过",
-  attention: "需关注",
-  unknown: "不可判定",
+  pass: "符合门槛",
+  attention: "超出门槛",
+  unknown: "未设门槛",
   "not-produced": "未产生",
 };
 
 /** 返回质量状态对应中文标签 */
 export function statusLabel(status: OutputStatus): string {
   return OUTPUT_STATUS_LABEL[status];
+}
+
+/** 把可计算规则写成对照式 */
+export function formatQualityThreshold(rule: OutputQualityRule): string {
+  switch (rule.kind) {
+    case "between":
+      if (rule.min === undefined || rule.max === undefined) return rule.basis;
+      return `${rule.min}～${rule.max}`;
+    case "min":
+      return rule.min === undefined ? rule.basis : `≥ ${rule.min}`;
+    case "max":
+      return rule.max === undefined ? rule.basis : `≤ ${rule.max}`;
+    case "equals":
+      return rule.value === undefined ? rule.basis : `= ${String(rule.value)}`;
+    default:
+      return rule.basis;
+  }
+}
+
+/** 说明本次状态是对照哪条门槛得出的 */
+export function statusExplain(status: OutputStatus, row?: OutputFieldRow): string {
+  const rule = row?.qualityRule;
+  const threshold = rule ? formatQualityThreshold(rule) : "";
+  const basis = rule?.basis ? `（${rule.basis}）` : "";
+  switch (status) {
+    case "pass":
+      return threshold ? `落在登记门槛 ${threshold} 内${basis}` : "落在已登记的可计算门槛内。";
+    case "attention":
+      return threshold ? `未落在登记门槛 ${threshold} 内${basis}` : "未落在已登记的可计算门槛内。";
+    case "unknown":
+      return "没有可机器执行的统一门槛，不能自动判合格或不合格。";
+    case "not-produced":
+      return row?.conditional
+        ? `本次未写出该字段：${row.conditional}`
+        : "本次运行未返回该字段。";
+  }
 }
 
 /** 判断值是否视为“未产生/未绑定” */
@@ -280,13 +316,63 @@ function flattenRecord(
   }
 }
 
+export type ApiFieldGroupId = "status" | "data" | "files";
+
+export type ApiFieldGroup = {
+  id: ApiFieldGroupId;
+  label: string;
+  fields: FlattenedApiField[];
+};
+
+const API_FIELD_GROUP_LABEL: Record<ApiFieldGroupId, string> = {
+  status: "调用状态",
+  data: "计算结果",
+  files: "产物文件",
+};
+
+/** 将扁平字段分成调用状态、计算结果、产物文件三组 */
+export function groupApiFields(fields: FlattenedApiField[]): ApiFieldGroup[] {
+  const buckets: Record<ApiFieldGroupId, FlattenedApiField[]> = {
+    status: [],
+    data: [],
+    files: [],
+  };
+  for (const field of fields) {
+    if (field.path === "data" || field.path.startsWith("data.")) buckets.data.push(field);
+    else if (field.path === "files" || field.path.startsWith("files.")) buckets.files.push(field);
+    else buckets.status.push(field);
+  }
+  return (["status", "data", "files"] as const)
+    .filter((id) => buckets[id].length > 0)
+    .map((id) => ({ id, label: API_FIELD_GROUP_LABEL[id], fields: buckets[id] }));
+}
+
+/** 标量在表格内联显示；对象、数组和多行文本用代码块 */
+export function isInlineApiValue(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (typeof value === "boolean" || typeof value === "number") return true;
+  if (typeof value === "string") return !value.includes("\n");
+  return false;
+}
+
+/** 结构体与多行文本的可读原文 */
+export function displayStructuredValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  return JSON.stringify(value, null, 2);
+}
+
+/** 是否属于 data / files 产物字段，信封状态不进入字段解读 */
+export function isProductApiPath(path: string): boolean {
+  return path === "data" || path.startsWith("data.") || path === "files" || path.startsWith("files.");
+}
+
 /** 信封字段的固定说明，避免与知识库产物说明混淆 */
 export const ENVELOPE_FIELD_HELP: Record<string, string> = {
   success: "算法服务是否按协议返回成功。true 表示本次调用完成，不代表专题图业务合格。",
   algorithm_id: "本次运行的算法标识，与请求路径中的算法 ID 一致。",
   algorithm: "算法中文名称，来自服务实现，不是控制台另写的标题。",
   implemented: "该算法是否已实现真实计算。false 时通常只返回骨架说明。",
-  message: "服务对本次运行的一句话状态说明，属于接口原文。",
+  message: "服务对本次运行的状态说明，属于接口原文。",
 };
 
 export const ENVELOPE_FIELD_LABEL: Record<string, string> = {

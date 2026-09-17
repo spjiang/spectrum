@@ -29,7 +29,7 @@ def validate() -> None:
     prs = Presentation(OUT)
     algorithms = parse_algorithms(LIST_MD.read_text(encoding="utf-8"))
 
-    assert len(prs.slides) == 62, f"页数异常：{len(prs.slides)}"
+    assert len(prs.slides) == 72, f"页数异常：{len(prs.slides)}"
     all_text = "\n".join(slide_text(slide) for slide in prs.slides)
 
     for item in algorithms:
@@ -72,8 +72,8 @@ def validate() -> None:
         if first and (first.isdigit() or first.startswith("#")):
             invalid_titles.append((slide_index, first))
 
-    assert implemented_slides == len(IMPL) == 12, f"可运行页数异常：{implemented_slides}"
-    assert skeleton_slides == 33, f"骨架页数异常：{skeleton_slides}"
+    assert implemented_slides == len(IMPL) == 55, f"可运行页数异常：{implemented_slides}"
+    assert skeleton_slides == 0, f"骨架页数异常：{skeleton_slides}"
     assert not out_of_bounds, f"存在越界形状：{out_of_bounds[:10]}"
     assert not invalid_titles, f"存在残缺标题：{invalid_titles}"
     assert not undersized, f"存在小于 11pt 的正文：{undersized[:10]}"
@@ -82,7 +82,7 @@ def validate() -> None:
         assert phrase not in all_text, f"存在过期口径：{phrase}"
 
     print(
-        "PPT 校验通过：62 页；45 项算法；"
+        "PPT 校验通过：72 页；55 项算法；"
         f"{implemented_slides} 可运行；{skeleton_slides} 骨架；"
         f"0 个越界形状；字体 {dict(font_counter)}"
     )

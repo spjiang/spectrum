@@ -1,4 +1,4 @@
-"""Fmask 光谱云/云影检测（Zhu & Woodcock，无热红外通道时的光谱规则）。"""
+"""受 Fmask 启发的简化云/暗区检测（无热红外与云影投影几何）。"""
 from __future__ import annotations
 
 import numpy as np
@@ -16,7 +16,8 @@ def fmask_spectral(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     返回 (cloud_mask, shadow_mask)，uint8 0/1。
-    规则对齐 Fmask 潜在云：高亮、低 NDVI、高白度；影为近红外低值且非水体。
+    云候选规则：可见光亮、NDVI 低、可见光波段间相对差异较小（低白度指标）；
+    暗区候选为近红外低值且非水体。
     """
     b = cube.shape[2]
 
@@ -38,7 +39,7 @@ def fmask_spectral(
         ndsi = (green_r - swir_r) / (green_r + swir_r + 1e-12)
         cloud = cloud & (ndsi < 0.8) & (swir_r > 0.03)
     water = ndwi > 0.1
-    # 云影：近红外显著偏低且非水、非云
+    # 候选暗区：近红外显著偏低且非水、非云
     nir_thr = float(np.percentile(nir_r[~cloud], 15)) if (~cloud).any() else float(np.percentile(nir_r, 15))
     shadow = (~cloud) & (~water) & (nir_r < nir_thr)
     cloud_u = ndi.binary_opening(cloud, structure=np.ones((3, 3), dtype=bool)).astype(np.uint8)

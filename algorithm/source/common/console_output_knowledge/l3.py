@@ -263,17 +263,81 @@ def _simple_data(
     )
 
 
-L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
-    "27_ndvi": _index_knowledge(
+def _index_runtime_fields(
+    name: str,
+    *,
+    first_path: str,
+    first_label: str,
+    first_param: str,
+    first_default_note: str,
+    second_path: str,
+    second_label: str,
+    second_param: str,
+    second_default_note: str,
+) -> dict[str, Any]:
+    """指数接口回显的波段索引、尺寸与格式。"""
+    return {
+        first_path: _simple_data(
+            first_path,
+            first_label,
+            f"本次计算使用的{first_label.replace('索引', '')} 0-based 索引，回显请求参数 {first_param}。",
+            f"这是运行配置，不是观测结果。{first_default_note}",
+            warning="不得把该索引当成波长（nm），也不能套用到其他传感器。",
+        ),
+        second_path: _simple_data(
+            second_path,
+            second_label,
+            f"本次计算使用的{second_label.replace('索引', '')} 0-based 索引，回显请求参数 {second_param}。",
+            f"这是运行配置，不是观测结果。{second_default_note}",
+            warning="不得把该索引当成波长（nm），也不能套用到其他传感器。",
+        ),
+        "data.shape": _simple_data(
+            "data.shape",
+            "输出栅格尺寸",
+            f"写出的 {name} GeoTIFF 行列尺寸，格式为 [行, 列]。",
+            "应与输入空间尺寸一致；演示数据 为 16×16。",
+            warning="shape 不是地块面积，也不能从预览 PNG 像素数反推。",
+        ),
+        "data.format": _simple_data(
+            "data.format",
+            "主产物格式",
+            "主产物文件格式。当前实现写出 GeoTIFF。",
+            "定量读数应打开 GeoTIFF，不要从 PNG 颜色反推。",
+            warning="format 只说明容器，不保证已经过反射率定标或掩膜。",
+        ),
+    }
+
+
+def _ndvi_page_knowledge() -> dict[str, Any]:
+    """NDVI 专题图知识，并补上接口回显字段说明。"""
+    item = _index_knowledge(
         algorithm_id="27_ndvi",
         name="NDVI",
         formula="(NIR-RED)/(NIR+RED)",
         first_band="NIR",
         second_band="RED",
         file_key="ndvi_tif",
-        meaning="植被绿度与覆盖状况",
-    ),
-    "28_ndre": _index_knowledge(
+        meaning="植被绿度、活力及冠层覆盖状况",
+    )
+    item["outputs"].update(
+        _index_runtime_fields(
+            "NDVI",
+            first_path="data.red_band",
+            first_label="红光波段索引",
+            first_param="red_band",
+            first_default_note="默认 2 只对应演示数据，须按传感器光谱响应核验。",
+            second_path="data.nir_band",
+            second_label="近红外波段索引",
+            second_param="nir_band",
+            second_default_note="默认 3 只对应演示数据，须按传感器光谱响应核验。",
+        )
+    )
+    return item
+
+
+def _ndre_page_knowledge() -> dict[str, Any]:
+    """NDRE 专题图知识，并补上接口回显字段说明。"""
+    item = _index_knowledge(
         algorithm_id="28_ndre",
         name="NDRE",
         formula="(NIR-RE)/(NIR+RE)",
@@ -281,32 +345,73 @@ L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
         second_band="红边 RE",
         file_key="ndre_tif",
         meaning="冠层红边响应与中高覆盖植被差异",
-    ),
+    )
+    item["outputs"].update(
+        _index_runtime_fields(
+            "NDRE",
+            first_path="data.re_band",
+            first_label="红边波段索引",
+            first_param="re_band",
+            first_default_note="默认 4 只对应演示数据，必须按真实红边波长核验。",
+            second_path="data.nir_band",
+            second_label="近红外波段索引",
+            second_param="nir_band",
+            second_default_note="默认 3 只对应演示数据，必须按波长表核验。",
+        )
+    )
+    return item
+
+
+L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
+    "27_ndvi": _ndvi_page_knowledge(),
+    "28_ndre": _ndre_page_knowledge(),
     "29_evi_savi": {
         "summary": _summary(
-            "从蓝、红、近红外波段同时计算 EVI、SAVI 和 MSAVI。",
+            "从蓝、红、近红外波段同时计算 EVI、SAVI 和 MSAVI，并分别写成三个单波段 GeoTIFF。",
             "用三种不同背景校正机制描述植被状态，便于比较大气和土壤背景影响。",
-            "当前公式不裁剪结果；EVI/SAVI/MSAVI 不能统一套用 NDVI 的 [-1,1] 质量门限。",
+            "当前公式不裁剪结果；EVI/SAVI/MSAVI 不能统一套用 NDVI 的 [-1,1] 质量门限。三个文件不要平均成一个长势分。",
         ),
         "outputs": {
-            "files.indices_tif": _row(
-                "files.indices_tif", "EVI/SAVI/MSAVI 三波段栅格",
-                description="固定按 EVI、SAVI、MSAVI 顺序写出的三波段 GeoTIFF。",
-                effect="同步生成增强植被指数、土壤调节植被指数和改进土壤调节植被指数。",
-                business="用于比较高覆盖冠层、裸土背景和不同土壤校正假设下的植被响应。",
-                interpretation="波段 1=EVI，2=SAVI，3=MSAVI；数值受反射率尺度、蓝光质量及 L 参数影响。",
-                check="按服务公式抽样复算，检查 MSAVI 根号项、有限值及三个波段顺序。",
-                warning="不得把三个指数视为同一量纲下可直接互换的业务评分，也不得统一强制到 [-1,1]。",
-                downstream="用于指数对比、地块统计、特征工程和时序分析。",
-                format_name="GeoTIFF", vis="raster_cube",
-                bands=[
-                    {"name": "EVI", "description": "2.5×(NIR-RED)/(NIR+6RED-7.5BLUE+1)"},
-                    {"name": "SAVI", "description": "(1+L)×(NIR-RED)/(NIR+RED+L)"},
-                    {"name": "MSAVI", "description": "0.5×(2NIR+1-sqrt((2NIR+1)^2-8(NIR-RED)))"},
-                ],
-                related_outputs=["data.L", "data.evi_mean", "data.savi_mean", "data.msavi_mean"],
+            "files.evi_tif": _row(
+                "files.evi_tif", "EVI 专题图",
+                description="逐像元按 2.5×(NIR-RED)/(NIR+6RED-7.5BLUE+1) 计算的单波段 GeoTIFF。",
+                effect="把蓝、红、近红外差异映射为增强植被指数，供 GIS 和地块统计直接打开。",
+                business="密冠层或担心薄霾残差时，用来看相对绿度；不是叶面积或产量。",
+                interpretation="单波段，打开就是 EVI。数值受反射率尺度和蓝光质量影响；不能套用 NDVI 的 [-1,1] 门限。",
+                check="核对蓝/红/近红外索引，抽样复算公式，检查分母接近零和有限值。",
+                warning="不得把 EVI 当成 LAI、氮或产量，也不得把 MODIS 阈值直接套到别的相机。",
+                downstream="用于密冠层相对分区、地块均值和与 SAVI/MSAVI 对照。",
+                unit="无量纲指数", range_text="由公式与输入反射率决定，本仓库不裁剪",
+                format_name="GeoTIFF", vis="raster_index",
+                related_outputs=["data.evi_mean", "files.savi_tif", "files.msavi_tif"],
             ),
-            "files.preview_png": _preview("files.preview_png", "EVI", "files.indices_tif"),
+            "files.savi_tif": _row(
+                "files.savi_tif", "SAVI 专题图",
+                description="逐像元按 (1+L)×(NIR-RED)/(NIR+RED+L) 计算的单波段 GeoTIFF；仅此文件使用参数 L。",
+                effect="在 NDVI 形式上加入固定土壤因子 L，减轻裸土亮度对绿度的牵引。",
+                business="出苗、稀疏、土很多时看相对绿度；L=0 即回到 NDVI 形式。",
+                interpretation="单波段，打开就是 SAVI。L 是整幅同一个数，默认 0.5；换 L 后不能与另一幅混比。",
+                check="核对 L 与红/近红外索引，抽样复算，并确认未把 EVI 文件误当成 SAVI。",
+                warning="不得把不同 L 的 SAVI 直接比较，也不得把 SAVI 当成叶面积或产量。",
+                downstream="用于稀疏冠层相对分区、地块均值和与 EVI/MSAVI 对照。",
+                unit="无量纲指数", range_text="由公式、L 与输入反射率决定，本仓库不裁剪",
+                format_name="GeoTIFF", vis="raster_index",
+                related_outputs=["data.L", "data.savi_mean", "files.evi_tif", "files.msavi_tif"],
+            ),
+            "files.msavi_tif": _row(
+                "files.msavi_tif", "MSAVI 专题图",
+                description="逐像元按 0.5×(2NIR+1-sqrt((2NIR+1)^2-8(NIR-RED))) 计算的单波段 GeoTIFF。",
+                effect="土壤项随像元红光与近红外自适应，不需要手填 L。",
+                business="地块里稀密差得大、不好选一个 L 时，用来看相对绿度。",
+                interpretation="单波段，打开就是 MSAVI。根号项无效会产生 NaN；不能套用 NDVI 的 [-1,1] 门限。",
+                check="抽样复算闭式，检查根号项、有限值和空值掩膜。",
+                warning="不得把 MSAVI 当成叶面积或产量，也不得把它和 SAVI 当成同一个数。",
+                downstream="用于土壤背景变化大的相对分区、地块均值和与 EVI/SAVI 对照。",
+                unit="无量纲指数", range_text="由 Qi 闭式与输入反射率决定，本仓库不裁剪",
+                format_name="GeoTIFF", vis="raster_index",
+                related_outputs=["data.msavi_mean", "files.evi_tif", "files.savi_tif"],
+            ),
+            "files.preview_png": _preview("files.preview_png", "EVI", "files.evi_tif"),
             "data.L": _simple_data(
                 "data.L", "SAVI 土壤调节因子 L", "SAVI 公式使用的土壤背景调节参数。",
                 "L 越大，SAVI 对土壤背景的修正越强；当前默认 0.5。",
@@ -331,29 +436,51 @@ L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
     },
     "30_ndmi_ndwi": {
         "summary": _summary(
-            "从绿、近红外和短波红外计算 NDMI、NDWI、MNDWI。",
-            "同时表达植被水分响应与水体增强信息。",
-            "三波段含义和方向不同；阈值受传感器、地物和场景影响，不设业务通过阈值。",
+            "从绿、近红外和短波红外同时计算 NDMI、NDWI 和 MNDWI，并分别写成三个单波段 GeoTIFF。",
+            "用三条指数分开看冠层相对干湿和明水面，避免同名 NDWI 混用。",
+            "三个文件不要平均成一个水分分。没有真实 SWIR 时 NDMI/MNDWI 没有物理意义；阈值受传感器和场景影响，不设业务通过阈值。",
         ),
         "outputs": {
-            "files.indices_tif": _row(
-                "files.indices_tif", "NDMI/NDWI/MNDWI 三波段栅格",
-                description="固定按 NDMI、NDWI、MNDWI 顺序写出的三波段归一化差值 GeoTIFF。",
-                effect="分别计算 (NIR-SWIR)/(NIR+SWIR)、(GREEN-NIR)/(GREEN+NIR)、(GREEN-SWIR)/(GREEN+SWIR)。",
-                business="用于植被含水变化、水体候选提取和建成区背景抑制分析。",
-                interpretation="波段 1=NDMI，2=NDWI，3=MNDWI；非负可比输入下各指数理论范围 [-1,1]。",
-                check="核对绿/NIR/SWIR 索引，抽样复算并检查三波段顺序和 [-1,1] 理论定义域。",
-                warning="不得用单一固定阈值跨传感器、季节和区域直接判水或判旱。",
-                downstream="用于水分监测、水体候选区、地块统计和多指数特征。",
-                format_name="GeoTIFF", vis="raster_cube",
-                bands=[
-                    {"name": "NDMI", "description": "(NIR-SWIR)/(NIR+SWIR)"},
-                    {"name": "NDWI", "description": "(GREEN-NIR)/(GREEN+NIR)"},
-                    {"name": "MNDWI", "description": "(GREEN-SWIR)/(GREEN+SWIR)"},
-                ],
-                related_outputs=["data.ndmi_mean", "data.ndwi_mean", "data.mndwi_mean"],
+            "files.ndmi_tif": _row(
+                "files.ndmi_tif", "NDMI 专题图",
+                description="逐像元按 (NIR−SWIR)/(NIR+SWIR) 计算的单波段 GeoTIFF。",
+                effect="把近红外与短波红外差异映射为冠层水分相对格局。",
+                business="作物看起来还绿但可能已经偏干时，看同一景里哪里相对更干；不是含水量毫克数。",
+                interpretation="单波段，打开就是 NDMI。非负可比输入下理论范围约 [-1,1]；不能当成化验含水量。",
+                check="核对近红外/短波红外索引，抽样复算公式，确认用的是真实 SWIR。",
+                warning="不得把 NDMI 当成叶片含水量毫克数，也不得在没有真实 SWIR 时解释这一层。",
+                downstream="用于冠层相对干湿分区、地块均值和与 NDWI/MNDWI 对照。",
+                unit="无量纲指数", range_text="理论范围约 [-1, 1]",
+                format_name="GeoTIFF", vis="raster_index",
+                related_outputs=["data.ndmi_mean", "files.ndwi_tif", "files.mndwi_tif"],
             ),
-            "files.preview_png": _preview("files.preview_png", "NDWI", "files.indices_tif"),
+            "files.ndwi_tif": _row(
+                "files.ndwi_tif", "NDWI 专题图",
+                description="逐像元按 McFeeters (GREEN−NIR)/(GREEN+NIR) 计算的单波段 GeoTIFF。",
+                effect="用水面近红外几乎不反射、绿光相对还亮这一差异标出明水面。",
+                business="用来找湖、河、塘、淹田里露出来的水。预览 PNG 只渲这一张。",
+                interpretation="单波段，打开就是 McFeeters NDWI，不是 Gao 那条近红外减短波红外。湿土、阴影、薄膜也可能偏高。",
+                check="核对绿光/近红外索引，抽样复算，并确认未把 NDMI 文件误当成 NDWI。",
+                warning="不得把 McFeeters 与 Gao 的 NDWI 当成同一个数，也不得用固定阈值当水体验收。",
+                downstream="用于水体候选区、目视抽检和与 MNDWI 对照。",
+                unit="无量纲指数", range_text="理论范围约 [-1, 1]",
+                format_name="GeoTIFF", vis="raster_index",
+                related_outputs=["data.ndwi_mean", "files.ndmi_tif", "files.mndwi_tif"],
+            ),
+            "files.mndwi_tif": _row(
+                "files.mndwi_tif", "MNDWI 专题图",
+                description="逐像元按 (GREEN−SWIR)/(GREEN+SWIR) 计算的单波段 GeoTIFF。",
+                effect="短波红外遇水几乎不反射，屋顶和干土还能反射，用来把真水和房子、阴影分开。",
+                business="城里、浑水、房子旁边，比只看 NDWI 更分得清。",
+                interpretation="单波段，打开就是 MNDWI。必须有真实短波红外；不能用末波段冒充。",
+                check="核对绿光/短波红外索引，抽样复算，确认 SWIR 不是可见近红外传感器的末波段。",
+                warning="不得在没有真实 SWIR 时解释 MNDWI，也不得把高值格子直接写成已确认水体。",
+                downstream="用于城市周边水体候选、浑水对照和与 NDWI 对照。",
+                unit="无量纲指数", range_text="理论范围约 [-1, 1]",
+                format_name="GeoTIFF", vis="raster_index",
+                related_outputs=["data.mndwi_mean", "files.ndmi_tif", "files.ndwi_tif"],
+            ),
+            "files.preview_png": _preview("files.preview_png", "NDWI", "files.ndwi_tif"),
             **{
                 f"data.{key}_mean": _simple_data(
                     f"data.{key}_mean", f"{key.upper()} 均值", f"全景 {key.upper()} 像元算术均值。",
@@ -378,7 +505,7 @@ L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
                 effect="将每个像元的红边位置和振幅压缩为三个可解释参数。",
                 business="用于比较冠层红边位移、红边强度和胁迫响应。",
                 interpretation="波段 1/3 单位 nm；波段 2 为 R780-R670，单位随输入光谱。",
-                check="确认波长范围覆盖 670/700/740/780 nm 和 680–750 nm，抽样复算锚点内插与导数峰值。",
+                check="确认波长范围覆盖 670/700/740/780 nm 和半开窗口 680–760 nm，抽样复算锚点内插与导数峰值。",
                 warning="起止波长仅线性生成波长轴，不代表已读取传感器真实波长定标。",
                 downstream="用于红边专题制图、地块统计和回归特征。",
                 format_name="GeoTIFF", vis="raster_cube",
@@ -427,7 +554,7 @@ L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
         "summary": _summary(
             "用真值图监督训练 PLS 回归，并对整景反演连续变量。",
             "输出连续反演图及留出测试集 R²/RMSE。",
-            "当前响应固定报告 preprocess=snv；指标无业务验收阈值，且同一场景像元随机拆分可能高估空间泛化。",
+            "响应按实际分支报告 preprocess=snv 或 none；指标无业务验收阈值，且同一场景像元随机拆分可能高估空间泛化。",
         ),
         "outputs": {
             "files.inversion_tif": _row(
@@ -464,9 +591,9 @@ L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
                     (
                         "preprocess",
                         "预处理回显",
-                        "响应固定回显 snv；仅当请求参数 preprocess 忽略大小写后等于 snv 时，服务才实际执行标准正态变量变换。",
-                        "该固定回显可能与实际执行不一致，不能据此确认使用了 SNV；实际执行以请求参数和处理记录为准。",
-                        "不得把 data.preprocess 的固定回显当作预处理执行证据。",
+                        "响应回显实际执行分支：snv 表示执行标准正态变量变换，none 表示未执行。",
+                        "应与请求参数和处理记录交叉核对；其他取值会在创建作业目录前 fail closed。",
+                        "不得仅凭预处理名称推断模型具有跨场景泛化能力。",
                     ),
                 )
             },
@@ -474,46 +601,52 @@ L3_OUTPUT_KNOWLEDGE: dict[str, dict[str, Any]] = {
     },
     "33_physical_inversion": {
         "summary": _summary(
-            "用 PROSPECT-5+4SAIL 固定网格 LUT，以最小光谱角匹配反演 LAI 与 Cab。",
-            "输出叶面积指数和叶绿素含量的空间估计。",
-            "LUT 仅变化 LAI/Cab，其余参数固定；结果取离散网格值，不代表经过地面验证。",
+            "不用化验图，一次给出叶面积和叶绿素两张图，用来分清是叶子少还是叶子黄。",
+            "lai.tif 看密不密，cab.tif 看绿不绿；默认 RMSE 对最优若干条取平均。",
+            "LUT 仅变化 LAI/Cab，其余参数固定；多解平均不是地面验证，边界命中不是可靠极值。",
         ),
         "outputs": {
             "files.lai_tif": _row(
-                "files.lai_tif", "LAI 反演图", description="最相似 PROSAIL LUT 光谱对应的 LAI 单波段 GeoTIFF。",
-                effect="把每像元光谱匹配到 0.2–6.0 的离散 LAI 网格。",
-                business="用于冠层结构、覆盖和生物量相关分析。",
-                interpretation="输出为 LUT 最近邻参数，不是连续优化结果；网格边界堆积提示超出 LUT。",
-                check="检查 0.2–6.0 网格范围、边界值比例、波长数组长度及地面样点一致性。",
-                warning="不得把固定参数 LUT 的最近邻结果当作唯一物理解或绝对真值。",
+                "files.lai_tif", "叶面积图（密不密）", description="对代价最优的若干条 LUT 光谱，把它们的 LAI 平均后写入的单波段 GeoTIFF。",
+                effect="每个格子得到一个叶面积：高更密、低更稀。平均后可以离开 0.2–6.0 的档位。",
+                business="用来看同一架次里哪里封得实、哪里还稀。",
+                interpretation="读密不密，不要当化验叶面积。贴 0.2 或 6.0 多为超出表范围；要和 cab.tif 对照，不要两张图平均成一个长势分。",
+                check="检查数值是否落在约 0.2–6.0、n_boundary_lai 是否偏高、波长是否真实。",
+                warning="不得把 LUT 平均结果当作实验室叶面积或唯一真值。",
                 downstream="用于地块 LAI 汇总、时序比较和独立样点校准。",
-                unit="m²/m²", range_text="LUT 网格 0.2–6.0", format_name="GeoTIFF", vis="raster_continuous",
-                related_outputs=["data.lai_mean", "data.lai_max", "data.lut_size"],
+                unit="m²/m²", range_text="LUT 网格 0.2–6.0，平均后可离开格点", format_name="GeoTIFF", vis="raster_continuous",
+                related_outputs=["data.lai_mean", "data.lai_max", "data.lut_size", "data.n_boundary_lai"],
             ),
             "files.cab_tif": _row(
-                "files.cab_tif", "Cab 反演图", description="最相似 PROSAIL LUT 光谱对应的叶绿素 Cab 单波段 GeoTIFF。",
-                effect="把每像元光谱匹配到 10–70 的离散 Cab 网格。",
-                business="用于叶绿素状态和冠层生化差异分析。",
-                interpretation="输出为 LUT 最近邻 Cab；与 LAI 联合匹配，存在参数等效性。",
-                check="检查 10–70 网格范围、边界堆积、波长覆盖和地面叶绿素样点。",
-                warning="不得忽略 LAI/Cab 耦合、土壤和观测几何固定造成的不确定性。",
+                "files.cab_tif", "叶绿素图（绿不绿）", description="对代价最优的若干条 LUT 光谱，把它们的 Cab 平均后写入的单波段 GeoTIFF。",
+                effect="每个格子得到一个叶绿素：高更绿、低更黄。平均后可以离开 10–70 的档位。",
+                business="用来看同一架次里哪里开始退绿。",
+                interpretation="读绿不绿，不是产量，也不是化验毫克数。要和 lai.tif 对照：密但黄、稀但绿会分开。",
+                check="检查数值是否落在约 10–70、n_boundary_cab 是否偏高、单位是否按 μg/cm² 读。",
+                warning="不得忽略 LAI 与 Cab 互相顶、以及土壤和几何写死造成的偏差。",
                 downstream="用于地块叶绿素汇总、胁迫分析和地面校准。",
-                unit="µg/cm²", range_text="LUT 网格 10–70", format_name="GeoTIFF", vis="raster_continuous",
+                unit="µg/cm²", range_text="LUT 网格 10–70，平均后可离开格点", format_name="GeoTIFF", vis="raster_continuous",
                 related_outputs=["data.cab_mean", "data.model", "data.wavelengths_nm"],
             ),
-            "files.preview_png": _preview("files.preview_png", "PROSAIL LAI", "files.lai_tif"),
+            "files.preview_png": _preview("files.preview_png", "叶面积（只渲 LAI）", "files.lai_tif"),
             **{
                 f"data.{key}": _simple_data(
                     f"data.{key}", label, description, interpretation, warning=warning,
-                    vis="array" if key == "wavelengths_nm" else "json_table",
+                    vis=vis,
                 )
-                for key, label, description, interpretation, warning in (
-                    ("model", "物理模型", "实际 LUT 模型标识 PROSAIL-5 + 4SAIL。", "说明光谱由叶片与冠层辐射传输模型组合生成。", "模型名不代表所有输入参数均已针对场景校准。"),
-                    ("lut_size", "LUT 光谱数", "LAI 12 点与 Cab 8 点笛卡尔积的光谱数量。", "当前默认应为 96 条；描述搜索规模而非有效样本量。", "LUT 大小不等同反演精度或不确定度。"),
-                    ("lai_mean", "LAI 均值", "LAI 栅格全景均值。", "应落在 LUT 网格范围内，需检查边界堆积。", "全景均值不能替代地块分布和地面验证。"),
-                    ("lai_max", "LAI 最大值", "LAI 栅格最大网格值。", "接近 6.0 可能是 LUT 上边界饱和。", "最大值等于边界不证明真实 LAI 就是该值。"),
-                    ("cab_mean", "Cab 均值", "Cab 栅格全景均值。", "应落在 10–70 网格范围内，需结合 LAI 解释。", "不得脱离单位、LUT 固定参数和地面样点解释。"),
-                    ("wavelengths_nm", "匹配波长数组", "用于插值 PROSAIL 光谱和匹配输入各波段的动态波长数组。", "第 i 项对应输入第 i 波段；缺省时按默认起止值线性生成。", "长度或顺序不匹配会使光谱角比较失去物理意义。"),
+                for key, label, description, interpretation, warning, vis in (
+                    ("model", "物理模型", "实际 LUT 模型标识 PROSAIL-5 + 4SAIL。", "说明光谱由叶片与冠层辐射传输模型组合生成。", "模型名不代表所有输入参数均已针对场景校准。", "json_table"),
+                    ("lut_size", "查找表有多少条", "n_lai × n_cab 得到的模拟光谱条数。", "默认 25×16=400。这是搜索规模，不是化验样本数。", "条数多不等于更准。", "json_table"),
+                    ("n_lai", "叶面积有几档", "本次表在 0.2–6.0 上采了多少个 LAI。", "和 n_cab 相乘就是 lut_size。", "档数再密也补不了写死的土壤和叶倾角。", "json_table"),
+                    ("n_cab", "叶绿素有几档", "本次表在 10–70 上采了多少个 Cab。", "和 n_lai 相乘就是 lut_size。", "档数再密也补不了写死的土壤和叶倾角。", "json_table"),
+                    ("best_n", "实际平均了几条", "按 best_frac×lut_size 取整后，每个格子平均的表行数。", "默认约 20 条。这是平滑宽度，不是独立验证样本。", "条数不是化验点数。", "json_table"),
+                    ("cost_method", "用哪把尺子匹配", "实际执行的 rmse 或 sam。", "rmse 看形状和明暗；sam 看光谱夹角。", "两种尺子的数字不能横比。", "json_table"),
+                    ("n_boundary_lai", "叶面积贴边的格子数", "选中的表行全贴在 LAI 最小或最大档的像元数。", "偏高说明很多地方可能超出表，不要当最稀或最密的实测。", "边界计数不是真实 LAI 极值。", "json_table"),
+                    ("n_boundary_cab", "叶绿素贴边的格子数", "选中的表行全贴在 Cab 最小或最大档的像元数。", "偏高说明很多地方可能超出 10–70，不要当最黄或最绿的实测。", "边界计数不是真实叶绿素极值。", "json_table"),
+                    ("lai_mean", "叶面积全图均值", "lai.tif 全部像元的平均。", "用来扫一眼整体疏密，不能代替地块分布。", "全图均值会掩盖稀密对比。", "json_table"),
+                    ("lai_max", "叶面积全图最大", "lai.tif 最大值。", "接近 6.0 可能是表的上沿饱和。", "等于边界不证明真实叶面积就是这个数。", "json_table"),
+                    ("cab_mean", "叶绿素全图均值", "cab.tif 全部像元的平均。", "用来扫一眼整体绿度，要结合 lai.tif 读。", "不得当化验含量。", "json_table"),
+                    ("wavelengths_nm", "匹配波长数组", "用于插值 PROSAIL 光谱和匹配输入各波段的动态波长数组。", "第 i 项对应输入第 i 波段；缺省时按默认起止值线性生成。", "长度或顺序不匹配会使光谱比较失去物理意义。", "array"),
                 )
             },
         },
@@ -964,7 +1097,7 @@ L3_OUTPUT_KNOWLEDGE.update(
                 "data.mode": _simple_data(
                     "data.mode", "统计模式", "请求的 continuous 或 categorical 模式字符串。",
                     "决定 scene 和 parcels 中使用连续统计还是类别计数结构。",
-                    warning="服务未将其他字符串规范化为合法枚举；非 categorical 会走连续分支。",
+                    warning="其他字符串会在创建作业目录前 fail closed，不会回显为已执行模式。",
                 ),
                 "data.n_parcels": _simple_data(
                     "data.n_parcels", "地块记录数", "zonal_by_geojson 实际返回的动态地块记录数量。",
@@ -998,3 +1131,7 @@ L3_OUTPUT_KNOWLEDGE.update(
         },
     }
 )
+
+from .l3_indices import L3_INDEX_OUTPUT_KNOWLEDGE  # noqa: E402
+
+L3_OUTPUT_KNOWLEDGE.update(L3_INDEX_OUTPUT_KNOWLEDGE)

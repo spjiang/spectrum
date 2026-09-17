@@ -1,4 +1,13 @@
-/** 算法原理页的可视化类型（按「怎么学更直观」选型）。 */
+export type ProcessStageTone = "input" | "step" | "branch" | "output";
+
+export interface ProcessStage {
+  kicker: string;
+  title: string;
+  note?: string;
+  tone?: ProcessStageTone;
+}
+
+/** 算法原理页的可视化类型。 */
 export type PrincipleVizKind =
   | "pipeline"
   | "lawnmower"
@@ -6,6 +15,8 @@ export type PrincipleVizKind =
   | "red_edge"
   | "regression"
   | "lut"
+  | "lut_process"
+  | "process"
   | "feature_space"
   | "sam"
   | "cnn_arch"
@@ -41,6 +52,7 @@ export interface PrincipleViz {
   bands?: BandMark[];
   layers?: ArchLayer[];
   steps?: string[];
+  stages?: ProcessStage[];
 }
 
 export interface IoRow {
@@ -49,6 +61,7 @@ export interface IoRow {
 }
 
 export interface PrincipleSummary {
+  /** 须对齐文献或标准原文，不得自行引申。 */
   definition: string;
   value: string;
   keyInput: string;
@@ -64,12 +77,31 @@ export interface ParameterNote {
   risk: string;
 }
 
+export interface FormulaItem {
+  name: string;
+  eq: string;
+  note: string;
+}
+
+export interface ScenarioCase {
+  title: string;
+  body: string;
+}
+
 export interface PrincipleDoc {
   id: string;
   purpose: string;
   why: string;
   formula: string;
   formulaNote?: string;
+  /** 多公式捆成一项时，写在公式列表下方。 */
+  formulaTogether?: string;
+  /** 原理页高亮的一句话理解。 */
+  formulaTakeaway?: string;
+  formulaItems?: FormulaItem[];
+  /** 画在核心公式下方的处理过程图，与页中「原理示意」分开。 */
+  formulaProcess?: PrincipleViz;
+  scenarioCases?: ScenarioCase[];
   steps: string[];
   viz: PrincipleViz;
   inputs: IoRow[];

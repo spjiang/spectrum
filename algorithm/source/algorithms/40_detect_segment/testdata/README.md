@@ -1,4 +1,4 @@
-# testdata · 语义分割/目标检测
+# testdata · 低NDVI种子ACE目标检测
 
 影像 GeoTIFF + 标注 GeoJSON。
 

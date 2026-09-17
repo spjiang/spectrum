@@ -1,6 +1,6 @@
 # 高光谱算法 HTTP 服务（单进程）
 
-一个 FastAPI 进程聚合 **45** 个算法模块；**目录仍按算法拆分**，便于对照业界清单学习与扩展。
+一个 FastAPI 进程聚合 **55** 个算法模块；**目录仍按算法拆分**，便于对照业界清单学习与扩展。
 
 设计说明：[`../docs/source-http-api-设计说明.md`](../docs/source-http-api-设计说明.md)  
 服务简介：[`../docs/当前服务简单介绍.md`](../docs/当前服务简单介绍.md)
@@ -18,7 +18,7 @@ source/
       router.py          # 薄 HTTP 层
       service.py         # 业务实现
       README.md          # 本算法使用说明
-    …（共 45 个）
+    …（共 55 个）
   scripts/start.sh       # 一键启动
   examples/              # 示例数据生成
   data/uploads|outputs|examples
@@ -66,7 +66,7 @@ chmod +x scripts/start.sh
 
 ## 已实现（可运行）
 
-清单 **45 项全部可运行**（`implemented: true`，均有 `files` 产物）。
+清单 **55 项全部可运行**（`implemented: true`，均有 `files` 产物）。
 
 实现按业界方法：经验线/DOS2、Ross-Li、共线方程+DEM 正射、PROSAIL、FCLS/ACE、MNF、IR-MAD、HybridSN/SpectralFormer 等。不含 MODTRAN 与多视空三（需外部商业软件）。
 

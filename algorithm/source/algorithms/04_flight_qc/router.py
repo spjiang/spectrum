@@ -1,4 +1,4 @@
-"""HTTP 路由：架次质检（丢帧/过曝）。"""
+"""HTTP 路由：架次过曝与场景统计质检。"""
 from __future__ import annotations
 
 from common.routing import build_router

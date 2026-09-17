@@ -10,7 +10,7 @@ from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_prev
 from common.response import err_response, ok_response
 
 ALGORITHM_ID = "18_color_balance"
-TITLE = "匀色与接缝线优化"
+TITLE = "Wallis局部匀色"
 IMPLEMENTED = True
 LEVEL = "L2"
 

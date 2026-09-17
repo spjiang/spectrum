@@ -3,12 +3,42 @@
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 import unittest
 
 from common import console_params, console_router
 from common.console_catalog import get_console_algorithm, list_console_algorithms
 from common.console_params import get_service_params
+
+def _extract_numbered_copy(path: Path, dict_name: str) -> dict[int, str]:
+    """提取培训生成器里按算法编号组织的说明文字。"""
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == dict_name
+            for target in node.targets
+        ):
+            continue
+        assert isinstance(node.value, ast.Dict)
+        result: dict[int, str] = {}
+        for key, value in zip(node.value.keys, node.value.values):
+            if not isinstance(key, ast.Constant) or not isinstance(key.value, int):
+                continue
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                result[key.value] = value.value
+            elif isinstance(value, ast.Dict):
+                parts = [
+                    item.value
+                    for item in value.values
+                    if isinstance(item, ast.Constant) and isinstance(item.value, str)
+                ]
+                result[key.value] = " ".join(parts)
+        return result
+    raise AssertionError(f"{path.name} 缺少 {dict_name}")
+
 
 FRONTEND_VIS_KINDS = {
     "raster_falsecolor",
@@ -89,6 +119,96 @@ def _extract_ok_response_file_keys(source: str) -> set[str]:
 
 
 class ConsoleProfessionalMetadataTests(unittest.TestCase):
+    def test_document_generators_keep_narrowed_36_38_39_40_capabilities(self) -> None:
+        """生成源不得把四项未实现能力重新写回完成口径。"""
+        docs_root = Path(__file__).parents[2] / "docs"
+        expected_by_file = {
+            "generate_training_ppt.py": (
+                "1D-CNN 光谱分类；RNN 未实现",
+                "SpectralFormer 光谱分类；GCN 未实现",
+                "SAM 均值原型少样本分类；迁移学习未实现",
+                "低 NDVI 种子 ACE 目标检测；语义分割未实现",
+            ),
+            "generate_training_ppt_v4.py": (
+                "1D-CNN 光谱分类；RNN 未实现",
+                "SpectralFormer 光谱分类；GCN 未实现",
+                "SAM 均值原型少样本分类；迁移学习未实现",
+                "低 NDVI 种子 ACE 目标检测；语义分割未实现",
+            ),
+            "build_algorithm_word.py": (
+                '36: "1D-CNN',
+                '38: "SpectralFormer',
+                '39: "SAM均值原型',
+                '40: "低NDVI种子ACE',
+            ),
+        }
+        forbidden = (
+            "1D-CNN/RNN 沿光谱维",
+            "Transformer 注意力或 GCN",
+            "迁移学习、元学习或少样本微调",
+            "语义分割/目标检测定位",
+            "→ 处方图",
+        )
+        for filename, expected in expected_by_file.items():
+            source = (docs_root / filename).read_text(encoding="utf-8")
+            with self.subTest(filename=filename):
+                for phrase in expected:
+                    self.assertIn(phrase, source)
+                for phrase in forbidden:
+                    self.assertNotIn(phrase, source)
+        all_generator_sources = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sorted(docs_root.glob("*.py"))
+        )
+        for phrase in forbidden:
+            self.assertNotIn(phrase, all_generator_sources)
+
+    def test_document_generators_03_04_15_17_18_19_match_catalog_scope(self) -> None:
+        """#03/#04/#15/#17/#18/#19 培训生成源不得把未实现能力写成已交付。"""
+        docs_root = Path(__file__).parents[2] / "docs"
+        forbidden = {
+            3: re.compile(r"IMU\s*角速度|组合导航"),
+            4: re.compile(r"检查丢帧|丢帧率|曝光日志"),
+            15: re.compile(r"共线方程"),
+            17: re.compile(r"同名点|接缝线"),
+            18: re.compile(r"接缝线|接缝优化"),
+            19: re.compile(r"矢量边界|\bshp\b"),
+        }
+        required = {
+            3: ("杠杆臂", "平滑"),
+            4: ("过曝",),
+            15: ("中心点", "GSD"),
+            17: ("羽化",),
+            18: ("Wallis",),
+            19: ("平移",),
+        }
+        disclaimer = re.compile(
+            r"未实现|不读取|不搜索|不执行|不处理|不检测|不接受|不是|当前不|也不"
+        )
+        sources = (
+            (docs_root / "generate_training_ppt.py", "ENRICH"),
+            (docs_root / "generate_training_ppt_v4.py", "ENRICH"),
+            (docs_root / "build_algorithm_word.py", "PRINCIPLES"),
+        )
+        for path, dict_name in sources:
+            copy = _extract_numbered_copy(path, dict_name)
+            for number, pattern in forbidden.items():
+                text = copy[number]
+                with self.subTest(file=path.name, number=number):
+                    claiming = [
+                        part.strip()
+                        for part in re.split(r"[。；;！？\n]", text)
+                        if part.strip() and not disclaimer.search(part)
+                    ]
+                    blob = " ".join(claiming) if claiming else ""
+                    hits = pattern.findall(blob)
+                    self.assertFalse(
+                        hits,
+                        f"{path.name} #{number:02d} 把未实现能力写成已交付: {hits} / {blob}",
+                    )
+                    for needle in required[number]:
+                        self.assertIn(needle, text)
+
     REQUIRED_PARAMETER_DETAILS = {
         "label",
         "unit",
@@ -115,7 +235,7 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
 
     def test_all_algorithms_expose_professional_field_metadata(self) -> None:
         items = list_console_algorithms()
-        self.assertEqual(45, len(items))
+        self.assertEqual(55, len(items))
 
         for item in items:
             with self.subTest(algorithm_id=item["id"]):
@@ -138,7 +258,7 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
         )
         self.assertEqual("波段索引（从 0 开始）", red["unit"])
         self.assertIn("不是波长值", red["selectionGuide"])
-        self.assertIn("620–680 nm", red["selectionGuide"])
+        self.assertIn("630–690 nm", red["selectionGuide"])
         self.assertEqual(item["testdata"]["params"]["red_band"], red["default"])
 
     def test_same_parameter_can_have_algorithm_specific_guidance(self) -> None:
@@ -221,7 +341,6 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
         required_ids = {
             "11_relative_radiometric",
             "16_orthorectify",
-            "17_mosaic",
             "19_multi_source_register",
             "26_patch_build",
             "32_regression_inversion",
@@ -257,6 +376,7 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
             ("04_flight_qc", "bit_depth"): "int",
             ("12_panel_reflectance", "panel_roi"): "list",
             ("13_atmospheric_correction", "wavelengths_nm"): "list",
+            ("16_orthorectify", "gsd_out"): "float",
             ("15_geo_locate", "gsd_m"): "float",
             ("20_bad_band_remove", "wavelengths_nm"): "list",
             ("33_physical_inversion", "wavelengths_nm"): "list",
@@ -297,7 +417,10 @@ class ConsoleProfessionalMetadataTests(unittest.TestCase):
             for item in items
             for row in item["fields"]["outputs"]
         ]
-        self.assertEqual(305, len(rows))
+        self.assertEqual(
+            {item["id"] for item in items},
+            {algorithm_id for algorithm_id, _ in rows},
+        )
         for algorithm_id, row in rows:
             with self.subTest(algorithm_id=algorithm_id, path=row["name"]):
                 self.assertIn(row["vis"], FRONTEND_VIS_KINDS)
@@ -390,7 +513,8 @@ def run(include_optional):
             self.assertIn(label, workbench)
         self.assertNotIn('label: "文件产物"', workbench)
         self.assertIn("原始接口返回", workbench)
-        self.assertIn("知识库说明", workbench)
+        for visible_knowledge_label in ("字段解读", "补充说明", "判定依据"):
+            self.assertIn(visible_knowledge_label, workbench)
         self.assertIn("flattenApiFields", workbench)
         self.assertIn("originalApiPayload", workbench)
         self.assertIn('role="tablist"', workbench)

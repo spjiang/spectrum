@@ -1,4 +1,4 @@
-# Transformer/GCN分类
+# SpectralFormer光谱分类
 
 - **algorithm_id**: `38_transformer_classify`
 - **层级**: L3
@@ -6,7 +6,7 @@
 
 ## 作用
 
-Transformer/GCN分类（对齐业界算法清单 #38）。
+SpectralFormer光谱分类（对齐业界算法清单 #38）。GCN 属于未实现差距。
 
 ## 使用场景
 

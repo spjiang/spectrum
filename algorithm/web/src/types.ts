@@ -133,6 +133,11 @@ export interface RasterMeta {
   width: number;
   bands: number;
   name?: string;
+  mode?: string;
+  colorLow?: number;
+  colorMid?: number;
+  colorHigh?: number;
+  colorMap?: string;
 }
 
 export interface SpectrumPoint {
@@ -140,4 +145,119 @@ export interface SpectrumPoint {
   values: number[];
   row: number;
   col: number;
+}
+
+/** L3 AI 探索知识与解读，与 /api/v1/l3-aide 对齐。 */
+export interface AideQuality {
+  status: "pass" | "warn" | "unknown" | string;
+  label: string;
+  detail: string;
+}
+
+export interface AideLlm {
+  used: boolean;
+  fallback: boolean;
+  reason: string;
+  detail?: string | null;
+  model?: string | null;
+  baseUrl?: string | null;
+}
+
+export interface AideLlmDim {
+  id: string;
+  label: string;
+  score: number;
+  max: number;
+  effect: string;
+  why: string;
+}
+
+export interface AideLlmSection {
+  id: string;
+  label: string;
+  text: string;
+}
+
+export interface AideLlmLeverage {
+  score: number;
+  max: number;
+  percent: number;
+  band: string;
+  note: string;
+  dims: AideLlmDim[];
+  sections?: AideLlmSection[];
+}
+
+export interface AideKnowledge {
+  id: string;
+  title: string;
+  group: string;
+  definition: string;
+  method: string;
+  input: string;
+  output: string;
+  accuracy: string[];
+  llmMay: string[];
+  llmMustNot: string[];
+  llmPrompt: string;
+  llmLeverage?: AideLlmLeverage;
+}
+
+export interface AideAlgoRun {
+  success: boolean;
+  algorithmId: string;
+  message?: string;
+  stats: { min: number; max: number; mean: number } | null;
+  quality: AideQuality;
+  runComment: string;
+  templateComment?: string;
+  prompt?: { system: string; user: string };
+  llm: AideLlm;
+}
+
+/** 文献页主张条目：不含内部实现路径。 */
+export interface SourcePanelClaimSource {
+  referenceId: string;
+  authors: string;
+  year: string;
+  title: string;
+  url: string;
+}
+
+export interface SourcePanelClaimItem {
+  claimId: string;
+  title: string;
+  text: string;
+  statusLabel: string;
+  gradeLabel: string;
+  referenceIds: string[];
+  sources: SourcePanelClaimSource[];
+}
+
+/** 文献页参考文献：必须带上所支持的主张。 */
+export interface SourcePanelSupportedClaim {
+  claimId: string;
+  title: string;
+  text: string;
+}
+
+export interface SourcePanelReferenceItem {
+  referenceId: string;
+  authors: string;
+  year: string;
+  title: string;
+  venue: string;
+  url: string;
+  summary: string;
+  supportedClaims: SourcePanelSupportedClaim[];
+}
+
+/** 文献页三部分绑定视图。 */
+export interface SourcePanelView {
+  method: string;
+  gradeLabel: string;
+  claims: SourcePanelClaimItem[];
+  references: SourcePanelReferenceItem[];
+  implementationClaims: SourcePanelClaimItem[];
+  implementationDiffs: string[];
 }

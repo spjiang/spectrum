@@ -9,7 +9,7 @@ from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_prev
 from common.response import err_response, ok_response
 
 ALGORITHM_ID = "39_few_shot_classify"
-TITLE = "少样本/迁移学习分类"
+TITLE = "SAM均值原型少样本分类"
 IMPLEMENTED = True
 LEVEL = "L3"
 

@@ -7,7 +7,8 @@ from fastapi import UploadFile
 from common.impl import parse_params
 from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_upload
 from common.response import err_response, ok_response
-from common.rs.sensor import dark_current_correct
+from common.rs.sensor import dark_current_correct, dark_current_correct_to_path
+from common.rs.stream import raster_hwc, read_overview_cube, should_stream
 
 ALGORITHM_ID = "06_dark_current"
 TITLE = "暗电流校正"
@@ -23,27 +24,42 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     _ = params
     job = new_job_dir(ALGORITHM_ID)
     path = await save_upload(file, job)
-    arr, profile = load_raster(path)
-    cube = as_cube(arr.astype(np.float64))
-    dark = None
-    if file2 is not None:
-        dpath = await save_upload(file2, job)
-        dark_arr, _ = load_raster(dpath)
-        dark = as_cube(dark_arr.astype(np.float64))
-        if dark.shape != cube.shape:
+    dpath = await save_upload(file2, job) if file2 is not None else None
+    out = job / "dn_dark_corrected.tif"
+    if should_stream(path):
+        if dpath is not None and raster_hwc(dpath) != raster_hwc(path):
             return err_response(
                 algorithm_id=ALGORITHM_ID,
                 algorithm=TITLE,
-                message=f"暗帧尺寸须为 {cube.shape}，实际 {dark.shape}",
+                message=f"暗帧尺寸须为 {raster_hwc(path)}，实际 {raster_hwc(dpath)}",
             )
-    out_cube, meta = dark_current_correct(cube, dark)
-    out = job / "dn_dark_corrected.tif"
-    save_geotiff(out_cube.astype(np.float32), out, profile=profile)
+        meta = dark_current_correct_to_path(path, out, dpath)
+        preview = read_overview_cube(out)
+        mean = float(preview.mean())
+        shape = list(raster_hwc(out))
+        shape = [shape[0], shape[1], shape[2]]
+    else:
+        arr, profile = load_raster(path)
+        cube = as_cube(arr.astype(np.float64))
+        dark = None
+        if dpath is not None:
+            dark_arr, _ = load_raster(dpath)
+            dark = as_cube(dark_arr.astype(np.float64))
+            if dark.shape != cube.shape:
+                return err_response(
+                    algorithm_id=ALGORITHM_ID,
+                    algorithm=TITLE,
+                    message=f"暗帧尺寸须为 {cube.shape}，实际 {dark.shape}",
+                )
+        out_cube, meta = dark_current_correct(cube, dark)
+        save_geotiff(out_cube.astype(np.float32), out, profile=profile)
+        mean = float(out_cube.mean())
+        shape = list(out_cube.shape)
     return ok_response(
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
         message="暗电流+列 FPN 校正完成",
-        data={**meta, "shape": list(out_cube.shape), "mean": float(out_cube.mean()), "format": "GeoTIFF"},
+        data={**meta, "shape": shape, "mean": mean, "format": "GeoTIFF"},
         files={"cube_tif": str(out.resolve())},
     )

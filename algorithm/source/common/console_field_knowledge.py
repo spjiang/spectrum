@@ -54,10 +54,11 @@ COMMON: dict[str, dict[str, Any]] = {
     "red_band": _field(
         "红光波段索引",
         unit="波段索引（从 0 开始）",
-        range_text="0 至波段数−1；推荐对应 620–680 nm",
+        range_text="0 至波段数−1；典型对应约 630–690 nm，具体由传感器光谱响应决定",
         selection_guide=(
             "填写红光反射率在数组中的位置，索引从 0 开始，不是波长值；不能直接填写 660。"
-            "应读取影像 wavelength 元数据，选择最接近 620–680 nm 的有效波段。"
+            "应读取影像 wavelength 元数据，按传感器光谱响应选择红光区域有效波段。"
+            "典型窗口约 630–690 nm（Landsat TM Band 3 / Tucker 1979 红光窗口），不是所有传感器的固定标准。"
         ),
         effect="红光反射率越高，NDVI 等归一化植被指数通常越低。",
         risk="误选红边或近红外会改变指数物理意义；示例默认索引不能照搬到其他传感器。",
@@ -66,10 +67,11 @@ COMMON: dict[str, dict[str, Any]] = {
     "nir_band": _field(
         "近红外波段索引",
         unit="波段索引（从 0 开始）",
-        range_text="0 至波段数−1；植被应用通常对应 760–900 nm",
+        range_text="0 至波段数−1；植被应用典型对应约 760–900 nm，具体由传感器光谱响应决定",
         selection_guide=(
             "填写近红外反射率在数组中的位置，索引从 0 开始，不是波长值。"
-            "应避开强水汽吸收区和传感器边缘低信噪比波段。"
+            "应按传感器光谱响应取近红外高原有效波段；典型窗口约 760–900 nm（Landsat TM Band 4），"
+            "并避开强水汽吸收区和传感器边缘低信噪比波段。"
         ),
         effect="健康植被近红外反射率较高，通常会提高 NDVI、NDRE 等指数。",
         risk="选成红边、短波红外或低信噪比波段会造成指数偏差和噪声放大。",
@@ -111,6 +113,15 @@ COMMON: dict[str, dict[str, Any]] = {
         ),
         effect="叶片和水体含水量变化会显著改变短波红外反射率。",
         risk="VNIR 传感器没有真实 SWIR 波段；用最后一个近红外波段替代会使 NDMI/MNDWI 无物理意义。",
+    ),
+    "gamma": _field(
+        "ARVI 大气气溶胶权重",
+        unit="无量纲",
+        range_text="通常 0–1；Kaufman 与 Tanré 常用 1",
+        selection_guide="γ 进入 RB = RED − γ(BLUE − RED)。没有本地气溶胶标定前保持 1，不要把它当成已经做完大气校正。",
+        effect="γ 增大时蓝光对红光修正更强，ARVI 对气溶胶残差更敏感，也更容易被蓝光噪声带偏。",
+        risk="γ 不是本传感器现场标定；蓝光差或阴影重时不要解释 ARVI。",
+        example="演示数据默认 1.0。",
     ),
     "cruise_speed_m_s": _field(
         "巡航速度",
@@ -172,7 +183,7 @@ COMMON: dict[str, dict[str, Any]] = {
         "强制剔除波段列表",
         unit="波段索引列表（从 0 开始）",
         range_text="JSON 整数数组；每项为 0 至波段数−1",
-        selection_guide="填写已知坏波段、传感器边缘波段或强吸收区索引，并与自动 SNR 判定结果复核。",
+        selection_guide="填写已知坏波段、传感器边缘波段或强吸收区索引，并与场景像元均值/标准差比（非传感器 SNR）的候选结果复核。",
         effect="列表越长，保留特征越少但可减少明显噪声。",
         risk="误删关键吸收或红边波段会损失分类、反演信息；索引不可写成波长。",
     ),
@@ -207,6 +218,41 @@ COMMON: dict[str, dict[str, Any]] = {
         effect="成分增多可保留更多信息，同时增加噪声、存储和计算量。",
         risk="过少会丢失小目标或窄吸收信息，过多会保留噪声并削弱降维意义。",
     ),
+    "n_lai": _field(
+        "叶面积表有几档",
+        unit="个",
+        range_text="≥ 2；默认 25，覆盖 0.2–6.0",
+        selection_guide="默认 25。演示可更稀；想更平滑可加密，但加密不能替代真实波长和几何。",
+        effect="档数增多，叶面积平均更连续，PROSAIL 也更慢。",
+        risk="过稀会出台阶；再密也补不了写死的土壤、叶倾角和叶片水。",
+        example="默认填写 25。",
+    ),
+    "n_cab": _field(
+        "叶绿素表有几档",
+        unit="个",
+        range_text="≥ 2；默认 16，覆盖 10–70 μg/cm²",
+        selection_guide="默认 16。叶绿素变化大时可适当加密，和 n_lai 一起决定表有多大。",
+        effect="档数增多，叶绿素平均更细，正演次数也增加。",
+        risk="过稀会出台阶；过密只是更慢。",
+        example="默认填写 16。",
+    ),
+    "best_frac": _field(
+        "平均最好的那部分表行",
+        unit="比例（0–1）",
+        range_text="大于 0 且不超过 1；默认 0.05",
+        selection_guide="默认 0.05：400 条表大约平均 20 条。这是 Weiss 多解平均的工程截法。",
+        effect="比例增大更平滑，也更容易把不像的行混进去。",
+        risk="过大等于乱平均；过小退回只抄最像的一条。",
+        example="默认填写 0.05。",
+    ),
+    "cost_method": _field(
+        "比像不像的尺子",
+        range_text="rmse 或 sam",
+        selection_guide="默认 rmse，同时看形状和明暗。整体亮度不可信、更看曲线形状时改 sam。",
+        effect="rmse 对明暗敏感；sam 对整体变亮变暗不敏感。",
+        risk="两把尺子的数字不能横比；乱填会直接失败。",
+        example="当前实现填写 rmse。",
+    ),
     "n_segments": _field(
         "目标超像素数量",
         unit="个",
@@ -222,6 +268,42 @@ COMMON: dict[str, dict[str, Any]] = {
         selection_guide="结合空间分辨率和目标尺寸选择，确保窗口中心与标签定义一致。",
         effect="窗口增大可引入更多空间上下文，也增加混合像元和计算量。",
         risk="窗口过大可能跨类别边界并造成标签污染；偶数窗口中心定义不明确。",
+    ),
+    "tile_size": _field(
+        "分块边长",
+        unit="像元",
+        range_text="正整数；建议 256–2048。小于 16 时退回整幅计算",
+        selection_guide="按机器内存和影像边长选择。十几平方公里应使用 512 或 1024，先把 RGB 降到 8 通道网格再配准或镶嵌。",
+        effect="块越小峰值内存越低，块过多会增加重投影和 FFT 次数。",
+        risk="块过小导致相位相关不稳定；块过大仍可能整幅占满内存。",
+        example="512",
+    ),
+    "tile_rows": _field(
+        "正射行块高度",
+        unit="行",
+        range_text="正整数；默认 256 行一块",
+        selection_guide="按影像高度和内存选择。大图用 128–512 行；演示小图可等于整幅高度。",
+        effect="分行计算降低共线方程网格的峰值内存，结果应与整幅一次计算一致。",
+        risk="取值过小会增加循环开销；不能替代空三和分片 DEM 的生产正射。",
+        example="256",
+    ),
+    "workers": _field(
+        "并行线程数",
+        unit="个",
+        range_text="0 表示按 CPU 核数自动取值，上限 32",
+        selection_guide="16 核机器保持 0。只跑一路时可用满核；RGB 与 8 通道各开一个任务时各用一半，避免抢满内存。",
+        effect="行块正射、镶嵌窗和配准分块可同时计算，缩短墙钟。",
+        risk="线程过多会争用内存和磁盘；本实现用线程而非多进程，避免 GDAL 多进程死锁。",
+        example="0",
+    ),
+    "gsd_out": _field(
+        "输出地面采样距离",
+        unit="m",
+        range_text="正数；不填则按航高×像元尺寸/焦距推算",
+        selection_guide="融合时把 RGB 正射锁到 8 通道 GSD（常见 0.2–0.5 m），不要锁到厘米级可见光。",
+        effect="增大 GSD 减少输出像元、加快正射与后续镶嵌。",
+        risk="填得过粗会损失空间细节；填得过细会把内存和时间重新打满。",
+        example="0.3",
     ),
     "test_size": _field(
         "测试集比例",
@@ -616,7 +698,7 @@ COMMON.update(
         ),
         "preprocess": _field(
             "回归光谱预处理",
-            range_text="当前实现支持 snv",
+            range_text="snv 或 none",
             selection_guide="训练和推理必须使用相同预处理；仅在散射变化明显且绝对尺度不是目标信息时使用 SNV。",
             effect="SNV 会逐样本移除均值并按标准差缩放，改变绝对反射率尺度。",
             risk="目标与绝对幅值相关时，SNV 可能删除有效信息。",
@@ -650,13 +732,13 @@ COMMON.update(
             example="60% 旁向重叠填写 0.6。",
         ),
         "snr_ratio": _field(
-            "相对中位 SNR 阈值",
+            "场景像元均值/标准差比相对阈值（兼容参数名）",
             unit="比例",
             range_text="大于等于 0",
-            selection_guide="基于校准数据或代表性场景的逐波段 SNR 分布设置，并人工复核吸收区。",
+            selection_guide="基于代表性场景的逐波段像元均值/标准差比分布设置，并人工复核吸收区；该值不是传感器 SNR。",
             effect="阈值提高会判定更多波段为坏波段。",
-            risk="场景纹理可能影响统计 SNR，单景自动阈值会误删真实低反射吸收特征。",
-            example="低于中位 SNR 的 0.4 倍可标记为候选坏波段。",
+            risk="场景纹理会直接影响该比值，单景自动阈值可能误删真实低反射吸收特征。",
+            example="低于场景比值中位数的 0.4 倍可标记为候选坏波段。",
         ),
         "wavelengths_nm": _field(
             "波段中心波长",
@@ -727,6 +809,63 @@ COMMON.update(
 
 ALGORITHM_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
     (
+        "33_physical_inversion",
+        "file",
+    ): _field(
+        "地表反射率立方体",
+        selection_guide="必须是与 PROSAIL 定义一致的地表反射率；波段顺序固定，并尽量带真实中心波长。",
+        effect="每个像元的光谱拿去和查找表比像不像，决定叶面积和叶绿素。",
+        risk="把 DN 或辐亮度当反射率，整张表都会对错。",
+    ),
+    (
+        "33_physical_inversion",
+        "wavelengths_nm",
+    ): _field(
+        "波段中心波长",
+        unit="nm",
+        range_text="长度等于光谱波段数的数值数组",
+        selection_guide="填传感器标定文件里的中心波长，裁波段后同步裁数组。缺省会用 450–850 nm 假等间隔。",
+        effect="决定 PROSAIL 模拟光谱插到你的哪些纳米位置。",
+        risk="缺省假波长可让参数图看起来平滑，但位置全错。",
+        example="8 个波段可填与立方体一一对应的纳米数组。",
+    ),
+    (
+        "33_physical_inversion",
+        "solar_zenith",
+    ): _field(
+        "太阳天顶角",
+        unit="度（°）",
+        range_text="0–90；0 表示太阳在头顶",
+        selection_guide="用采集时刻和经纬度计算，不要用处理时刻。默认 30° 只是占位。",
+        effect="改查找表里光谱被太阳照亮的形状，从而改 LAI/Cab 匹配。",
+        risk="把太阳高度角当天顶角会差一个互余；这不是 BRDF 校正页的核系数。",
+        example="中纬度上午常见 25–40°。",
+    ),
+    (
+        "33_physical_inversion",
+        "view_zenith",
+    ): _field(
+        "观测天顶角",
+        unit="度（°）",
+        range_text="通常 0–90；0 表示垂直下视",
+        selection_guide="天底飞行填 0；宽视场边缘其实各不相同，本仓库整景只用一个角。",
+        effect="改冠层二向反射，影响表里光谱形状。",
+        risk="航带很宽时，单一角度会把边缘像元匹配偏。",
+        example="近似天底可填 0。",
+    ),
+    (
+        "33_physical_inversion",
+        "relative_azimuth",
+    ): _field(
+        "相对方位角",
+        unit="度（°）",
+        range_text="通常 0–180；按太阳方位与观测方位计算",
+        selection_guide="太阳在观测方向正后方时接近 0°（后向）；相对方位会改前向/后向散射。",
+        effect="改查找表光谱的明暗和形状，不是 BRDF 核的输入专用字段。",
+        risk="符号或 360° 周期没处理会对整景造成系统偏差。",
+        example="近似后向散射可填 0。",
+    ),
+    (
         "22_normalize",
         "method",
     ): _field(
@@ -765,6 +904,12 @@ ALGORITHM_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
 
 
 FILE_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
+    ("33_physical_inversion", "file"): _field(
+        "地表反射率立方体",
+        selection_guide="必须是与 PROSAIL 定义一致的地表反射率；波段顺序固定，并尽量带真实中心波长。",
+        effect="每个像元的光谱拿去和查找表比像不像，决定叶面积和叶绿素。",
+        risk="把 DN 或辐亮度当反射率，整张表都会对错。",
+    ),
     ("06_dark_current", "file2"): _field(
         "暗帧参考影像",
         selection_guide="使用同设备、同增益、同积分时间和相近温度条件下遮光采集的暗帧。",

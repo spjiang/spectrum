@@ -8,23 +8,27 @@ from common.impl import parse_params, write_json
 from common.io import as_cube, load_raster, new_job_dir, save_upload
 from common.response import err_response, ok_response
 from common.rs.qc import flight_qc
+from common.rs.stream import read_overview_cube, should_stream
 
 ALGORITHM_ID = "04_flight_qc"
-TITLE = "架次质检（丢帧/过曝）"
+TITLE = "架次过曝与场景统计质检"
 IMPLEMENTED = True
 LEVEL = "L0"
 
 
 async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
-    """params.bit_depth、max_saturated_ratio。"""
+    """params.bit_depth、max_saturated_ratio。大图抽稀统计，禁止整景载入。"""
     _ = file2
     params, err = parse_params(params_json)
     if err:
         return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message=err)
     job = new_job_dir(ALGORITHM_ID)
     path = await save_upload(file, job)
-    arr, _ = load_raster(path)
-    cube = as_cube(arr.astype(np.float64))
+    if should_stream(path):
+        cube = read_overview_cube(path)
+    else:
+        arr, _ = load_raster(path)
+        cube = as_cube(arr.astype(np.float64))
     bit_depth = params.get("bit_depth")
     report = flight_qc(
         cube,

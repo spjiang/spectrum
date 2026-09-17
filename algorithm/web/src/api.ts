@@ -1,4 +1,13 @@
-import type { AlgorithmCard, RasterMeta, RunResult, SpectrumPoint } from "./types";
+import type { LlmConfig } from "./llmConfig";
+import { llmRequestBody } from "./llmConfig";
+import type {
+  AideAlgoRun,
+  AideKnowledge,
+  AlgorithmCard,
+  RasterMeta,
+  RunResult,
+  SpectrumPoint,
+} from "./types";
 
 async function readJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -89,4 +98,51 @@ export async function fetchSpectrum(
   col: number,
 ): Promise<SpectrumPoint> {
   return readJson<SpectrumPoint>(await fetch(spectrumUrl(previewUrl, row, col)));
+}
+
+export async function fetchAideKnowledge(id: string): Promise<AideKnowledge> {
+  const res = await fetch(`/api/v1/l3-aide/algorithms/${id}`, { cache: "no-store" });
+  let data: AideKnowledge & { message?: string };
+  try {
+    data = (await res.json()) as AideKnowledge & { message?: string };
+  } catch {
+    throw new Error("算法服务返回不是 JSON");
+  }
+  if (!res.ok) {
+    throw new Error(data.message || "无法加载该算法的解读知识");
+  }
+  return data;
+}
+
+export async function interpretAideAlgorithm(
+  id: string,
+  result: { data?: Record<string, unknown>; files?: Record<string, string> } | null,
+  config?: LlmConfig,
+  prompt?: { system?: string; user?: string },
+): Promise<AideAlgoRun> {
+  const llm = config ? llmRequestBody(config) : undefined;
+  const runData = result?.data && typeof result.data === "object" ? result.data : {};
+  const files = result?.files && typeof result.files === "object" ? Object.keys(result.files) : [];
+  const system = prompt?.system?.trim() || "";
+  const user = prompt?.user?.trim() || "";
+  const res = await fetch(`/api/v1/l3-aide/algorithms/${id}/interpret`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      data: runData,
+      files,
+      ...(llm ? { llm } : {}),
+      ...(system || user ? { prompt: { system, user } } : {}),
+    }),
+  });
+  let body: AideAlgoRun & { message?: string };
+  try {
+    body = (await res.json()) as AideAlgoRun & { message?: string };
+  } catch {
+    throw new Error("算法服务返回不是 JSON");
+  }
+  if (!res.ok) {
+    throw new Error(body.message || `解读失败 ${res.status}`);
+  }
+  return body;
 }

@@ -1,19 +1,11 @@
 <template>
   <section class="output-workbench" aria-label="输出分析工作台">
     <header class="workbench-summary">
-      <p class="kicker">知识库说明</p>
       <h3>{{ algo.title }} 主要产物</h3>
       <p>{{ algo.output_summary.what }}</p>
-      <p><strong>业务判断：</strong>{{ algo.output_summary.value }}</p>
-      <p class="workbench-caution"><strong>使用边界：</strong>{{ algo.output_summary.caution }}</p>
-      <p class="workbench-hint">
-        「原始返回」按字段从上到下展示算法服务信封。
-        「字段解读」对同一批字段做可视化与说明。
-        「综合分析」合并核心指标、质量检查与下游应用。
-        files_http 与 job_id 仅用于页面预览，不属于算法原始返回。
-      </p>
-      <p v-if="!hasRun" class="workbench-hint">尚未执行。运行后第一个标签显示原始信封；此前仅能查看预期产物说明。</p>
-      <p v-else-if="!runOk" class="workbench-hint">本次执行未成功，原始返回中仍保留信封字段，不生成虚假质量结论。</p>
+      <p class="workbench-caution">{{ algo.output_summary.caution }}</p>
+      <p v-if="!hasRun" class="workbench-hint">尚未执行。运行后显示接口返回。</p>
+      <p v-else-if="!runOk" class="workbench-hint">本次执行未成功。仍列出返回字段，不生成虚假质量结论。</p>
     </header>
 
     <nav class="workbench-tabs" role="tablist" aria-label="输出分析分类">
@@ -46,18 +38,40 @@
             <code class="mono">{{ algo.endpoint }}</code>
           </div>
         </header>
-        <p v-if="!apiPayload" class="workbench-hint">尚未执行，没有算法服务返回。运行后将按字段从上到下展示。</p>
+        <p v-if="!apiPayload" class="workbench-hint">尚未执行，没有算法服务返回。</p>
         <template v-else>
-          <p>算法服务原始字段仅包含 success、algorithm_id、algorithm、implemented、message、data、files。以下按返回顺序逐项展开。</p>
-          <ol class="workbench-field-list">
-            <li v-for="item in apiFields" :key="`raw-${item.path}`" class="workbench-field">
-              <div class="workbench-field-head">
-                <strong>{{ fieldTitle(item.path, knowledgeOf(item.path)) }}</strong>
-                <code class="mono">{{ item.path }}</code>
-              </div>
-              <pre class="data workbench-field-value">{{ displayFieldValue(item.value) }}</pre>
-            </li>
-          </ol>
+          <section
+            v-for="group in apiGroups"
+            :key="group.id"
+            class="workbench-kv-group"
+          >
+            <h4>{{ group.label }}</h4>
+            <table class="workbench-kv">
+              <thead>
+                <tr>
+                  <th>字段</th>
+                  <th>键</th>
+                  <th>值</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in group.fields" :key="`raw-${item.path}`">
+                  <td>{{ fieldTitle(item.path, knowledgeOf(item.path)) }}</td>
+                  <td><code class="mono">{{ item.path }}</code></td>
+                  <td>
+                    <code
+                      v-if="isInlineApiValue(item.value)"
+                      class="mono workbench-kv-value"
+                    >{{ displayFieldValue(item.value) }}</code>
+                    <pre
+                      v-else
+                      class="workbench-kv-block"
+                    >{{ displayStructuredValue(item.value) }}</pre>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
           <details class="workbench-json-details">
             <summary>完整 JSON</summary>
             <pre class="data workbench-api-json">{{ JSON.stringify(apiPayload, null, 2) }}</pre>
@@ -74,6 +88,7 @@
       aria-labelledby="workbench-tab-fields"
     >
       <p v-if="!apiPayload" class="workbench-hint">尚未执行，无法对返回字段做可视化解读。</p>
+      <p v-else-if="!interpretedFields.length" class="workbench-hint">本次返回没有 data / files 产物字段。</p>
       <article
         v-for="field in interpretedFields"
         :key="`vis-${field.path}`"
@@ -85,28 +100,25 @@
             <strong>{{ field.title }}</strong>
             <code class="mono">{{ field.path }}</code>
           </div>
-          <span
-            v-if="field.help.source === 'pending'"
-            class="workbench-status unknown"
-          >说明待补充</span>
-          <span
-            v-else-if="field.status"
-            class="workbench-status"
-            :class="field.status"
-          >{{ statusLabel(field.status) }}</span>
+          <div class="workbench-card-aside">
+            <code class="mono workbench-kv-value">{{ field.display }}</code>
+            <span
+              v-if="field.help.source === 'pending'"
+              class="workbench-status unknown"
+            >说明待补充</span>
+            <template v-else-if="field.status">
+              <span class="workbench-status" :class="field.status">{{ statusLabel(field.status) }}</span>
+              <p class="workbench-status-why">{{ statusExplain(field.status, field.row) }}</p>
+            </template>
+          </div>
         </header>
 
-        <p class="workbench-api-line">
-          <span class="kicker">接口返回值</span>
-          <strong>{{ field.display }}</strong>
-        </p>
-
-        <div class="field-vis" :data-kind="field.visKind">
-          <template v-if="field.visKind === 'boolean'">
-            <span class="bool-chip" :class="{ on: field.value === true }">true</span>
-            <span class="bool-chip" :class="{ on: field.value === false }">false</span>
-          </template>
-          <template v-else-if="field.domain">
+        <div
+          v-if="showsFieldVis(field)"
+          class="field-vis"
+          :data-kind="field.visKind"
+        >
+          <template v-if="field.domain">
             <div class="num-axis" :aria-label="`${field.path} 数值轴`">
               <span>{{ field.domain.min }}</span>
               <div class="num-bar">
@@ -114,7 +126,7 @@
               </div>
               <span>{{ field.domain.max }}</span>
             </div>
-            <p class="field-vis-caption">标记位置为当前返回值 {{ field.display }}</p>
+            <p class="field-vis-caption">当前值 {{ field.display }}</p>
           </template>
           <template v-else-if="field.shape">
             <div class="shape-vis">
@@ -126,7 +138,7 @@
             </div>
           </template>
           <template v-else-if="field.visKind === 'file'">
-            <p v-if="field.fileAsset" class="workbench-hint">下方预览使用控制台派生的 files_http，不是 files 中的原始路径。</p>
+            <p v-if="field.fileAsset" class="workbench-hint">预览使用控制台派生的 files_http，不是 files 中的原始路径。</p>
             <VisPanel
               v-if="field.fileAsset"
               :title="field.title"
@@ -143,28 +155,22 @@
               </li>
             </ol>
           </template>
-          <p v-else-if="field.visKind === 'number'" class="num-plain">
-            <span>{{ field.display }}</span>
-          </p>
-          <p v-else-if="field.visKind === 'empty'" class="workbench-hint">该字段为空。</p>
-          <pre v-else class="data workbench-field-value">{{ field.display }}</pre>
+          <pre v-else class="workbench-kv-block">{{ field.display }}</pre>
         </div>
 
-        <div class="workbench-knowledge">
-          <p class="kicker">{{ helpSourceLabel(field.help.source) }}</p>
-          <p>{{ field.help.text }}</p>
-          <template v-if="field.row">
-            <dl class="field-meta">
-              <div v-if="field.row.format"><dt>格式</dt><dd>{{ field.row.format }}</dd></div>
-              <div v-if="field.row.unit"><dt>单位</dt><dd>{{ field.row.unit }}</dd></div>
-              <div v-if="field.row.range"><dt>范围</dt><dd>{{ field.row.range }}</dd></div>
-              <div v-if="field.row.conditional"><dt>条件</dt><dd>{{ field.row.conditional }}</dd></div>
-            </dl>
-            <p><strong>效果：</strong>{{ field.row.effect }}</p>
-            <p><strong>业务含义：</strong>{{ field.row.businessMeaning }}</p>
-            <p><strong>如何解读：</strong>{{ field.row.interpretation }}</p>
-          </template>
-        </div>
+        <p class="workbench-field-help">{{ field.help.text }}</p>
+        <dl v-if="field.row" class="field-meta">
+          <div v-if="field.row.format"><dt>格式</dt><dd>{{ field.row.format }}</dd></div>
+          <div v-if="field.row.unit"><dt>单位</dt><dd>{{ field.row.unit }}</dd></div>
+          <div v-if="field.row.range"><dt>范围</dt><dd>{{ field.row.range }}</dd></div>
+          <div v-if="field.row.conditional"><dt>条件</dt><dd>{{ field.row.conditional }}</dd></div>
+        </dl>
+        <details v-if="field.row" class="workbench-more">
+          <summary>补充说明</summary>
+          <p><strong>效果：</strong>{{ field.row.effect }}</p>
+          <p><strong>字段含义：</strong>{{ field.row.businessMeaning }}</p>
+          <p><strong>解读：</strong>{{ field.row.interpretation }}</p>
+        </details>
         <details v-if="field.row?.bands?.length">
           <summary>波段结构</summary>
           <ul>
@@ -197,36 +203,52 @@
                 <strong>{{ row.label }}</strong>
                 <code class="mono">{{ row.name }}</code>
               </div>
-              <span
-                v-if="hasRun"
-                class="workbench-status"
-                :class="rowStatus(row)"
-              >{{ statusLabel(rowStatus(row)) }}</span>
+              <div v-if="hasRun" class="workbench-card-aside">
+                <span class="workbench-status" :class="rowStatus(row)">{{ statusLabel(rowStatus(row)) }}</span>
+                <p class="workbench-status-why">{{ statusExplain(rowStatus(row), row) }}</p>
+              </div>
             </header>
             <p class="workbench-api-line">
-              <span class="kicker">接口返回值</span>
-              <code class="mono">{{ row.name }}</code>
+              <span class="kicker">返回值</span>
               <strong>{{ hasRun ? displayFieldValue(resolveOutputValue(row, result)) : "尚未执行" }}</strong>
             </p>
-            <div class="workbench-knowledge">
-              <p class="kicker">知识库说明</p>
-              <p>{{ row.description }}</p>
-              <dl class="field-meta">
-                <div v-if="row.unit"><dt>单位</dt><dd>{{ row.unit }}</dd></div>
-                <div v-if="row.range"><dt>范围</dt><dd>{{ row.range }}</dd></div>
-                <div v-if="row.qualityRule?.basis"><dt>判定依据</dt><dd>{{ row.qualityRule.basis }}</dd></div>
-              </dl>
+            <p class="workbench-field-help">{{ row.description }}</p>
+            <dl class="field-meta">
+              <div v-if="row.unit"><dt>单位</dt><dd>{{ row.unit }}</dd></div>
+              <div v-if="row.range"><dt>范围</dt><dd>{{ row.range }}</dd></div>
+              <div v-if="row.qualityRule?.basis"><dt>判定依据</dt><dd>{{ row.qualityRule.basis }}</dd></div>
+            </dl>
+            <details class="workbench-more">
+              <summary>补充说明</summary>
               <p><strong>效果：</strong>{{ row.effect }}</p>
-              <p><strong>业务含义：</strong>{{ row.businessMeaning }}</p>
-              <p><strong>如何解读：</strong>{{ row.interpretation }}</p>
-            </div>
+              <p><strong>字段含义：</strong>{{ row.businessMeaning }}</p>
+              <p><strong>解读：</strong>{{ row.interpretation }}</p>
+            </details>
           </article>
         </div>
       </section>
 
       <section class="analysis-section">
         <h4>质量检查</h4>
-        <p v-if="!hasRun" class="workbench-hint">执行后将依据结构化规则评估，当前不可判定。</p>
+        <dl class="workbench-status-legend">
+          <div>
+            <dt>符合门槛</dt>
+            <dd>返回值落在知识库登记的可计算范围内。</dd>
+          </div>
+          <div>
+            <dt>未设门槛</dt>
+            <dd>该字段没有自动阈值，需按说明人工核对。</dd>
+          </div>
+          <div>
+            <dt>超出门槛</dt>
+            <dd>返回值越出登记范围。</dd>
+          </div>
+          <div>
+            <dt>未产生</dt>
+            <dd>条件输出本次没有写出。</dd>
+          </div>
+        </dl>
+        <p v-if="!hasRun" class="workbench-hint">尚未执行，无法对照门槛。</p>
         <template v-else>
           <section v-for="group in qualityGroups" :key="group.status" class="workbench-quality-group">
             <h5>
@@ -241,12 +263,15 @@
                     <code class="mono">{{ row.name }}</code>
                   </div>
                 </header>
+                <p class="workbench-status-why">{{ statusExplain(rowStatus(row), row) }}</p>
                 <p><strong>检查方法：</strong>{{ row.qualityCheck }}</p>
                 <ul v-if="row.abnormalSigns?.length">
                   <li v-for="sign in row.abnormalSigns" :key="sign">{{ sign }}</li>
                 </ul>
-                <p v-if="row.qualityRule?.basis"><strong>规则依据：</strong>{{ row.qualityRule.basis }}</p>
-                <p v-else class="workbench-hint">没有可机器判定的统一阈值，状态保持为不可判定。</p>
+                <p v-if="row.qualityRule">
+                  <strong>登记门槛：</strong>{{ formatQualityThreshold(row.qualityRule) }}
+                  · {{ row.qualityRule.basis }}
+                </p>
               </article>
             </div>
           </section>
@@ -282,16 +307,22 @@ import {
   asShape,
   asTestdataHttp,
   displayFieldValue,
+  displayStructuredValue,
   domainPercent,
   evaluateOutputStatus,
   fieldHelp,
   fieldTitle,
   fieldVisKind,
   flattenApiFields,
+  formatQualityThreshold,
+  groupApiFields,
+  isInlineApiValue,
+  isProductApiPath,
   knowledgeRowForPath,
   numericDomain,
   originalApiPayload,
   resolveOutputValue,
+  statusExplain,
   statusLabel,
 } from "../outputWorkbench";
 import type { AlgorithmCard, OutputBand, OutputFieldRow, OutputStatus, RunResult, TestdataHttp } from "../types";
@@ -321,6 +352,7 @@ const hasRun = computed(() => Boolean(props.result));
 const runOk = computed(() => props.result?.success === true);
 const apiPayload = computed(() => originalApiPayload(props.result));
 const apiFields = computed(() => flattenApiFields(apiPayload.value));
+const apiGroups = computed(() => groupApiFields(apiFields.value));
 const allRows = computed(() => props.algo.fields.outputs);
 const metricRows = computed(() => allRows.value.filter((row) => row.parent === "data"));
 
@@ -341,7 +373,7 @@ type InterpretedField = {
 };
 
 const interpretedFields = computed<InterpretedField[]>(() => {
-  const fields = apiFields.value;
+  const fields = apiFields.value.filter((item) => isProductApiPath(item.path) && item.path !== "data" && item.path !== "files");
   return fields.map((item: FlattenedApiField) => {
     const row = knowledgeRowForPath(allRows.value, item.path);
     const domain =
@@ -390,10 +422,10 @@ function knowledgeOf(path: string): OutputFieldRow | undefined {
   return knowledgeRowForPath(allRows.value, path);
 }
 
-function helpSourceLabel(source: FieldHelpSource): string {
-  if (source === "envelope") return "信封说明";
-  if (source === "knowledge") return "知识库说明";
-  return "说明待补充";
+/** 标量已在标题行展示，解读页只保留轴、栅格、文件和结构体 */
+function showsFieldVis(field: InterpretedField): boolean {
+  if (field.domain || field.shape || field.fileAsset) return true;
+  return field.visKind === "file" || field.visKind === "array" || field.visKind === "json";
 }
 
 function rowStatus(row: OutputFieldRow): OutputStatus {

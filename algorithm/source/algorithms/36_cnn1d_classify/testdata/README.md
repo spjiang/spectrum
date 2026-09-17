@@ -1,4 +1,4 @@
-# testdata · 1D-CNN/RNN光谱分类
+# testdata · 1D-CNN光谱分类
 
 Cube + 标签 GeoTIFF。
 

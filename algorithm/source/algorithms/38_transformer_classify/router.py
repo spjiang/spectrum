@@ -1,4 +1,4 @@
-"""HTTP 路由：Transformer/GCN分类。"""
+"""HTTP 路由：SpectralFormer光谱分类。"""
 from __future__ import annotations
 
 from common.routing import build_router

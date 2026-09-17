@@ -11,7 +11,7 @@ from common.response import err_response, ok_response
 from .model import train_and_predict
 
 ALGORITHM_ID = "36_cnn1d_classify"
-TITLE = "1D-CNN/RNN光谱分类"
+TITLE = "1D-CNN光谱分类"
 IMPLEMENTED = True
 LEVEL = "L3"
 

@@ -27,7 +27,13 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     except json.JSONDecodeError:
         return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message="params 不是合法 JSON")
 
-    mode = str(params.get("mode", "continuous"))
+    mode = str(params.get("mode", "continuous")).lower()
+    if mode not in {"continuous", "categorical"}:
+        return err_response(
+            algorithm_id=ALGORITHM_ID,
+            algorithm=TITLE,
+            message="mode 仅支持 continuous 或 categorical",
+        )
     job = new_job_dir(ALGORITHM_ID)
     path = await save_upload(file, job)
     arr, profile = load_raster(path)
@@ -43,15 +49,28 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     files: dict[str, str] = {}
     parcels: list[dict] = []
     geo = None
+    nodata = profile.get("nodata") if profile else None
     if file2 is not None:
         gpath = await save_upload(file2, job)
         if gpath.suffix.lower() in {".json", ".geojson"}:
             geo = load_text_or_json(gpath)
             files["parcel_geojson"] = str(gpath.resolve())
             if isinstance(geo, dict):
-                parcels = zonal_by_geojson(arr, profile, geo, mode=mode)
+                parcels = zonal_by_geojson(
+                    arr, profile, geo, mode=mode, nodata=nodata
+                )
 
     whole = arr.ravel()
+    valid = np.isfinite(whole)
+    if nodata is not None and np.isfinite(nodata):
+        valid &= whole != nodata
+    whole = whole[valid]
+    if whole.size == 0:
+        return err_response(
+            algorithm_id=ALGORITHM_ID,
+            algorithm=TITLE,
+            message="输入栅格没有可用于统计的有效像元",
+        )
     if mode == "categorical":
         vals, counts = np.unique(whole.astype(int), return_counts=True)
         total = int(counts.sum())

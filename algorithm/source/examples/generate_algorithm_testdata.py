@@ -370,6 +370,16 @@ def fixture_spec(algo_id: str, cube, dn, gt, index) -> dict:
             "note": "指数 GeoTIFF + 地块 GeoJSON。",
             "curl_extra": ' -F "file2=@./testdata/file2.geojson"',
         },
+        "46_reci": {"files": {"input.tif": cube}, "params": {"re_band": 4, "nir_band": 3}, "note": "反射率 GeoTIFF；须有真实红边。"},
+        "47_gndvi": {"files": {"input.tif": cube}, "params": {"green_band": 1, "nir_band": 3}, "note": "反射率 GeoTIFF。"},
+        "48_osavi": {"files": {"input.tif": cube}, "params": {"red_band": 2, "nir_band": 3, "L": 0.16}, "note": "反射率 GeoTIFF；L 默认 0.16。"},
+        "49_arvi": {"files": {"input.tif": cube}, "params": {"blue_band": 0, "red_band": 2, "nir_band": 3, "gamma": 1.0}, "note": "反射率 GeoTIFF。"},
+        "50_vari": {"files": {"input.tif": cube}, "params": {"blue_band": 0, "green_band": 1, "red_band": 2}, "note": "反射率 GeoTIFF；只用可见光。"},
+        "51_lai_index": {"files": {"input.tif": cube}, "params": {"blue_band": 0, "red_band": 2, "nir_band": 3}, "note": "反射率 GeoTIFF；经验 LAI，不是 PROSAIL。"},
+        "52_nbr": {"files": {"input.tif": cube}, "params": {"nir_band": 3, "swir_band": 5}, "note": "反射率 GeoTIFF；须有真实 SWIR。"},
+        "53_sipi": {"files": {"input.tif": cube}, "params": {"blue_band": 0, "red_band": 2, "nir_band": 3}, "note": "反射率 GeoTIFF。"},
+        "54_gci": {"files": {"input.tif": cube}, "params": {"green_band": 1, "nir_band": 3}, "note": "反射率 GeoTIFF。"},
+        "55_ndsi": {"files": {"input.tif": cube}, "params": {"green_band": 1, "swir_band": 5}, "note": "反射率 GeoTIFF；用途是雪，不是水。"},
     }
     return specs.get(algo_id, base)
 

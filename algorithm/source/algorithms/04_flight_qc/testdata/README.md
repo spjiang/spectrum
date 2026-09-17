@@ -1,4 +1,4 @@
-# testdata · 架次质检（丢帧/过曝）
+# testdata · 架次过曝与场景统计质检
 
 原始 DN GeoTIFF。
 

@@ -40,6 +40,9 @@
         叶绿素（红边右移）
         <input type="range" min="0" max="100" v-model.number="chlorophyll" />
       </label>
+      <p class="pv-note pv-note-takeaway">
+        这张图只画「陡坡在哪」（Guyot 红边位置）。拖滑块：叶绿素升高，虚线 REP 往右（长波）挪，表示相对更绿。它不是三波段假彩色，也不是长势打分；振幅和最陡处不在这张图上。
+      </p>
     </div>
 
     <!-- SAM 夹角 -->
@@ -191,9 +194,62 @@
     <!-- LUT -->
     <div v-else-if="viz.kind === 'lut'" class="pv-body">
       <svg viewBox="0 0 520 200" class="pv-svg">
-        <polyline v-for="(p, i) in lutLines" :key="i" :points="p" fill="none" :stroke="i === lutHit ? 'var(--warn)' : 'var(--line-strong)'" :stroke-width="i === lutHit ? 2.6 : 1.2" />
+        <polyline v-for="(p, i) in lutLines" :key="i" :points="p" fill="none" :stroke="lutHits.includes(i) ? 'var(--warn)' : 'var(--line-strong)'" :stroke-width="lutHits.includes(i) ? 2.6 : 1.2" />
         <polyline :points="lutQuery" fill="none" stroke="var(--forest)" stroke-width="2.4" stroke-dasharray="5 3" />
-        <text x="360" y="30" class="blab">虚线 = 像元 · 红 = 最近 LUT</text>
+        <text x="248" y="30" class="blab">虚线 = 这个格子 · 红 = 最像的那一批</text>
+      </svg>
+      <p class="pv-note pv-note-takeaway">
+        绿色虚线是这个格子自己的反射率。红色是对照表里跟它最像的那一批曲线（默认大约 20 条），不是只留最像的一条。这批曲线各自带着一组叶面积和叶绿素，平均之后写成 lai.tif（密不密）和 cab.tif（绿不绿）。表里土壤和叶子怎么翘是固定的，所以这两张图不是化验结果。
+      </p>
+    </div>
+
+    <!-- 处理过程流程图 -->
+    <div v-else-if="viz.kind === 'process' || viz.kind === 'lut_process'" class="pv-body">
+      <svg
+        :viewBox="`0 0 720 ${processLayout.height}`"
+        class="pv-svg pv-svg-process"
+        role="img"
+        :aria-label="viz.caption"
+      >
+        <defs>
+          <marker id="fp-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="var(--ink-soft)" />
+          </marker>
+        </defs>
+        <g v-for="(g, gi) in processLayout.laid" :key="gi">
+          <g v-for="(b, bi) in g.boxes" :key="bi">
+            <rect
+              :x="b.x"
+              :y="b.y"
+              :width="b.w"
+              :height="b.h"
+              rx="6"
+              fill="var(--paper)"
+              :stroke="b.stroke"
+              stroke-width="2"
+            />
+            <text :x="b.x + 14" :y="b.y + 22" class="fp-kicker">{{ b.item.kicker }}</text>
+            <text
+              v-if="b.item.note"
+              :x="b.x + b.w - 14"
+              :y="b.y + 22"
+              text-anchor="end"
+              class="fp-sub"
+            >{{ b.item.note }}</text>
+            <text :x="b.x + 14" :y="b.y + 42" class="fp-title">{{ b.item.title }}</text>
+          </g>
+        </g>
+        <line
+          v-for="(a, ai) in processLayout.arrows"
+          :key="'arr' + ai"
+          :x1="a.x1"
+          :y1="a.y1"
+          :x2="a.x2"
+          :y2="a.y2"
+          stroke="var(--ink-soft)"
+          stroke-width="1.5"
+          marker-end="url(#fp-arrow)"
+        />
       </svg>
     </div>
 
@@ -315,7 +371,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { PrincipleViz } from "../principles/types";
+import type { PrincipleViz, ProcessStage, ProcessStageTone } from "../principles/types";
 
 const props = defineProps<{ viz: PrincipleViz }>();
 
@@ -502,8 +558,9 @@ const lutLines = [
   wavePts(0.5, 0, 0.4),
   wavePts(0.7, 0.4, 0.7),
   wavePts(1.0, 0.1, 1.0),
+  wavePts(0.92, 0.18, 0.9),
 ];
-const lutHit = 2;
+const lutHits = [2, 3];
 const lutQuery = wavePts(0.95, 0.12, 0.96);
 
 const fsA = [
@@ -538,4 +595,65 @@ function majFill(c: number, r: number, after: boolean): string {
   }
   return r <= 2 ? "var(--forest-2)" : "var(--viz-warm)";
 }
+
+const STEP_STROKES = ["var(--gold)", "var(--forest-2)", "var(--warn)"];
+
+function stageTone(stage: ProcessStage): ProcessStageTone {
+  return stage.tone ?? "step";
+}
+
+const processLayout = computed(() => {
+  const stages = props.viz.stages ?? [];
+  const groups: { tone: ProcessStageTone; items: ProcessStage[] }[] = [];
+  for (const stage of stages) {
+    const tone = stageTone(stage);
+    const last = groups[groups.length - 1];
+    if (last && last.tone === tone && tone !== "step") {
+      last.items.push(stage);
+    } else {
+      groups.push({ tone, items: [stage] });
+    }
+  }
+  const left = 80;
+  const width = 560;
+  const boxH = 58;
+  const arrow = 28;
+  const gap = 16;
+  let y = 16;
+  let stepIndex = 0;
+  const laid = groups.map((group) => {
+    const n = group.items.length;
+    const boxW = n === 1 ? width : (width - gap * (n - 1)) / n;
+    const stroke =
+      group.tone === "input"
+        ? "var(--line-strong)"
+        : group.tone === "output"
+          ? "var(--forest)"
+          : group.tone === "branch"
+            ? "var(--viz-warm)"
+            : STEP_STROKES[stepIndex++ % STEP_STROKES.length];
+    const boxes = group.items.map((item, i) => ({
+      item,
+      x: left + i * (boxW + gap),
+      y,
+      w: boxW,
+      h: boxH,
+      stroke,
+    }));
+    const node = { boxes, midX: left + width / 2, bottom: y + boxH, y };
+    y += boxH + arrow;
+    return node;
+  });
+  return {
+    laid,
+    arrows: laid.slice(0, -1).map((group, i) => ({
+      x1: group.midX,
+      y1: group.bottom,
+      x2: laid[i + 1].midX,
+      y2: laid[i + 1].y,
+    })),
+    height: groups.length ? y - arrow + 16 : 80,
+  };
+});
+
 </script>

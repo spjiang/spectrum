@@ -1,4 +1,4 @@
-"""坏波段剔除：SNR + 大气吸收窗口，并入手动 drop_bands。"""
+"""坏波段剔除：场景像元均值/标准差比 + 大气吸收窗口，并入手动列表。"""
 from __future__ import annotations
 
 from fastapi import UploadFile
@@ -9,7 +9,7 @@ from common.response import err_response, ok_response
 from common.rs.badband import auto_drop_bands
 
 ALGORITHM_ID = "20_bad_band_remove"
-TITLE = "坏波段剔除与光谱去噪"
+TITLE = "坏波段剔除"
 IMPLEMENTED = True
 LEVEL = "L2"
 
@@ -41,7 +41,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message=f"已剔除 {len(drop)} 个波段（SNR/吸收/手动），剩余 {len(keep)}",
+        message=f"已剔除 {len(drop)} 个波段（场景像元均值/标准差比/吸收/手动），剩余 {len(keep)}",
         data={
             "input_bands": cube.shape[2],
             "dropped": drop,

@@ -36,6 +36,7 @@ def zonal_by_geojson(
     geo: dict,
     *,
     mode: str = "continuous",
+    nodata: float | None = None,
 ) -> list[dict]:
     """
     将每个多边形栅格化到影像网格，统计落入像元。
@@ -72,6 +73,10 @@ def zonal_by_geojson(
             all_touched=True,
         )
         pix = arr[mask]
+        valid = np.isfinite(pix)
+        if nodata is not None and np.isfinite(nodata):
+            valid &= pix != nodata
+        pix = pix[valid]
         rec: dict[str, Any] = {
             "id": props.get("id", i),
             "name": props.get("name"),
@@ -80,6 +85,7 @@ def zonal_by_geojson(
         }
         if pix.size == 0:
             rec["empty"] = True
+            rec["status"] = "empty"
             rows.append(rec)
             continue
         if mode == "categorical":

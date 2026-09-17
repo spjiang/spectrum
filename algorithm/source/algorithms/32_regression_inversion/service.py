@@ -27,6 +27,13 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message=err)
     n_comp = int(params.get("n_components", 3))
     test_size = float(params.get("test_size", 0.3))
+    preprocess = str(params.get("preprocess", "snv")).lower()
+    if preprocess not in {"snv", "none"}:
+        return err_response(
+            algorithm_id=ALGORITHM_ID,
+            algorithm=TITLE,
+            message="preprocess 仅支持 snv 或 none",
+        )
     job = new_job_dir(ALGORITHM_ID)
     p1 = await save_upload(file, job)
     p2 = await save_upload(file2, job)
@@ -36,7 +43,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     if ymap.shape != cube.shape[:2]:
         return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message="真值图尺寸须与影像一致")
     x = cube.reshape(-1, cube.shape[2])
-    if str(params.get("preprocess", "snv")).lower() == "snv":
+    if preprocess == "snv":
         x = snv(cube).reshape(-1, cube.shape[2])
     y = ymap.ravel()
     n_comp = max(1, min(n_comp, cube.shape[2], x.shape[0] - 1))
@@ -55,7 +62,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="SNV + PLS 回归反演完成",
-        data={"r2": r2, "rmse": rmse, "n_components": n_comp, "n_train": int(len(y_tr)), "n_test": int(len(y_te)), "preprocess": "snv", "format": "GeoTIFF"},
+        message=f"{preprocess.upper()} + PLS 回归反演完成",
+        data={"r2": r2, "rmse": rmse, "n_components": n_comp, "n_train": int(len(y_tr)), "n_test": int(len(y_te)), "preprocess": preprocess, "format": "GeoTIFF"},
         files={"inversion_tif": str(tif.resolve()), "preview_png": str(png.resolve())},
     )

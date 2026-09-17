@@ -1,8 +1,7 @@
 <template>
   <section v-if="terms.length" class="abbr-box" :class="{ compact }">
-    <h4 v-if="!compact">名词对照</h4>
-    <p v-if="!compact" class="abbr-lead">标题和原理里的简称，英文全称与中文译名如下。</p>
     <table>
+      <caption>名词对照</caption>
       <thead>
         <tr>
           <th>简称</th>
@@ -18,6 +17,12 @@
         </tr>
       </tbody>
     </table>
+  </section>
+  <section v-else class="abbr-box">
+    <table>
+      <caption>名词对照</caption>
+    </table>
+    <p class="src-note">本页正文没有需要对照的字母简称。</p>
   </section>
 </template>
 

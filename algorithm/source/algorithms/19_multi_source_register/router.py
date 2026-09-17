@@ -1,4 +1,4 @@
-"""HTTP 路由：多源配准 HSI-RGB-矢量。"""
+"""HTTP 路由：HSI-RGB全局平移配准。"""
 from __future__ import annotations
 
 from common.routing import build_router

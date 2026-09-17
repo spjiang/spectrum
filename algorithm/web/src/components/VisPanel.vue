@@ -10,6 +10,19 @@
         :alt="asset.name"
         @click="onClickRaster"
       />
+      <div v-if="colorScale" class="vis-legend">
+        <div class="vis-legend-bar" aria-hidden="true" />
+        <div class="vis-legend-ticks">
+          <span>红 {{ formatIndex(colorScale.low) }} 偏低</span>
+          <span>黄 {{ formatIndex(colorScale.mid) }}</span>
+          <span>绿 {{ formatIndex(colorScale.high) }} 偏高</span>
+        </div>
+      </div>
+      <p
+        v-if="colorNote"
+        class="vis-color-note"
+        :class="{ 'vis-color-note-takeaway': isRedEdgeParamsStack }"
+      >{{ colorNote }}</p>
       <div v-if="isMap || vis === 'csv_track'" ref="mapEl" class="map" />
       <div v-if="needChart" ref="chartEl" class="chart" />
       <pre v-if="textBlock" class="data">{{ textBlock }}</pre>
@@ -47,14 +60,42 @@ let map: L.Map | null = null;
 let chart: echarts.ECharts | null = null;
 let specChart: echarts.ECharts | null = null;
 
+const colorScale = ref<{ low: number; mid: number; high: number } | null>(null);
 const vis = computed(() => props.asset?.vis || "none");
+const isRedEdgeParamsStack = computed(() => {
+  if (props.algorithmId !== "31_red_edge_params") return false;
+  return (props.asset?.name || "").toLowerCase().includes("red_edge_params");
+});
 const isImage = computed(() =>
   ["png", "raster_falsecolor", "raster_index", "raster_class"].includes(vis.value),
 );
+const colorNote = computed(() => {
+  if (isRedEdgeParamsStack.value) {
+    return "这张彩图只用来扫一眼空间上有没有成片差异，不是长势图。红不等于差、绿不等于好。要看绿势，看 Guyot 红边位置预览图，或只打开本文件第 1 层。";
+  }
+  if (vis.value === "raster_index" || colorScale.value) {
+    return "上图右侧色条和下面这行数字，就是这种颜色对应的指数值，和 TIF 格子里的数是同一套。绿=这张图里相对高，红=相对低。特别暗或特别亮的少数格子会顶到色带两端。不能只靠颜色当读数，要看色条上的数字。";
+  }
+  if (vis.value === "raster_falsecolor") {
+    return "假彩色：每个波段先不管特别暗、特别亮的少数格子，再赋给红、绿、蓝通道。颜色只用来看空间结构，不是地物真实颜色。";
+  }
+  if (vis.value === "raster_class") {
+    return "分类色块只用来区分编号。颜色深浅不表示面积、置信度或业务等级。";
+  }
+  return "";
+});
 const isMap = computed(() => vis.value === "geojson_map");
 const needChart = computed(() =>
   ["csv_track", "csv_spectrum", "csv_table", "json_table"].includes(vis.value),
 );
+
+function formatIndex(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 100) return value.toFixed(0);
+  if (abs >= 10) return value.toFixed(1);
+  return value.toFixed(3);
+}
 
 function disposeAll() {
   map?.remove();
@@ -66,6 +107,7 @@ function disposeAll() {
   textBlock.value = "";
   spectrumHint.value = "";
   spectrumReady.value = false;
+  colorScale.value = null;
 }
 
 function parseCsv(text: string): { headers: string[]; rows: string[][] } {
@@ -226,6 +268,13 @@ async function prepareRaster() {
   try {
     const meta = await fetchRasterMeta(props.asset.url);
     rasterBands.value = meta.bands;
+    if (
+      typeof meta.colorLow === "number" &&
+      typeof meta.colorHigh === "number" &&
+      typeof meta.colorMid === "number"
+    ) {
+      colorScale.value = { low: meta.colorLow, mid: meta.colorMid, high: meta.colorHigh };
+    }
     spectrumHint.value =
       meta.bands >= 3
         ? `数据立方体 ${meta.width}×${meta.height}×${meta.bands}。点击图像可查看该像元光谱。`

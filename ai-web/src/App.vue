@@ -1,121 +1,162 @@
 <template>
-  <div class="page">
-    <header class="hero">
-      <div>
-        <p class="kicker">中达瑞和 × AI 团队</p>
-        <h1>L3 参谋 · 长势与氮素</h1>
-      </div>
-      <div class="hero-meta">
-        <p>独立站点 · 不算图，只选型、解读、建议</p>
-        <p>分类 / 水质同一编排器，本期不接</p>
-      </div>
-    </header>
-
-    <div v-if="!healthy" class="banner warn">无法连接 127.0.0.1:28800。请先启动算法服务，再点开始参谋。</div>
-    <div v-if="error" class="banner warn">{{ error }}</div>
-    <div v-if="payload?.llm.fallback" class="banner muted">本次为规则叙事（大模型未改选型，文案走模板）。</div>
-
-    <div class="toolbar">
-      <button class="go" type="button" :disabled="loading || !healthy" @click="start">
-        {{ loading ? "正在选型并出图…" : "开始参谋" }}
-      </button>
+  <div class="shell">
+    <aside class="side">
+      <router-link class="brand" to="/">
+        <span>中达瑞和 × AI 团队</span>
+        <strong>按层赋能</strong>
+      </router-link>
+      <nav class="nav-group">
+        <p>处理层案例</p>
+        <router-link
+          v-for="row in layers"
+          :key="row.id"
+          :to="'/layer/' + row.id"
+          :class="{ on: currentId === row.id }"
+        >
+          {{ row.level }} {{ row.title }}
+        </router-link>
+      </nav>
+      <p v-if="catalogError" class="side-err">{{ catalogError }}</p>
+    </aside>
+    <div class="main">
+      <header class="hero">
+        <div>
+          <p class="kicker">传统流水线 vs LLM · 不算公式</p>
+          <h1>{{ pageTitle }}</h1>
+        </div>
+        <p class="hero-meta">独立站点 · 单算法解读请用 5173</p>
+        <div class="llm-menu" ref="menuRoot">
+          <button class="llm-trigger" type="button" :data-on="savedOn" @click="toggleMenu">
+            大模型配置
+            <span>{{ savedOn ? "已启用" : "未启用" }}</span>
+          </button>
+          <div v-if="menuOpen" class="llm-panel" role="dialog" aria-label="大模型调试配置">
+            <p class="step">大模型调试配置</p>
+            <p class="detail">
+              点保存后才会用于各层「运行本层演示」。密钥只存在本机浏览器，不写仓库。
+            </p>
+            <label class="llm-on">
+              <input v-model="draft.enabled" type="checkbox" />
+              启用真实大模型
+            </label>
+            <div class="llm-grid">
+              <label>
+                Base URL
+                <input v-model="draft.baseUrl" type="url" autocomplete="off" />
+              </label>
+              <label>
+                模型
+                <input v-model="draft.model" type="text" autocomplete="off" />
+              </label>
+              <label class="wide">
+                API Key
+                <input v-model="draft.apiKey" type="password" autocomplete="off" />
+              </label>
+            </div>
+            <p class="meta">默认 DeepSeek：https://api.deepseek.com · deepseek-chat。</p>
+            <div class="llm-actions">
+              <button class="ghost" type="button" @click="closeMenu">取消</button>
+              <button class="go" type="button" @click="saveMenu">保存</button>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div v-if="!healthy" class="banner warn">无法连接 127.0.0.1:28800。请先启动算法服务。</div>
+      <router-view v-slot="{ Component, route: viewRoute }">
+        <component
+          :is="Component"
+          :healthy="healthy"
+          :id="typeof viewRoute.params.id === 'string' ? viewRoute.params.id : ''"
+        />
+      </router-view>
     </div>
-
-    <section class="card">
-      <p class="step">① 问题</p>
-      <h2>{{ question.title }}</h2>
-      <p class="meta">
-        作物：{{ question.crop }} · 冠层：{{ question.canopy }} · 相机：{{ question.sensor }}（7 通道，含 720/750 nm
-        红边）· 任务：{{ question.task }}
-      </p>
-      <p class="hook">{{ question.hook }}</p>
-    </section>
-
-    <section v-if="payload" class="card">
-      <p class="step">② 选型 · 规则权威，大模型只写理由</p>
-      <h2>密冠层主看 NDRE，NDVI 只做对照</h2>
-      <div class="plan-grid">
-        <article class="plan primary">
-          <strong>主跑 {{ payload.plan.primary.title }}</strong>
-          <p>{{ payload.plan.primary.reason }}</p>
-        </article>
-        <article class="plan">
-          <strong>对照 {{ payload.plan.contrast.title }}</strong>
-          <p>{{ payload.plan.contrast.reason }}</p>
-        </article>
-        <article v-for="row in payload.plan.skipped" :key="row.algorithmId" class="plan skip">
-          <strong>不跑 {{ row.title }}</strong>
-          <p>{{ row.reason }}</p>
-        </article>
-      </div>
-    </section>
-
-    <section v-if="payload" class="card">
-      <p class="step">③ 出图解释 · 调用现有算法 API，原始影像不进大模型</p>
-      <div class="result-grid">
-        <article v-for="row in payload.results" :key="row.algorithmId" class="result">
-          <img v-if="row.previewUrl" :src="row.previewUrl" :alt="row.algorithmId + ' 预览'" />
-          <div v-else class="missing">本图未算出{{ row.message ? "：" + row.message : "" }}</div>
-          <p v-if="row.stats" class="stats">
-            <strong>
-              均值 {{ fmt(row.stats.mean) }} · 范围 {{ fmt(row.stats.min) }}～{{ fmt(row.stats.max) }}
-            </strong>
-          </p>
-          <p class="detail">{{ row.quality.detail }}</p>
-          <p class="quality" :data-status="row.quality.status">判断：{{ row.quality.label }}</p>
-        </article>
-      </div>
-    </section>
-
-    <section v-if="payload" class="advice">
-      <p class="step light">④ 建议 · 辅助，不是处方</p>
-      <h2>{{ payload.advice.headline }}</h2>
-      <ul>
-        <li v-for="(line, i) in payload.advice.bullets" :key="i">{{ line }}</li>
-      </ul>
-    </section>
-
-    <footer class="foot">分类、水质可接同一编排器，本期不跑这些算法。</footer>
   </div>
 </template>
 
 <script setup lang="ts">
-/** 一页四段：问题常驻，其余在一次参谋请求后填入。 */
-import { onMounted, ref } from "vue";
-import { defaultQuestion, fetchAideHealth, runAide } from "./api";
-import type { AideQuestion, AideResponse } from "./types";
+/** 左侧四层目录，右侧首页或一层对照。 */
+import { computed, onMounted, onUnmounted, provide, ref } from "vue";
+import { useRoute } from "vue-router";
+import { fetchAideHealth, fetchLayers } from "./api";
+import { loadLlmConfig, saveLlmConfig, type LlmConfig } from "./llmConfig";
+import { LLM_CONFIG_KEY } from "./llmKey";
+import type { LayerSummary } from "./types";
 
 const healthy = ref(true);
-const loading = ref(false);
-const error = ref("");
-const question = ref<AideQuestion>(defaultQuestion);
-const payload = ref<AideResponse | null>(null);
+const layers = ref<LayerSummary[]>([]);
+const catalogError = ref("");
+const llm = ref(loadLlmConfig());
+const draft = ref<LlmConfig>({ ...llm.value });
+const menuOpen = ref(false);
+const menuRoot = ref<HTMLElement | null>(null);
+const route = useRoute();
 
-function fmt(n: number): string {
-  return n.toFixed(2);
+provide(LLM_CONFIG_KEY, llm);
+
+const savedOn = computed(() => llm.value.enabled && !!llm.value.apiKey.trim());
+
+function copyConfig(src: LlmConfig): LlmConfig {
+  return { ...src };
 }
+
+function openMenu(): void {
+  draft.value = copyConfig(llm.value);
+  menuOpen.value = true;
+}
+
+function closeMenu(): void {
+  draft.value = copyConfig(llm.value);
+  menuOpen.value = false;
+}
+
+function toggleMenu(): void {
+  if (menuOpen.value) {
+    closeMenu();
+  } else {
+    openMenu();
+  }
+}
+
+function saveMenu(): void {
+  llm.value = copyConfig(draft.value);
+  saveLlmConfig(llm.value);
+  menuOpen.value = false;
+}
+
+function onDocClick(event: MouseEvent): void {
+  const root = menuRoot.value;
+  if (root && !root.contains(event.target as Node)) {
+    closeMenu();
+  }
+}
+
+const currentId = computed(() => (typeof route.params.id === "string" ? route.params.id : ""));
+const pageTitle = computed(() => {
+  const hit = layers.value.find((row) => row.id === currentId.value);
+  return hit ? `${hit.level} ${hit.title}` : "处理层案例";
+});
 
 async function ping(): Promise<void> {
   healthy.value = await fetchAideHealth();
 }
 
-async function start(): Promise<void> {
-  error.value = "";
-  loading.value = true;
+async function loadCatalog(): Promise<void> {
+  catalogError.value = "";
   try {
-    const data = await runAide();
-    payload.value = data;
-    question.value = data.question;
-  } catch (err) {
-    payload.value = null;
-    error.value = err instanceof Error ? err.message : "运行失败";
-    await ping();
-  } finally {
-    loading.value = false;
+    layers.value = await fetchLayers();
+  } catch {
+    catalogError.value = "层目录未加载";
+    layers.value = [];
   }
 }
 
 onMounted(() => {
   void ping();
+  void loadCatalog();
+  document.addEventListener("click", onDocClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", onDocClick);
 });
 </script>

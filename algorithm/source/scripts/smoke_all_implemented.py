@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""对 45 项算法 testdata 做 HTTP 冒烟：要求 200 + success + implemented + files。
+"""对全部已实现算法 testdata 做 HTTP 冒烟：要求 200 + success + implemented + files。
 
 通过 curl 访问本机服务，避免 Python HTTP 被代理拦截。
 """

@@ -1,4 +1,4 @@
-/** 与中达瑞和产品的适配程度。 */
+/** 本算法与中达瑞和型号的适配程度：直接使用 / 需要改编 / 不建议。 */
 export type FitLevel = "direct" | "adapt" | "no";
 
 export type ProductFamily =
@@ -32,7 +32,7 @@ export interface ProductFit {
 /** 单条算法面向中达瑞和合作的产品 / 业务 / 应用分析。 */
 export interface AlgoWayhoDoc {
   id: string;
-  /** 一句话合作判断。 */
+  /** 合作判断。 */
   verdict: string;
   /** 产品维度：吃什么数据、对上哪款机。 */
   product: string;

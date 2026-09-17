@@ -1,4 +1,4 @@
-# testdata · 匀色与接缝线优化
+# testdata · Wallis局部匀色
 
 镶嵌 GeoTIFF。
 

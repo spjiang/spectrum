@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +16,7 @@ SOURCE = ROOT / "source"
 sys.path.insert(0, str(SOURCE))
 
 from common.catalog import ALGORITHMS  # noqa: E402
+from common.scientific_evidence import load_scientific_evidence  # noqa: E402
 
 LIST_MD = ROOT / "docs" / "采集到算法-算法清单.md"
 OUT = ROOT / "docs" / "算法API测试清单.md"
@@ -29,7 +29,7 @@ EXAMPLE_DEMO: dict[int, dict[str, str]] = {
         "problem": (
             "植保场景需要知道「病斑/胁迫/杂草在哪一块」，而不是整幅只给出作物类别。"
             "本示例演示：从多波段反射率立方体中自动找出低长势斑块，并输出可上图的掩膜与矢量边界，"
-            "便于后续精准喷药或人工复核。"
+            "便于后续人工复核或作为空间筛查输入。"
         ),
         "input_lines": [
             "`file` → `input.tif`：模拟 **16×16×8** 波段反射率 GeoTIFF（EPSG:4326）",
@@ -63,6 +63,76 @@ EXAMPLE_DEMO: dict[int, dict[str, str]] = {
 }
 
 
+_REVIEW_GRADE_PATTERNS = (
+    r"故保持\s*C\s*级",
+    r"保持\s*C\s*级",
+    r"证据等级",
+    r"C\s*级",
+    r"保持\s*C",
+)
+
+
+def sanitize_limitation_for_docs(text: str) -> str:
+    """拷贝到对外清单时去掉证据等级/内部评审用语。"""
+    cleaned = text.strip()
+    for pattern in _REVIEW_GRADE_PATTERNS:
+        cleaned = re.sub(pattern, "", cleaned)
+    cleaned = re.sub(r"[，,]\s*(?=[。.]|$)", "", cleaned)
+    cleaned = re.sub(r"[，,]{2,}", "，", cleaned)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    cleaned = cleaned.strip(" ，,")
+    if cleaned and cleaned[-1] not in "。.":
+        cleaned += "。"
+    return cleaned
+
+
+def sync_inventory(md: str) -> str:
+    """以 catalog/evidence 为权威同步总表标题、详表标题与方法边界。"""
+    titles = {int(row["id"][:2]): row["title"] for row in ALGORITHMS}
+    limitations = {
+        int(row["algorithmId"][:2]): sanitize_limitation_for_docs(
+            next(
+                claim["text"]
+                for claim in row["claims"]
+                if claim["category"] == "limitation"
+            )
+        )
+        for row in load_scientific_evidence()
+    }
+    lines: list[str] = []
+    current_number: int | None = None
+    for line in md.splitlines():
+        heading = re.match(r"(####\s+)(\d+)(\.\s+).+", line)
+        if heading:
+            current_number = int(heading.group(2))
+            line = f"{heading.group(1)}{current_number}{heading.group(3)}{titles[current_number]}"
+        else:
+            summary = re.match(
+                r"(\|\s*)(\d+)(\s*\|\s*[^|]+\|\s*)([^|]+)(\s*\|.*)",
+                line,
+            )
+            if summary and int(summary.group(2)) in titles:
+                number = int(summary.group(2))
+                line = (
+                    f"{summary.group(1)}{number}{summary.group(3)}"
+                    f"{titles[number]}{summary.group(5)}"
+                )
+        if current_number and line.startswith("| **方法边界**"):
+            line = f"| **方法边界** | {limitations[current_number]} |"
+        lines.append(line)
+        if current_number and line.startswith("| **数据输出**"):
+            # 旧文档没有边界行时补齐；已有相邻边界由下方去重。
+            lines.append(f"| **方法边界** | {limitations[current_number]} |")
+    # 去重：重生成过的文档会暂时形成相邻两条方法边界。
+    deduped: list[str] = []
+    for line in lines:
+        if line.startswith("| **方法边界**") and deduped and deduped[-1].startswith("| **方法边界**"):
+            deduped[-1] = line
+        else:
+            deduped.append(line)
+    return "\n".join(deduped) + "\n"
+
+
 def find_primary(d: Path):
     for name in ["input.tif", "input.geojson", "input.csv", "input.json"]:
         if (d / name).exists():
@@ -79,11 +149,12 @@ def find_secondary(d: Path):
 
 def parse_list(md: str):
     pattern = re.compile(
-        r"####\s+(\d+)\.\s+(.+?)\n\n\| 项 \| 内容 \|\n\|----\|------\|\n"
-        r"\| \*\*作用\*\* \| (.+?) \|\n"
-        r"\| \*\*使用场景\*\* \| (.+?) \|\n"
-        r"\| \*\*数据输入\*\* \| (.+?) \|\n"
-        r"\| \*\*数据输出\*\* \| (.+?) \|\n",
+        r"####\s+(\d+)\.\s+(.+?)\n.*?"
+        r"\|\s*\*\*作用\*\*\s*\|\s*(.+?)\s*\|\n"
+        r"\|\s*\*\*使用场景\*\*\s*\|\s*(.+?)\s*\|\n"
+        r"\|\s*\*\*数据输入\*\*\s*\|\s*(.+?)\s*\|\n"
+        r"\|\s*\*\*数据输出\*\*\s*\|\s*(.+?)\s*\|\n"
+        r"\|\s*\*\*方法边界\*\*\s*\|\s*(.+?)\s*\|\n",
         re.S,
     )
     infos = {}
@@ -95,6 +166,7 @@ def parse_list(md: str):
             "scene": m.group(4).strip().replace("**", ""),
             "inp": m.group(5).strip().replace("**", ""),
             "out": m.group(6).strip().replace("**", ""),
+            "boundary": m.group(7).strip().replace("**", ""),
         }
     one = {}
     for line in md.splitlines():
@@ -104,12 +176,20 @@ def parse_list(md: str):
     return infos, one
 
 
-def main():
-    md = LIST_MD.read_text(encoding="utf-8")
+def generate_checklists(
+    list_path: Path | None = None,
+    out_path: Path | None = None,
+) -> tuple[str, str]:
+    """同步算法清单并生成 API 测试清单。返回写入后的两份文本。"""
+    src = list_path or LIST_MD
+    dst = out_path or OUT
+    md = src.read_text(encoding="utf-8")
+    md = sync_inventory(md)
+    src.write_text(md, encoding="utf-8")
     infos, one = parse_list(md)
-    assert len(infos) == 45, len(infos)
+    assert len(infos) == 55, len(infos)
 
-    old = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
+    old = dst.read_text(encoding="utf-8") if dst.exists() else ""
     report = ""
     if "## 最近一次自动测试结果" in old:
         m = re.search(r"(## 最近一次自动测试结果\n.*?)(\n## 使用说明)", old, re.S)
@@ -118,7 +198,7 @@ def main():
 
     lines = []
     A = lines.append
-    A("# 算法 API 测试清单（45 项）")
+    A("# 算法 API 测试清单（55 项）")
     A("")
     A("> 格式对齐培训 PPT「对接示例」：`POST /api/v1/{algorithm_id}/run` + `file` / `file2` / `params`。")
     A(">")
@@ -189,6 +269,7 @@ def main():
         A(f"| **使用场景** | {it['scene']} |")
         A(f"| **数据输入** | {it['inp']} |")
         A(f"| **数据输出** | {it['out']} |")
+        A(f"| **方法边界** | {it['boundary']} |")
         A("")
         demo = EXAMPLE_DEMO.get(num)
         if demo:
@@ -242,10 +323,16 @@ def main():
     A("")
     A("可运行清单：" + "、".join(f'`{x["id"]}`' for x in items if x["implemented"]))
     A("")
-    A(f"介绍来源：[采集到算法-算法清单.md](./采集到算法-算法清单.md)（同步生成于 {datetime.now().strftime('%Y-%m-%d %H:%M')}）")
+    A("介绍来源：[采集到算法-算法清单.md](./采集到算法-算法清单.md)（由 catalog/evidence 同步生成）")
     A("")
 
-    OUT.write_text("\n".join(lines), encoding="utf-8")
+    api_text = "\n".join(lines)
+    dst.write_text(api_text, encoding="utf-8")
+    return md, api_text
+
+
+def main():
+    generate_checklists()
     print("wrote", OUT)
 
 

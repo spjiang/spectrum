@@ -1,4 +1,4 @@
-# testdata · 几何粗校正/地理定位
+# testdata · POS中心点与GSD粗定位
 
 影像 GeoTIFF + POS JSON。
 

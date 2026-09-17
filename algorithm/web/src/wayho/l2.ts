@@ -22,10 +22,10 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
   },
   {
     id: "18_color_balance",
-    verdict: "镶嵌接缝观感。只在多航带机载产品上推销。",
-    product: "SKY/MAX 镶嵌后航带间曝光差会造成假长势边界。匀色让领导能看图。实验室单立方体没有接缝线。",
-    business: "演示给领导看的第一眼。对方若拼接有色差，客户会怀疑硬件。本模块是「专题图能上台面」的化妆品，适合和 17 绑定，不要单独报价成高深算法。",
-    application: "农业整景图、生态巡查图册。工业灰度分选不追求匀色美学。",
+    verdict: "镶嵌接缝匀色。仅适用于多航带机载产品。",
+    product: "SKY/MAX 镶嵌后航带间曝光差会造成假长势边界。匀色用于消除接缝辐射差。实验室单立方体没有接缝线。",
+    business: "镶嵌接缝的色差会被误判为地物或长势差异。本模块是镶嵌后的辐射匀色，应与 #17 绑定，不作为独立定量算法。",
+    application: "农业整景图、生态巡查图册。工业灰度分选通常不需要匀色。",
     hook: "与镶嵌打包，作为 SKY/MAX 交付图的默认后处理。",
     fits: [
       fit("sky-w417", "direct", "航带接缝必须匀色"),
@@ -36,7 +36,7 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
   },
   {
     id: "19_multi_source_register",
-    verdict: "把光谱、真彩色、地块矢量叠在一起。SKY 自带 2000 万 RGB，是最强理由。",
+    verdict: "把光谱、真彩色、地块矢量叠在一起。SKY-W417 官方页列出 2000 万像素可见光相机。",
     product: "SKY-W417 高光谱+可见光双相机是设计上的配准对象。MAX 7+RGB 同样。VIX-W330 同轴共焦，出厂已共光路，配准需求弱，只需校验。SHIS 若另拍一张 RGB 可改编。地块 GeoJSON 是 45 的上游。",
     business: "农服/水务要「人看得到的图 + 算法吃的谱 + 承包地边界」。这是方案销售语言。合作把配准做成固定管道：HSI 正射、RGB 正射、矢量，三者误差作为验收指标。",
     application: "处方图落到地块、病斑落到可见光照片、岸线矢量裁光谱。工业可用「光谱图与 RGB 工位相机」配准，需改输入。",
@@ -52,7 +52,7 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
   {
     id: "20_bad_band_remove",
     verdict: "百波段高光谱才有坏波段；MAX 7 通道改成通道质量检查。",
-    product: "SKY 1200 通道、VIX/SHIS 连续谱，水汽吸收、低响应波段必须剔除，否则 PCA 和分类被噪声主导。MAX/SVC/HSC 通道是工厂选好的，只需标记异常通道，不是「删掉几十个坏带」。",
+    product: "SKY-W417 官方页列出 1200 通道；VIX-W330 官方页列出可选 1200/600/300 通道，适合做候选坏波段检查。其他型号通道配置需以项目所用型号官方规格为准。",
     business: "科研客户会问「哪些波段别用」。给出坏波段列表是专业感。对多光谱客户不要讲坏波段，改口「通道健康度」，避免显得生搬卫星流程。",
     application: "全谱定量、SAM、深度学习分类。实时 8 通道视频几乎不删波段。",
     hook: "为 SKY/VIX 提供默认坏波段配置文件，按型号出厂写入云档案。",
@@ -69,7 +69,7 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
     id: "21_savgol_smooth",
     verdict: "连续密光谱的平滑与包络。高光谱直接；7–8 通道多光谱不要做 SG。",
     product: "SKY、VIX、SHIS 的谱线需要降噪才能找红边、做吸收特征。MAX 只有 7 个点，SG 窗口没有意义，硬做会毁指数。HSC 同理。IrisCube 的曲线分析可背后调用平滑。",
-    business: "这是实验室科研套装的标配，不是机载多光谱的卖点。合作按产品线拆 SKU：高光谱分析包含 SG，多光谱包不含。避免在 MAX 方案里堆「光谱平滑」被对方看穿。",
+    business: "适配取决于连续光谱采样点数和窗口长度；离散少通道输入不满足当前 SG 窗口条件。",
     application: "植物胁迫吸收谷、物证染料特征、材料谱峰。实时监控指数不依赖 SG。",
     hook: "绑定 SHIS/VIX/SKY 的科研分析包，与 IrisCube 曲线模块对接。",
     fits: [
@@ -79,7 +79,7 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
       fit("shis-n220", "direct", "实验室曲线"),
       fit("iriscube", "adapt", "曲线分析可调用"),
       fit("max-s810", "no", "7 点不能做 SG"),
-      fit("svc-2p4m30", "no", "5 个分立波段"),
+      fit("svc-2p4m30", "no", "通道配置需以项目所用型号官方规格为准；当前按离散少通道输入处理"),
     ],
   },
   {
@@ -101,7 +101,7 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
     id: "23_pca",
     verdict: "IrisCube 已有 PCA。我们提供 MNF/ICA 与可批处理，定位成引擎而非抢 UI。",
     product: "高光谱（SKY/VIX/SHIS）降维收益最大。MAX 7 维 PCA 信息有限，可做演示不宜当核心。对方 IrisCube 明确有按光谱差异性生成成分图——这是最大重叠点，必须在合作材料里写「可替换或增强其后端」。",
-    business: "实验室软件的招牌功能之一。正确姿势是：IrisCube 继续给人点按钮，本接口给云平台和机载批量出成分图。再把 MNF（更适合高光谱噪声结构）作为差异化，IrisCube 宣传里只写了 PCA。",
+    business: "适配取决于高维连续光谱输入、内存与批处理接口；不据此比较软件效果。",
     application: "物证墨迹（公开论文用过 SHIS-N220+化学计量学）、材料、植被变异可视化、去噪。",
     hook: "承认 PCA 重叠，主推 MNF 批处理 + 云端 API，给 IrisCube 当计算后端。",
     fits: [
@@ -115,14 +115,14 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
   },
   {
     id: "24_band_select",
-    verdict: "给高光谱选波段；MAX 出厂已选好，不要再推销选择算法。",
+    verdict: "用于高光谱波段选择；MAX 出厂通道已固定，不建议再做波段选择。",
     product: "SKY 1200 通道、SHIS 可任意步长扫描，有真实选择问题（算得动、避开坏带、对准红边）。MAX/SVC/HSC 通道是硬件决定的。VIX 高速机有时只下发部分通道，可选。",
-    business: "可帮对方做「行业波段包」：农业红边包、水质包、塑料包，固化成相机扫描配方。这对 LCTF（SHIS 可任意波段）特别有商业价值——告诉客户扫哪些波段而不是全扫浪费时间。",
+    business: "适配取决于设备是否支持可配置采样波段，以及训练标签能否支撑有监督评分。",
     application: "SHIS 凝视缩短扫描时间、机载降数据量、工业只留鉴别波段。",
     hook: "为 SHIS 做行业扫描配方（起止波长与步长），直接缩短客户采集时间。",
     fits: [
       fit("sky-w417", "direct", "从 1200 通道选出任务波段"),
-      fit("shis-n220", "direct", "LCTF 可按配方扫描，商业价值高"),
+      fit("shis-n220", "adapt", "可配置能力需以项目所用型号官方规格为准"),
       fit("shis-v220", "direct", "可见光配方"),
       fit("vix-n320", "direct", "可降采样通道"),
       fit("max-s810", "no", "7 通道出厂已选"),
@@ -133,7 +133,7 @@ export const L2_WAYHO: AlgoWayhoDoc[] = [
     id: "25_superpixel",
     verdict: "从像素改到斑块，图像类产品都可用，机载专题图更干净。",
     product: "正射后的 SKY/MAX 用地物斑块比单像素稳。实验室 SHIS 高空间分辨率（2048）很适合超像素。SVC 视频要降帧再做。HSC 分辨率 640×480 可用但斑块粗。",
-    business: "领导看图受不了椒盐噪声。超像素是分类/检测的前端，适合和 34/40/44 打包成「图斑产品」。对方目标智能提取（IrisCube）有相似叙事，强调我们输出可进 GIS 的对象。",
+    business: "像素分类的椒盐噪声会降低专题图可用性。超像素是分类/检测的对象化前端，适合与 34/40/44 组成图斑产品。对方目标智能提取（IrisCube）有相近能力，输出应可进入 GIS。",
     application: "病斑、杂草、藻华斑块、工业瑕疵轮廓。",
     hook: "作为识别类算法的统一前端，写入云平台「对象层」。",
     fits: [

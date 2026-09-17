@@ -1,4 +1,4 @@
-# testdata · 坏波段剔除与光谱去噪
+# testdata · 坏波段剔除
 
 反射率 GeoTIFF。
 

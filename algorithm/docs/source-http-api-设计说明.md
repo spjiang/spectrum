@@ -5,7 +5,7 @@
 
 ## 目标
 
-提供可学习、可对接的 HTTP API：文件输入、JSON 输出（含文件路径）；与业界 45 项算法清单一一对应。
+提供可学习、可对接的 HTTP API：文件输入、JSON 输出（含文件路径）；与业界 55 项算法清单一一对应。
 
 面向阅读的简介见：[当前服务简单介绍.md](./当前服务简单介绍.md)。
 
@@ -21,7 +21,7 @@ Client ──► app.main (FastAPI :28800)
 
 - **单进程**：运维简单，一个 OpenAPI 文档  
 - **按算法分目录**：对照清单、独立实现与说明  
-- **common.routing.build_router**：统一 `/run` 契约，避免 45 份重复样板  
+- **common.routing.build_router**：统一 `/run` 契约，避免 55 份重复样板  
 
 ## 接口约定
 
@@ -33,9 +33,9 @@ Client ──► app.main (FastAPI :28800)
 
 详见 `业界文件格式介绍.md`。
 
-## 第一批实现
+## 实现范围
 
-12、20、21、22、23、27、28、34、40、42、45（见 `common/catalog.py` 中 `implemented: true`）
+清单 **55 项全部 `implemented: true`**（见 `common/catalog.py`），含原产线 #01–#45 与补齐的植被指数 #46–#55。
 
 ## 非目标
 

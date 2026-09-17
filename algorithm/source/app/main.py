@@ -21,7 +21,7 @@ from common.l3_aide.router import router as l3_aide_router  # noqa: E402
 app = FastAPI(
     title="高光谱算法服务",
     description=(
-        "单服务聚合业界算法清单（45 项）。"
+        "单服务聚合业界算法清单（55 项）。"
         "每个算法独立目录；统一 POST /api/v1/{algorithm_id}/run ；"
         "可视化控制台 API 位于 /api/v1/console/* ；"
         "L3 AI 参谋位于 /api/v1/l3-aide/* 。"

@@ -1,4 +1,4 @@
-"""架次辐射质检：按位深饱和、欠曝、SNR。"""
+"""架次辐射质检：按位深饱和、欠曝、场景像元均值/标准差比。"""
 from __future__ import annotations
 
 import numpy as np
@@ -21,8 +21,9 @@ def infer_saturation(vmax: float, bit_depth: int | None = None) -> float:
 
 def band_snr(cube: np.ndarray) -> np.ndarray:
     """
-    逐波段 SNR ≈ μ/σ。
-    均匀区近似：全图统计（推扫质检常用快速指标）。
+    逐波段场景像元均值/标准差比 μ/σ。
+
+    兼容历史函数名；该场景统计混合地物纹理，不是 EMVA/传感器 SNR。
     """
     mu = cube.mean(axis=(0, 1))
     sd = cube.std(axis=(0, 1)) + 1e-12
@@ -37,7 +38,7 @@ def flight_qc(
     sat_frac: float = 0.98,
     dark_frac: float = 0.02,
 ) -> dict:
-    """过曝/欠曝比例 + 波段 SNR。"""
+    """过曝/欠曝比例 + 逐波段场景像元均值/标准差比。"""
     cube = cube.astype(np.float64)
     vmax = float(np.nanmax(cube))
     vmin = float(np.nanmin(cube))

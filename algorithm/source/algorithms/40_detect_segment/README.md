@@ -1,4 +1,4 @@
-# 语义分割/目标检测
+# 低NDVI种子ACE目标检测
 
 - **algorithm_id**: `40_detect_segment`
 - **层级**: L3

@@ -2,13 +2,9 @@
   <div v-if="doc" class="pr">
     <div class="pr-hero">
       <div>
-        <p class="kicker">领导摘要 · 一句话定义</p>
+        <p class="kicker">算法定义</p>
         <h3>{{ doc.summary?.definition || doc.purpose }}</h3>
         <p class="pr-why">{{ doc.summary?.value || doc.why }}</p>
-        <div class="pr-tags" aria-label="算法定位">
-          <span>{{ level }}</span>
-          <span v-if="method">{{ method }}</span>
-        </div>
       </div>
       <div class="pr-summary-grid">
         <div><span>关键输入</span><strong>{{ doc.summary?.keyInput || doc.inputs[0]?.meaning || "待补充" }}</strong></div>
@@ -16,8 +12,6 @@
         <div class="pr-summary-limit"><span>关键限制</span><strong>{{ doc.summary?.keyLimit || doc.industryGap }}</strong></div>
       </div>
     </div>
-
-    <AbbrGlossary :terms="terms" />
 
     <section>
       <h4>问题背景</h4>
@@ -28,11 +22,40 @@
 
     <section>
       <h4>原理依据与核心公式</h4>
+      <p v-if="formulaTakeaway" class="pr-takeaway">
+        <span class="pr-takeaway-kicker">一句话理解</span>
+        <mark>{{ formulaTakeaway }}</mark>
+      </p>
       <p class="pr-why">{{ doc.why }}</p>
-      <div class="pr-formula">
+      <ol v-if="doc.formulaItems?.length" class="pr-formula-list">
+        <li v-for="item in doc.formulaItems" :key="item.name" class="pr-formula">
+          <p class="pr-formula-name">{{ item.name }}</p>
+          <p class="pr-eq">{{ item.eq }}</p>
+          <p class="pr-fn">{{ item.note }}</p>
+        </li>
+      </ol>
+      <div v-else class="pr-formula">
         <p class="pr-eq">{{ doc.formula }}</p>
-        <p v-if="doc.formulaNote" class="pr-fn">{{ doc.formulaNote }}</p>
+        <p v-if="formulaNote" class="pr-fn">{{ formulaNote }}</p>
       </div>
+      <div v-if="formulaProcess" class="pr-formula-flow">
+        <p class="pr-formula-flow-kicker">处理过程</p>
+        <PrincipleViz :viz="formulaProcess" />
+      </div>
+      <aside v-if="doc.formulaTogether" class="pr-together">
+        <p class="pr-together-kicker">特别说明</p>
+        <p>{{ doc.formulaTogether }}</p>
+      </aside>
+    </section>
+
+    <section v-if="doc.scenarioCases?.length">
+      <h4>场景使用案例</h4>
+      <ol class="pr-scenario-list">
+        <li v-for="item in doc.scenarioCases" :key="item.title">
+          <strong>{{ item.title }}</strong>
+          <p>{{ item.body }}</p>
+        </li>
+      </ol>
     </section>
 
     <section>
@@ -56,7 +79,7 @@
 
     <div class="pr-io">
       <section>
-        <h4>输入要看懂什么</h4>
+        <h4>输入说明</h4>
         <ul>
           <li v-for="row in doc.inputs" :key="row.name">
             <code class="mono">{{ row.name }}</code>
@@ -65,7 +88,7 @@
         </ul>
       </section>
       <section>
-        <h4>输出得到什么</h4>
+        <h4>输出说明</h4>
         <ul>
           <li v-for="row in doc.outputs" :key="row.name">
             <code class="mono">{{ row.name }}</code>
@@ -121,7 +144,7 @@
         <p>{{ doc.industryGap }}</p>
       </details>
       <details>
-        <summary>学习自检</summary>
+        <summary>验证要点</summary>
         <ul class="pr-check"><li v-for="c in doc.checks" :key="c">{{ c }}</li></ul>
       </details>
     </div>
@@ -132,33 +155,23 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import PrincipleViz from "./PrincipleViz.vue";
-import AbbrGlossary from "./AbbrGlossary.vue";
 import { getPrinciple } from "../principles";
-import { termsForAlgorithm } from "../glossary";
+import { FORMULA_PROCESSES } from "../principles/formulaProcesses";
+import { FORMULA_TAKEAWAYS } from "../principles/formulaTakeaways";
 
-const props = defineProps<{ algorithmId: string; level: string; method?: string }>();
+const props = defineProps<{ algorithmId: string }>();
 const doc = computed(() => getPrinciple(props.algorithmId));
-const terms = computed(() => {
-  const d = doc.value;
-  if (!d) return termsForAlgorithm(props.algorithmId);
-  return termsForAlgorithm(
-    props.algorithmId,
-    d.purpose,
-    d.why,
-    d.formula,
-    d.formulaNote,
-    d.industryGap,
-    d.summary?.definition,
-    d.summary?.value,
-    ...(d.background || []),
-    ...(d.prerequisites || []),
-    ...(d.resultInterpretation || []),
-    ...(d.applicable || []),
-    ...(d.notApplicable || []),
-    ...(d.risks || []),
-    ...d.steps,
-    ...d.inputs.map((r) => `${r.name} ${r.meaning}`),
-    ...d.outputs.map((r) => `${r.name} ${r.meaning}`),
-  );
+const formulaNote = computed(
+  () => doc.value?.formulaNote || doc.value?.summary?.keyLimit || "",
+);
+const formulaProcess = computed(() => {
+  const current = doc.value;
+  if (!current) return undefined;
+  return current.formulaProcess ?? FORMULA_PROCESSES[current.id];
+});
+const formulaTakeaway = computed(() => {
+  const current = doc.value;
+  if (!current) return "";
+  return current.formulaTakeaway ?? FORMULA_TAKEAWAYS[current.id] ?? "";
 });
 </script>

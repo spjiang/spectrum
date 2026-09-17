@@ -2,15 +2,15 @@
   <div v-if="doc" class="pa">
     <div class="pa-hero">
       <div>
-        <p class="kicker">面向中达瑞和合作</p>
+        <p class="kicker">产品适配</p>
         <h3>{{ doc.verdict }}</h3>
         <p class="pa-hook">{{ doc.hook }}</p>
       </div>
       <div class="pa-counts">
         <p class="kicker">本算法适配</p>
         <p class="pa-count-line">
-          <strong>{{ counts.direct }}</strong> 直接 ·
-          <strong>{{ counts.adapt }}</strong> 改编 ·
+          <strong>{{ counts.direct }}</strong> 直接使用 ·
+          <strong>{{ counts.adapt }}</strong> 需要改编 ·
           <span class="pa-muted">{{ counts.no }} 不建议</span>
         </p>
         <p class="pa-links">
@@ -35,6 +35,21 @@
       </section>
     </div>
 
+    <dl class="pa-legend">
+      <div>
+        <dt>直接</dt>
+        <dd>该型号的波段与采集方式满足本算法前提，可按现实现使用。</dd>
+      </div>
+      <div>
+        <dt>改编</dt>
+        <dd>方法方向对，但须改波段取法、参数或假设，不能原样套用。</dd>
+      </div>
+      <div>
+        <dt>不建议</dt>
+        <dd>硬件或使用场景与算法前提不符，不要作为该型号的主路径。</dd>
+      </div>
+    </dl>
+
     <section class="pa-table-wrap">
       <div class="pa-table-head">
         <h4>适用产品</h4>
@@ -51,7 +66,6 @@
             <th>系列</th>
             <th>波段 / 方式</th>
             <th>理由</th>
-            <th>链接</th>
           </tr>
         </thead>
         <tbody>
@@ -67,14 +81,11 @@
             <td>{{ row.product.series }}</td>
             <td>{{ row.product.band }} · {{ row.product.mode }}</td>
             <td>{{ row.why }}</td>
-            <td>
-              <a class="pa-ext" :href="row.product.url" target="_blank" rel="noopener noreferrer">官网详情</a>
-            </td>
           </tr>
         </tbody>
       </table>
       <p class="pa-note">
-        型号与「官网详情」均指向
+        型号指向
         <a :href="WAYHO_HOME" target="_blank" rel="noopener noreferrer">wayho.cn</a>
         现网产品页。产品总览见
         <a :href="WAYHO_CATALOG" target="_blank" rel="noopener noreferrer">产品中心</a>。
@@ -119,8 +130,8 @@ const visibleRows = computed(() => {
 });
 
 function fitLabel(level: FitLevel): string {
-  if (level === "direct") return "直接";
-  if (level === "adapt") return "改编";
+  if (level === "direct") return "直接使用";
+  if (level === "adapt") return "需要改编";
   return "不建议";
 }
 </script>

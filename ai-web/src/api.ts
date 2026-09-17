@@ -1,17 +1,8 @@
-/** 调用算法服务上的 L3 参谋接口。 */
+/** 调用算法服务上的按层赋能接口。 */
 
-import type { AideResponse } from "./types";
-
-const DEFAULT: AideResponse["question"] = {
-  title: "密植水稻，MAX-S810 刚采完，要不要补氮？",
-  crop: "水稻",
-  canopy: "密植封垄",
-  sensor: "MAX-S810",
-  task: "氮素辅助判断",
-  hook: "对方机载已经会出 NDVI/NDRE。本页要证明的是：AI 团队决定「这场用哪个」，并挡住误用。",
-};
-
-export const defaultQuestion = DEFAULT;
+import type { LlmConfig } from "./llmConfig";
+import { llmRequestBody } from "./llmConfig";
+import type { LayerCase, LayerRun, LayerSummary } from "./types";
 
 export async function fetchAideHealth(): Promise<boolean> {
   try {
@@ -22,15 +13,37 @@ export async function fetchAideHealth(): Promise<boolean> {
   }
 }
 
-export async function runAide(): Promise<AideResponse> {
-  const res = await fetch("/api/v1/l3-aide/run", {
+export async function fetchLayers(): Promise<LayerSummary[]> {
+  const res = await fetch("/api/v1/l3-aide/layers", { cache: "no-store" });
+  if (!res.ok) throw new Error("层目录加载失败");
+  const data = (await res.json()) as { layers: LayerSummary[] };
+  return data.layers || [];
+}
+
+export async function fetchLayer(id: string): Promise<LayerCase> {
+  const res = await fetch(`/api/v1/l3-aide/layers/${id}`, { cache: "no-store" });
+  let data: LayerCase & { message?: string };
+  try {
+    data = (await res.json()) as LayerCase & { message?: string };
+  } catch {
+    throw new Error("算法服务返回不是 JSON");
+  }
+  if (!res.ok) {
+    throw new Error(data.message || "未知处理层");
+  }
+  return data;
+}
+
+export async function runLayer(id: string, config?: LlmConfig): Promise<LayerRun> {
+  const llm = config ? llmRequestBody(config) : undefined;
+  const res = await fetch(`/api/v1/l3-aide/layers/${id}/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ scenarioId: "rice_dense_max_n" }),
+    body: JSON.stringify(llm ? { llm } : {}),
   });
-  let data: AideResponse;
+  let data: LayerRun;
   try {
-    data = (await res.json()) as AideResponse;
+    data = (await res.json()) as LayerRun;
   } catch {
     throw new Error("算法服务返回不是 JSON");
   }

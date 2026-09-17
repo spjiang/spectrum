@@ -15,6 +15,7 @@ PARAM_TYPE_OVERRIDES: dict[tuple[str, str], str] = {
     ("04_flight_qc", "bit_depth"): "int",
     ("12_panel_reflectance", "panel_roi"): "list",
     ("13_atmospheric_correction", "wavelengths_nm"): "list",
+    ("16_orthorectify", "gsd_out"): "float",
     ("15_geo_locate", "gsd_m"): "float",
     ("20_bad_band_remove", "wavelengths_nm"): "list",
     ("33_physical_inversion", "wavelengths_nm"): "list",

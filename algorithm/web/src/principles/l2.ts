@@ -7,6 +7,16 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     why: "低空无人机大气路径短，白板法是最常用的 L2 入口。",
     formula: "ρ = ρ板 × (L − L暗) / (L板 − L暗)",
     formulaNote: "默认 ρ板=0.6（灰板）。自动取最亮百分位当代板，可能不是真板。",
+    scenarioCases: [
+      {
+        title: "同架次拍到了灰板或白板",
+        body: "低空无人机用现场板把 DN/辐亮度变成反射率，后续才能算指数。",
+      },
+      {
+        title: "没板时要当心",
+        body: "默认板反射率 0.6，无板用最亮百分位代替，可能不是真板。高空无板应走大气校正，不要和 DOS2 重复扣。",
+      },
+    ],
     steps: ["提取板光谱（ROI 或最亮百分位）", "提取暗点光谱", "经验线比例", "截到 [0, 1.5]"],
     viz: {
       kind: "pipeline",
@@ -21,7 +31,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "无板 BRDF；单板假设全图光照均匀。",
     checks: ["把水泥当白板、ρ板仍写 0.6 会怎样？"],
     summary: {
-      definition: "以已知反射率参考板和暗目标建立逐波段经验线，把 DN 或辐亮度映射为近似地表反射率。",
+      definition: "经验线法：用已知反射率参考板，把 DN 或辐亮度线性映射为地表反射率。",
       value: "在低空短大气路径场景中同步吸收传感器响应与现场照度影响，为跨波段、跨架次定量比较提供 L2 入口。",
       keyInput: "包含有效参考板像元的同架次影像、与波段对应的板反射率，以及可靠 panel_roi 或可辨识的高亮板区。",
       keyOutput: "逐波段应用单点亮端加暗端 ELM、并截断到 [0, 1.5] 的 reflectance.tif。",
@@ -73,13 +83,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["暗电流/坏像元处理、辐射定标与参考板现场采集；输入级别为原始 DN 或辐亮度。"],
     downstream: ["#14 BRDF 校正、#20 坏波段剔除及后续指数、分类和定量反演；通常不要再叠加 #13 DOS2。"],
-    demoFocus: ["对比正确板 ROI、自动最亮代板和错误板反射率三种结果，并核查板区回代值与截断比例。"],
+    demoFocus: ["比较正确板 ROI、自动最亮代板和错误板反射率三种结果，并核查板区回代值与截断比例。"],
   },
   {
     id: "13_atmospheric_correction",
     purpose: "扣除大气路径辐射与透过率，得到更接近真实的地表反射率。",
     why: "星载/高空无白板时必须做，否则蓝光偏亮、跨时相不可比。",
     formula: "DOS2：Lhaze 来自暗目标；ρ = π(L−Lhaze)d² / (ESUN·cosθs·τ²)，τ≈cosθs",
+    scenarioCases: [
+      {
+        title: "高空或星载、现场没有板",
+        body: "有稳定暗目标时，用 DOS2 估路径辐射，得到更接近地表的反射率。",
+      },
+      {
+        title: "低空有白板优先走经验线",
+        body: "这不是 6S/FLAASH。有现场板应走参考板，不要再叠一次 DOS2。",
+      },
+    ],
     steps: ["必要时 DN→L", "暗目标估 haze", "ESUN 与日地距离", "除以透过率得到 ρ"],
     viz: { kind: "atmosphere", caption: "太阳光穿过大气：路径辐射要减，衰减要除。" },
     inputs: [
@@ -90,7 +110,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "不是 6S/FLAASH；无气溶胶与水汽。低空有白板时通常用 #12 代替。",
     checks: ["#12 和 #13 同时做会不会双重扣除？"],
     summary: {
-      definition: "用 Chavez DOS2 的逐波段暗像元估计路径辐射，并结合太阳角、日地距离和太阳辐照度把辐亮度换算为地表反射率近似。",
+      definition: "DOS2：用暗目标估计路径辐射，并以太阳天顶角余弦近似透过率，得到地表反射率近似。",
       value: "在缺少同步参考板和完整大气参数时，降低路径辐射尤其对短波段的抬升，使高空影像更接近可比较的 L2 量级。",
       keyInput: "物理单位正确的辐亮度，或配有可靠 gain/offset 的 DN；还需真实中心波长、太阳天顶角和年积日。",
       keyOutput: "扣除估计 haze、按 DOS2 透过率近似换算并截断至 [0, 1.5] 的 reflectance_dos.tif。",
@@ -142,13 +162,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["DN 辐射定标到传感器辐亮度、真实波长与太阳几何元数据准备；输入级别为 L1。"],
     downstream: ["#14 BRDF 校正、#20 坏波段剔除、跨时相分析及 L3 模型。"],
-    demoFocus: ["展示暗像元假设成立与失败的场景，联动 dark_percentile 和太阳天顶角并检查 haze 光谱及截断比例。"],
+    demoFocus: ["核对暗像元假设成立与失败的场景；调节 dark_percentile 和太阳天顶角，检查 haze 光谱及截断比例。"],
   },
   {
     id: "14_brdf_correction",
     purpose: "把不同观测角的亮度归一到天底，减轻航带边缘明暗。",
     why: "植被有热点/碗状效应，宽视场镶嵌会一边亮。",
     formula: "ρ天底 = ρ × k(θs,0) / k(θs,θv,φ)，k 为 Ross-Thick + Li-Sparse",
+    scenarioCases: [
+      {
+        title: "宽视场航带两边明暗不均",
+        body: "植被影像跨轨角度亮度差明显、几何可近似时，往天底归一，减轻航带边缘亮暗。",
+      },
+      {
+        title: "只是天底归一（核系数固定）",
+        body: "核系数固定、不反演，方位角不随航迹变。复杂地形、要严格二向反射反演不要当这一页已经做完。",
+      },
+    ],
     steps: ["按列赋观测天顶角", "算核驱动 k", "乘天底归一因子"],
     viz: { kind: "brdf", caption: "同一地物：边缘观测角大，反射率被核函数拉开。" },
     inputs: [
@@ -159,7 +189,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "核系数固定不反演；方位角不随航迹变。",
     checks: ["热点出现在太阳与观测几乎同向时意味着什么？"],
     summary: {
-      definition: "用 Ross-Thick 体积散射核与 Li-Sparse 几何光学核，根据太阳—目标—传感器几何把反射率归一到天底观测。",
+      definition: "核驱动 BRDF：地表二向反射写成各向同性、体积散射与几何光学核的线性组合，并归一到天底观测。",
       value: "减轻宽视场、推扫航带和多角度观测中的热点、碗状效应与边缘亮度差，提高空间和跨航带一致性。",
       keyInput: "已完成反射率校正的立方体，以及太阳天顶角、视天顶角、相对方位角和适用地物的核权重。",
       keyOutput: "逐列乘以天底核值/实际几何核值的 brdf_corrected.tif，波段数和空间网格不变。",
@@ -211,13 +241,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#12 ELM 或 #13 DOS2 获得反射率，并准备太阳、传感器姿态和视场角几何。"],
     downstream: ["#16 正射、#17 镶嵌、#20 光谱清理以及跨航带定量分析。"],
-    demoFocus: ["绘制太阳天顶、视天顶和相对方位三角几何，比较正确与错误角度约定下的跨轨剖面。"],
+    demoFocus: ["核对太阳天顶、视天顶和相对方位三角几何，比较正确与错误角度约定下的跨轨剖面。"],
   },
   {
     id: "15_geo_locate",
     purpose: "给影像一张粗地理参考，便于预览落点。",
     why: "还不是正射，不能精确量面积，但能知道飞到哪了。",
     formula: "以像主点 POS 为中心，GSD 推分辨率，写北向上仿射（忽略姿态旋转）",
+    scenarioCases: [
+      {
+        title: "飞完先看落在哪",
+        body: "平坦、近天底、小姿态的单景，用 POS 中心和 GSD 写粗地理参考，做预览和质检。",
+      },
+      {
+        title: "不要当正射成品",
+        body: "不用姿态，更没有 DEM 和控制点。不能叠地块做面积，也不能当测绘级定位。",
+      },
+    ],
     steps: ["取 lon/lat/alt", "算 GSD 与度分辨率", "写 EPSG:4326 GeoTIFF"],
     viz: {
       kind: "pipeline",
@@ -232,7 +272,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "忽略 roll/pitch 与地形。精确落图看 #16。",
     checks: ["俯仰 5°、航高 120 m 地面大约偏多少？"],
     summary: {
-      definition: "以单个 POS 经纬度作为像主点地面中心，用航高、焦距和像元尺寸估算 GSD，并写入北向上的 EPSG:4326 仿射。",
+      definition: "POS中心点与GSD粗定位：以单个中心位置和像元尺度写北向上仿射，不使用姿态。",
       value: "在缺少完整摄影测量解算时快速给单景赋予近似位置和尺度，支持落点预览、粗裁切与质检。",
       keyInput: "影像、中心 lon/lat/alt，以及匹配相机的 focal_mm、pixel_um 或显式 gsd_m。",
       keyOutput: "像元值不变、写入 EPSG:4326 GeoTransform 的 geolocated.tif 和记录假设参数的 geo_meta.json。",
@@ -277,13 +317,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["GNSS/IMU 时间同步、相机内参和相对航高准备；辐射处理可独立进行。"],
     downstream: ["粗范围检索、预览与 #16 精确正射的初值；达到精度后才能进入 #17 镶嵌和地块统计。"],
-    demoFocus: ["叠加底图演示 5° 俯仰的约 10.5 m 偏移，并指出 yaw 仅记录、输出始终北向上。"],
+    demoFocus: ["底图叠加后，5° 俯仰对应约 10.5 m 偏移；yaw 仅记录，输出始终北向上。"],
   },
   {
     id: "16_orthorectify",
     purpose: "消除地形与姿态引起的几何畸变，像素可叠地块。",
     why: "山坡上的像素会「爬坡」错位，量面积必须正射。",
     formula: "共线方程：地面点经姿态转到相机系，再投影到像平面后重采样",
+    scenarioCases: [
+      {
+        title: "演示地形和姿态怎么把像素拉开",
+        body: "有 DEM、姿态和内参的演示数据，看共线方程重采样后像素能否叠地。",
+      },
+      {
+        title: "当前是生产算法（页面样例为演示数据）",
+        body: "未用真实地图格网、DEM 坐标系和控制点。生产级测绘图不要当这一页已经交付。",
+      },
+    ],
     steps: ["读影像与 DEM", "姿态转旋转矩阵", "DEM 格网点反投影", "双线性重采样"],
     viz: { kind: "ortho", caption: "有 DEM 时，山坡像素被拉回正上方网格。" },
     inputs: [
@@ -291,14 +341,14 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
       { name: "file2", meaning: "DEM（必填）" },
     ],
     outputs: [{ name: "ortho.tif", meaning: "正射影像/立方体" }],
-    industryGap: "无空三/GCP；输出尺寸等于输入；姿态靠 params。",
+    industryGap: "无空三/GCP；输出尺寸等于输入；姿态靠 params。大图按 tile_rows 分行计算。",
     checks: ["没有 DEM 只用平地，山坡像素往哪边错？"],
     summary: {
-      definition: "依据共线方程、相机内外方位和 DEM 高程，把输出地面格网点反投影到像方并逐波段双线性重采样。",
+      definition: "共线条件：物点、投影中心与像点共线；结合 DEM 做单片正射。",
       value: "补偿姿态与地形起伏引起的像点位移，使影像更接近可量测、可镶嵌和可叠加地块的正射产品。",
       keyInput: "影像、DEM，以及相对航高、roll/pitch/yaw、焦距和像元尺寸等成像几何参数。",
       keyOutput: "与输入同高宽、采用输入 profile 写出的 ortho.tif，以及 GSD、焦距像素值和 DEM 高程范围元数据。",
-      keyLimit: "本仓库是教学型单片重采样：没有相机中心经纬度、空三/GCP、畸变模型和真正地图格网构建，DEM 仅按数组尺寸缩放且其 CRS/transform 未参与计算。",
+      keyLimit: "本仓库是生产算法单片正射：没有相机中心经纬度、空三/GCP、畸变模型和真正地图格网构建，DEM 仅按数组尺寸缩放且其 CRS/transform 未参与计算。",
     },
     background: [
       "共线方程要求地面点、相机中心和姿态位于一致三维坐标系；DEM 高程基准也必须与相机高度基准一致。",
@@ -306,7 +356,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     prerequisites: [
       "输入影像与 DEM 覆盖同一区域，坐标系、水平单位和高程基准已统一，并具备经过标定的相机内参和同步姿态。",
-      "alt_m 表示与 DEM 同一垂直基准下的相机高度关系；当前实现实际更适合尺寸匹配的教学数组，而非任意地理 DEM。",
+      "alt_m 表示与 DEM 同一垂直基准下的相机高度关系；当前实现实际更适合尺寸匹配的演示数组，而非任意地理 DEM。",
     ],
     parameterNotes: [
       {
@@ -335,7 +385,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
       "应使用独立 GCP/检查点报告平面 RMSE，并检查山脊、建筑和坡地是否仍有位移；仅看图像变形不等于正射精度合格。",
       "输出沿用输入 profile，未新建真实地图范围；因此当前结果更准确地说是基于简化几何的像方重采样示范，不是完整可交付正射产品。",
     ],
-    applicable: ["尺寸和几何关系受控的单片教学数据，用于演示 DEM、姿态和共线方程如何影响重采样。"],
+    applicable: ["尺寸和几何关系受控的单片演示数据，用于演示 DEM、姿态和共线方程如何影响重采样。"],
     notApplicable: [
       "要求测绘精度、GCP/空三约束、镜头畸变、遮挡处理、地图投影输出或多景无缝正射的生产任务。",
       "DEM 与影像范围/CRS 不一致、推扫逐行姿态变化或高层建筑视差显著的场景。",
@@ -347,28 +397,38 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#15 可提供粗定位概念，但生产流程需独立空三/GNSS-IMU、相机标定、DEM 重投影与坐标基准统一。"],
     downstream: ["#17 镶嵌、#19 多源精配准、地块叠加、面积量测和 L3 空间分析。"],
-    demoFocus: ["用平地/起伏 DEM 与姿态扰动对比共线投影，同时明确展示 DEM transform 未参与和输出 profile 沿用的实现边界。"],
+    demoFocus: ["用平地/起伏 DEM 与姿态扰动对比共线投影。本实现未使用 DEM transform，输出 profile 沿用输入。"],
   },
   {
     id: "17_mosaic",
     purpose: "把两条已地理参考的航带拼成整景。",
     why: "单航带盖不全测区。整景镶嵌后才是可分析的底图。",
     formula: "重叠区按到边缘距离羽化：out = Σ(像素×权重)/Σ权重",
+    scenarioCases: [
+      {
+        title: "两条已校正航带要拼成测区",
+        body: "同源、已正射、坐标系相同的两景，用边缘距离羽化拼成连续立方体。",
+      },
+      {
+        title: "坐标系不同会直接拒绝",
+        body: "没有接缝线、空值掩膜和辐射归一。未配准、不同传感器不要硬拼。",
+      },
+    ],
     steps: ["取范围并集", "重投影到统一网格", "距离羽化融合"],
     viz: { kind: "mosaic", caption: "两景重叠处不是硬切，而是距离加权淡入淡出。" },
     inputs: [
       { name: "file", meaning: "航带 1" },
-      { name: "file2", meaning: "航带 2（必填）" },
+      { name: "file2", meaning: "航带 2（非 zip 时必填）" },
     ],
     outputs: [{ name: "mosaic.tif", meaning: "镶嵌整景" }],
-    industryGap: "仅 2 景；无接缝线搜索；依赖预先配准。",
+    industryGap: "无接缝线搜索；依赖预先配准。非 zip 为两景；zip 可多航带分块写出。",
     checks: ["为什么必须先正射再镶嵌？"],
     summary: {
-      definition: "将两幅带地理参考的同波段栅格重投影到统一网格，并在重叠区按边缘距离羽化融合。",
+      definition: "将各景重投影到统一坐标网格后镶嵌，重叠区融合。",
       value: "形成覆盖完整、边界连续的测区级 L2 影像，为后续匀色、分割和地块统计提供统一空间底图。",
-      keyInput: "两幅已正射、已配准且 CRS、分辨率、波段定义可协调的 GeoTIFF 航带。",
-      keyOutput: "保留地理参考与波段维度的 mosaic.tif，范围为两景空间并集。",
-      keyLimit: "本仓库仅处理两景，不搜索最优接缝线，也不补偿辐射差异或纠正残余几何错位。",
+      keyInput: "已正射、已配准且 CRS、分辨率、波段定义可协调的 GeoTIFF 航带；或含多景的 zip。",
+      keyOutput: "保留地理参考与波段维度的 mosaic.tif，范围为各景空间并集。",
+      keyLimit: "不搜索最优接缝线，也不补偿辐射差异或纠正残余几何错位。",
     },
     background: [
       "航带镶嵌解决的是空间覆盖拼接；几何误差应在正射和配准阶段消除，辐射差异应由辐射校正或匀光处理。",
@@ -394,21 +454,31 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     applicable: ["两幅同源航带已完成正射和辐射校正，需要形成连续测区级反射率立方体。"],
     notApplicable: [
       "原始推扫条带、无地理参考影像，或存在明显旋转、尺度、地形视差尚未解决的数据。",
-      "多景批量生产、需自动接缝线避云避车或要求严格保光谱的生产级镶嵌。",
+      "需自动接缝线避云避车或要求严格保光谱的生产级镶嵌。",
     ],
     risks: [
       "把羽化误当配准会掩盖而非修复错位；在训练/验证切分前先全区镶嵌，还可能让同一地物跨分区形成空间泄漏。",
       "输入 NoData、分辨率或波段顺序不一致会造成黑边、插值污染或错误光谱混合。",
     ],
     upstream: ["#16 正射校正；必要时先做航带间几何配准与统一辐射校正。"],
-    downstream: ["#18 匀色用于展示优化；#25 超像素、L3 分类及地块统计用于分析。"],
-    demoFocus: ["对比硬切与距离羽化的接边，并放大展示错位时羽化产生的双影，强调本实现只支持两景。"],
+    downstream: ["#18 匀色用于匀光；#25 超像素、L3 分类及地块统计用于分析。"],
+    demoFocus: ["比较硬切与距离羽化的接边；错位时羽化会产生双影。非 zip 两条带，zip 可多航带。"],
   },
   {
     id: "18_color_balance",
     purpose: "Wallis 局部匀光，减轻镶嵌块状色差。",
-    why: "客户出图需要观感均匀。定量产品要慎用。",
+    why: "镶嵌成果需要航带间辐射一致。定量产品应慎用，以免改变绝对反射率。",
     formula: "局部均值/方差拉向全局，contrast 与 brightness 控制强度",
+    scenarioCases: [
+      {
+        title: "镶嵌图一块亮一块暗，给人看",
+        body: "制图、展示、人工判读时，用 Wallis 匀光减轻块状色差。",
+      },
+      {
+        title: "定量指数不要再匀光",
+        body: "NDVI、吸收深度、反演、跨时相比反射率，匀光会破坏量纲，不要走这一页。",
+      },
+    ],
     steps: ["逐波段盒式滤波估局部统计", "Wallis 变换", "输出匀色图"],
     viz: {
       kind: "pipeline",
@@ -417,10 +487,10 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     },
     inputs: [{ name: "file", meaning: "镶嵌或单景" }, { name: "params.window", meaning: "默认 7" }],
     outputs: [{ name: "color_balanced.tif", meaning: "匀光后立方体" }],
-    industryGap: "标题含接缝线，当前未做接缝线优化。定量 NDVI 不应过 Wallis。",
+    industryGap: "当前不做接缝线优化。定量 NDVI 不应经过 Wallis。",
     checks: ["#11、#14、#18 各改的是哪一层不一致？"],
     summary: {
-      definition: "逐波段用 Wallis 局部均值和标准差调整亮度与对比度，使局部统计向全局统计靠拢。",
+      definition: "Wallis 匀光：用局部均值与方差把子块统计拉向目标，减轻镶嵌色调差。",
       value: "减轻航带、阴影缓变和局部曝光差带来的块状观感，提升镶嵌成果的目视一致性。",
       keyInput: "已完成基础辐射校正和几何处理的单景或镶嵌栅格，通常用于可视化产品。",
       keyOutput: "逐波段局部统计被调整的 color_balanced.tif 及均值预览图。",
@@ -462,13 +532,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#17 镶嵌或单景正射产品；先完成 #11/#14 等物理辐射一致性校正。"],
     downstream: ["展示制图、人工判读或对绝对光谱不敏感的视觉分割；不建议进入定量指数链。"],
-    demoFocus: ["联动展示 window、contrast、brightness 对亮度均匀性和局部光晕的影响，并明确“无接缝线优化”。"],
+    demoFocus: ["调节 window、contrast、brightness，核对亮度均匀性与局部光晕。本实现无接缝线优化。"],
   },
   {
     id: "19_multi_source_register",
     purpose: "把 RGB 亚像元平移对齐到 HSI，方便人看图、算法吃谱。",
     why: "未配准的多层无法按地块统计。",
     formula: "相位相关（Foroosh）估计 (dy, dx)，cubic 重采样",
+    scenarioCases: [
+      {
+        title: "HSI 和 RGB 只差一个平移",
+        body: "已经粗配准、尺度方向差不多，用相位相关把 RGB 亚像元对齐到高光谱，方便叠图和取谱。",
+      },
+      {
+        title: "只估计平移",
+        body: "做不了非线性变形、大幅旋转或尺度差。还没粗配准不要直接用。",
+      },
+    ],
     steps: ["波段均值成灰度", "FFT 相位相关", "亚像元偏移", "重采样 RGB"],
     viz: {
       kind: "pipeline",
@@ -483,14 +563,14 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
       { name: "hsi_ref.tif", meaning: "参考 HSI" },
       { name: "rgb_aligned.tif", meaning: "对齐后 RGB" },
     ],
-    industryGap: "矢量未参与；无旋转仿射。",
+    industryGap: "矢量未参与；无旋转仿射。大图先降到 HSI 网格，缩略图估平移，分块校核。",
     checks: ["相对旋转 2° 时相位相关会怎样？"],
     summary: {
-      definition: "将 HSI 波段均值与 RGB 灰度代理做 FFT 相位相关，估计亚像元二维平移并重采样 RGB。",
+      definition: "相位相关在频域估计平移，并可得到亚像素精度。",
       value: "让 RGB 纹理与高光谱像元在同一格网上对应，便于联合判读、特征融合和标签转移。",
       keyInput: "空间覆盖相近、存在共同纹理的 HSI 与 RGB 栅格；HSI 为参考，RGB 为待对齐影像。",
       keyOutput: "原样参考 hsi_ref.tif、按估计 dx/dy 平移并写入 HSI profile 的 rgb_aligned.tif。",
-      keyLimit: "本仓库只估计全局平移，不处理旋转、尺度、透视、局部形变，也未实现标题中的矢量配准。",
+      keyLimit: "本仓库只估计全局平移，不处理矢量、旋转、尺度、透视或局部形变。",
     },
     background: [
       "相位相关利用频域相位差估计平移，对统一增益较稳健，但要求两源影像仍有相似的空间结构。",
@@ -524,14 +604,24 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["HSI 与 RGB 各自完成几何校正、重投影和近似范围裁切。"],
     downstream: ["多源特征融合、RGB 辅助标注、对象分割和同位置地块统计。"],
-    demoFocus: ["叠加边缘展示配准前后差异，并用旋转 2° 的反例说明全局平移模型边界。"],
+    demoFocus: ["比较配准前后边缘差异。旋转 2° 的输入超出全局平移模型适用边界。"],
   },
   {
     id: "20_bad_band_remove",
-    purpose: "丢掉低 SNR 与大气吸收窗口波段。",
+    purpose: "丢掉场景像元均值/标准差比偏低与大气吸收窗口波段。",
     why: "噪声波段会害分类、解混和红边。",
-    formula: "丢掉 SNR < 0.4×中位 SNR 的波段，并上吸收窗与手工 drop_bands",
-    steps: ["逐波段 SNR", "匹配吸收窗波长", "并上手工列表", "至少保留 2 个最佳波段"],
+    formula: "丢掉场景像元均值/标准差比 < 0.4×其中位数的波段，并上吸收窗与手工 drop_bands",
+    scenarioCases: [
+      {
+        title: "平滑、降维、建模前先丢掉坏波段",
+        body: "VNIR/SWIR 立方体按场景均值/标准差比和吸收窗筛波段，给 SG、MNF、分类减噪声。",
+      },
+      {
+        title: "名字里的 SNR 不是传感器 SNR",
+        body: "修坏点、去条带、沿光谱平滑不是删波段。这一页也不测实验室 SNR。",
+      },
+    ],
+    steps: ["逐波段场景像元均值/标准差比", "匹配吸收窗波长", "并上手工列表", "至少保留 2 个最高比值波段"],
     viz: {
       kind: "index_spectrum",
       caption: "水汽窗（约 940、1400、1900 nm）几乎全是噪声。",
@@ -543,13 +633,13 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     },
     inputs: [
       { name: "file", meaning: "反射率立方体" },
-      { name: "params.drop_bands", meaning: "手工索引，样例 [0,5] 只是教学" },
+      { name: "params.drop_bands", meaning: "手工索引，样例 [0,5] 只是演示数据缺省" },
     ],
     outputs: [{ name: "cube_clean.tif", meaning: "剔除后立方体" }],
     industryGap: "无波长时用 450–850 假波长，打不中 SWIR 吸收窗。",
     checks: ["为何 1400 nm 附近常整段扔掉？"],
     summary: {
-      definition: "综合逐波段 SNR、典型大气吸收波段和人工索引，剔除不可靠波段并保留原始波长子集。",
+      definition: "按场景像元均值/标准差比、大气吸收窗口和指定索引剔除候选波段；该比值不是传感器 SNR。",
       value: "减少低信噪与强吸收波段对平滑、降维、分类和光谱匹配的污染。",
       keyInput: "完成辐射/反射率校正的光谱立方体，最好提供与波段轴严格对应的 wavelengths_nm。",
       keyOutput: "按 keep 索引压缩后的 cube_clean.tif，以及 dropped、kept 和检测元数据。",
@@ -560,22 +650,22 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
       "剔除会改变波段索引；后续模型、指数和波长表必须使用 keep 映射，不能沿用原索引。",
     ],
     prerequisites: [
-      "输入至少为已定标的 L1/L2 光谱立方体，波段轴方向明确，并排除大面积 NoData 对 SNR 统计的干扰。",
+      "输入至少为已定标的 L1/L2 光谱立方体，波段轴方向明确，并排除大面积 NoData 对场景统计的干扰。",
       "wavelengths_nm 的长度、单位和顺序与立方体第三维完全一致；人工 drop_bands 使用零基索引。",
     ],
     parameterNotes: [
       {
         name: "snr_ratio",
-        role: "以中位 SNR 的比例设定自动低信噪剔除阈值，默认 0.4。",
-        guidance: "结合均匀靶、暗场或代表性 ROI 复核；不同传感器和场景不应机械共用阈值。",
-        effect: "提高阈值会剔除更多相对低 SNR 波段，降低阈值则保留更多信息与噪声。",
+        role: "以场景像元均值/标准差比中位数的比例设定自动候选阈值，默认 0.4；参数名仅为 API 兼容。",
+        guidance: "结合均匀靶、暗场或代表性 ROI 复核；该值不是 EMVA/传感器 SNR，不同场景不应机械共用阈值。",
+        effect: "提高阈值会剔除更多相对低比值波段，降低阈值则保留更多信息与噪声。",
         risk: "场景异质性会被误当噪声；阈值过高可能删除窄吸收特征所在波段。",
       },
       {
         name: "wavelengths_nm / drop_bands",
         role: "前者定位固定吸收窗，后者强制加入已知坏波段索引。",
         guidance: "优先传入真实中心波长，并将传感器质检清单转换为明确索引后人工核对。",
-        effect: "二者与 SNR 结果取并集；人工列表会无条件影响输出波段集合。",
+        effect: "二者与场景像元均值/标准差比筛选结果取并集；人工列表会无条件影响输出波段集合。",
         risk: "波长单位、顺序或索引基准错误会删除错误波段；无波长时 SWIR 检测不可信。",
       },
     ],
@@ -591,13 +681,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["辐射定标、反射率校正和传感器波长标定；可先屏蔽 NoData 与饱和像元。"],
     downstream: ["#21 SG 平滑、#22 归一化、#23 PCA/MNF、#24 波段选择及 L3 模型。"],
-    demoFocus: ["绘制 SNR 与真实波长，联动展示自动、吸收窗、手工三类剔除来源，并演示缺失波长的 SWIR 边界。"],
+    demoFocus: ["按真实波长核对场景像元均值/标准差比；区分自动、吸收窗、手工三类剔除来源，并核对缺失波长时的 SWIR 边界。"],
   },
   {
     id: "21_savgol_smooth",
     purpose: "沿光谱维做多项式滑动平滑，压高频抖动、保峰形。",
     why: "红边求导和光谱匹配都怕毛刺。",
     formula: "窗口内拟合 polyorder 阶多项式，用拟合值替换中心点",
+    scenarioCases: [
+      {
+        title: "曲线毛刺多，后面要看峰和导数",
+        body: "高光谱反射率有高频抖动，又要做红边、SAM、端元时，沿光谱做 SG 平滑保峰形。",
+      },
+      {
+        title: "只做 SG，不是去包络",
+        body: "波长缺口没补、噪声主要是空间条带时，不要指望这一页。窗口必须是奇数。",
+      },
+    ],
     steps: ["窗口取奇数", "沿 axis=2 做 SG", "输出平滑立方体"],
     viz: { kind: "spectrum_smooth", caption: "拖动窗口：过大则抹掉窄吸收，过小则去噪不足。" },
     inputs: [
@@ -608,7 +708,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "清单写了包络线去除，当前只做 SG。",
     checks: ["window=11 对 5 nm 采样会抹掉多窄的峰？"],
     summary: {
-      definition: "对每个像元沿波段轴在滑动窗口内拟合低阶多项式，以中心拟合值抑制高频光谱噪声。",
+      definition: "Savitzky–Golay：在滑动窗口内做多项式最小二乘，得到平滑值与导数。",
       value: "在较好保持峰位、峰宽和导数趋势的前提下降低随机抖动，服务红边和光谱匹配。",
       keyInput: "波长顺序连续、采样间隔近似均匀且已剔除严重坏波段的反射率立方体。",
       keyOutput: "空间尺寸与波段数不变、沿光谱轴平滑后的 cube_smooth.tif。",
@@ -650,13 +750,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#20 坏波段剔除；更早完成辐射/反射率校正。"],
     downstream: ["红边与导数特征、#22 归一化、#23 PCA/MNF、光谱匹配和分类。"],
-    demoFocus: ["以 nm 显示窗口实际宽度，对比过小、合理、过大三档参数对窄吸收峰和一阶导数的影响。"],
+    demoFocus: ["以纳米核对窗口实际宽度，比较过小、合理、过大三档参数对窄吸收峰和一阶导数的影响。"],
   },
   {
     id: "22_normalize",
     purpose: "统一光谱量纲，让分类器看形状而不是绝对亮度。",
     why: "照度变化会让同一类整体抬升。",
     formula: "默认 SNV：逐像元 (x−μ)/σ；还有 zscore / minmax / L2",
+    scenarioCases: [
+      {
+        title: "分类器要看形状、不要被亮度带跑",
+        body: "分类、聚类、回归、网络训练前统一尺度。SNV 看形状；其他分支是通用标准化。",
+      },
+      {
+        title: "指数和物理反演不要先归一",
+        body: "NDVI、绝对反射率阈值、辐射传输要保留物理量纲。整景拟合后再切分会泄漏。",
+      },
+    ],
     steps: ["选择 method", "按全图或逐像元统计", "写出归一化立方体"],
     viz: {
       kind: "pipeline",
@@ -668,7 +778,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "NDVI 等指数前不要做 SNV。换景推理须固化训练集统计。",
     checks: ["SAM 前做 L2 是否多余？"],
     summary: {
-      definition: "按逐像元光谱或逐波段全图统计重标定数值，使不同亮度、尺度或波段分布更适合模型计算。",
+      definition: "按所选方法重标定光谱：SNV 为逐光谱减均值再除标准差；亦可做 Z-score、MinMax 或 L2 归一。",
       value: "降低照度和数值尺度差异对距离、回归与神经网络优化的影响，但不同方法保留的信息不同。",
       keyInput: "波段语义稳定、坏波段已处理的反射率或特征立方体，以及与任务匹配的 method。",
       keyOutput: "空间和波段维不变的 cube_norm.tif，并返回实际方法及整体均值、标准差。",
@@ -703,13 +813,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#20 坏波段剔除和可选 #21 SG 平滑；先按空间独立单元完成数据划分。"],
     downstream: ["#23 降维、#24 特征选择、SAM/传统机器学习与深度模型；指数产品应走旁路。"],
-    demoFocus: ["同屏比较四种方法对同一组亮暗光谱的作用，并突出全图统计造成的训练/测试泄漏风险。"],
+    demoFocus: ["比较四种方法对同一组亮暗光谱的作用，并核对全图统计造成的训练/测试泄漏风险。"],
   },
   {
     id: "23_pca",
     purpose: "把高度相关的百波段压到少数信噪更高的分量。",
     why: "降冗余、降噪声，3D-CNN 前也常用。",
     formula: "默认 MNF：空间差分估噪声 → 白化 → PCA；可选普通 PCA",
+    scenarioCases: [
+      {
+        title: "百来个波段高度相关，要压缩或可视化",
+        body: "给传统模型或深度模型降维，或看前几个分量。可选 PCA 或 MNF。",
+      },
+      {
+        title: "分量不能当波长用",
+        body: "指数、吸收峰、传感器选波段需要真实波长。跨场景也不能直接复用这套分量。",
+      },
+    ],
     steps: ["估噪声协方差（MNF）", "特征分解", "取前 k 分量"],
     viz: { kind: "pca", caption: "相关波段张成的瘦长云，被转到少数主轴。" },
     inputs: [
@@ -720,7 +840,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "k=3 只适合可视化；不能再拿 MNF 分量算 NDVI。",
     checks: ["为何植被 PCA1 常像亮度图？"],
     summary: {
-      definition: "PCA 按总方差旋转波段空间；MNF 先用空间差分估噪声并白化，再按信噪排序得到低维分量。",
+      definition: "PCA 按总方差做正交变换；MNF 先白化噪声再按信噪比排序分量。",
       value: "压缩高相关波段、降低计算量；MNF 还可把较高信噪信息集中到前部分量。",
       keyInput: "同波段顺序、已清理坏波段的反射率立方体，以及 method 和目标分量数。",
       keyOutput: "pca_cube.tif 或 mnf_cube.tif，第三维为无物理波长的线性组合分量。",
@@ -762,13 +882,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#20 坏波段剔除，可选 #21 平滑与 #22 归一化；建模前先做空间划分。"],
     downstream: ["可视化、#25 SLIC 输入、分类/回归特征和深度模型；不可用于原波长指数。"],
-    demoFocus: ["并列展示 PCA 与 MNF 分量及噪声变化，用 k=3 的可视化案例说明其不是通用最优维数。"],
+    demoFocus: ["比较 PCA 与 MNF 分量及噪声变化。k=3 不是通用最优维数。"],
   },
   {
     id: "24_band_select",
     purpose: "选出对当前任务最有用的真实波段子集。",
     why: "比盲目 PCA 更好解释，仍保留波长。",
     formula: "无标签用方差；有标签用 ANOVA F，取 top-k",
+    scenarioCases: [
+      {
+        title: "只要少数可解释的真波段",
+        body: "便携相机设计、传统模型、快速分类时，按方差或有标签的 ANOVA F 选出 top-k。",
+      },
+      {
+        title: "不控制波段冗余",
+        body: "选出的波段可能彼此相关。跨景不能原样套用当前排名。无标签或标签无效会退回方差法。",
+      },
+    ],
     steps: ["算每个波段得分", "排序截断 k 个", "写出子集立方体与排名"],
     viz: {
       kind: "pipeline",
@@ -784,7 +914,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "方差常偏向近红外；无去相关。",
     checks: ["为何方差最大的 3 个波段常常全是近红外？"],
     summary: {
-      definition: "按无标签方差或有标签 ANOVA F 值给每个真实波段单独评分，选取得分最高的 top-k 子集。",
+      definition: "无标签时按方差、有标签时按 ANOVA F 值为每个波段评分并选取子集。",
       value: "在保留原始波段含义和波长可解释性的同时，减少冗余输入与采集/计算成本。",
       keyInput: "波段质量已控制的立方体；可选与影像同尺寸、0 为忽略且至少两类有效样本的标签图。",
       keyOutput: "selected_bands.tif 与 band_scores.json，记录实际评分方法、全波段得分和原索引。",
@@ -826,34 +956,44 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#20 坏波段剔除和可选 #21/#22 预处理；监督模式先完成空间分组切分。"],
     downstream: ["可解释分类/回归、轻量化部署、传感器波段配置与 #26 Patch 构建。"],
-    demoFocus: ["对比 variance 与 ANOVA F 排名，标注相邻高相关波段，并现场展示标签无效时退回方差法。"],
+    demoFocus: ["比较 variance 与 ANOVA F 排名，标注相邻高相关波段。标签无效时退回方差法。"],
   },
   {
     id: "25_superpixel",
     purpose: "把局部相似像素收成对象，减少椒盐分类。",
     why: "农田是斑块，不是孤立像素。",
-    formula: "SLIC：在 (x,y,R,G,B) 上做紧凑 k-means",
-    steps: ["取前三波段当 RGB", "SLIC 分割", "输出标签图"],
+    formula: "SLIC：在 (x,y,前三个输入特征) 上做局部紧凑聚类；convert2lab=False",
+    scenarioCases: [
+      {
+        title: "高分辨率农田、建筑要对象而不是椒盐",
+        body: "空间连续的地物，用超像素做对象级统计或分类后处理。",
+      },
+      {
+        title: "实现不是论文里的 Lab 色空间",
+        body: "本仓库用前三个原始光谱波段且不转 Lab。单像元小目标、空间分辨率不够时不要用。",
+      },
+    ],
+    steps: ["取前三个原始光谱波段作为三通道特征", "SLIC 分割", "输出标签图"],
     viz: {
       kind: "majority",
       caption: "超像素边界应贴地物，而不是固定方格。",
     },
     inputs: [
       { name: "file", meaning: "反射率" },
-      { name: "params.n_segments", meaning: "默认 20，仅适合很小的教学图" },
+      { name: "params.n_segments", meaning: "默认 20，仅适合很小的演示图" },
     ],
     outputs: [{ name: "superpixel_labels.tif", meaning: "对象编号" }],
     industryGap: "高光谱常先 MNF 再 SLIC。",
     checks: ["compactness 过大/过小时斑块长什么样？"],
     summary: {
-      definition: "在三通道光谱/颜色特征与二维坐标的联合空间中运行 SLIC，将相邻相似像元聚为紧凑超像素。",
+      definition: "SLIC：在光谱特征与平面坐标的联合空间做局部聚类，生成紧凑超像素。",
       value: "把像素级分析提升为对象级单元，可降低椒盐噪声并支持对象统计、多数投票和标注加速。",
       keyInput: "几何连续、尺度明确的单景或镶嵌栅格，以及目标对象尺度对应的 n_segments 与 compactness。",
       keyOutput: "从 1 开始编号、与输入同高宽且保留地理参考的 superpixel_labels.tif 及预览图。",
-      keyLimit: "本仓库实际只取前三个原始波段，不自动计算前三主成分；也不提供掩膜、对象特征或跨瓦片合并。",
+      keyLimit: "本仓库只取前三个原始光谱波段，scikit-image 在内部对全部三通道数值做一次全局 min-max，不逐通道标准化；各通道尺度和动态范围可能不同，某个波段可能主导特征距离。convert2lab=False，因此不等同于标准 CIELAB SLIC。",
     },
     background: [
-      "SLIC 平衡光谱/颜色相似性与空间紧凑性，生成的是过分割单元，不是有语义的作物或地块类别。",
+      "当前 SLIC 平衡前三通道光谱特征相似性与空间紧凑性，生成的是过分割单元，不是有语义的作物或地块类别。",
       "前三原始高光谱波段若位于低 SNR 或相邻窄波段，边界质量通常不如合适的 RGB/MNF 特征。",
     ],
     prerequisites: [
@@ -864,7 +1004,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
       {
         name: "n_segments",
         role: "给出期望超像素数量，默认 20，实际对象数可能略有偏差。",
-        guidance: "按有效影像面积除以期望对象面积估算；大幅生产影像应远高于教学默认值。",
+        guidance: "按有效影像面积除以期望对象面积估算；大幅生产影像应远高于演示数据默认值。",
         effect: "数量越大对象越小、边界更细；数量越少对象越大、平滑更强。",
         risk: "过少会跨越类别边界，过多会退化为碎片并增加对象级计算量。",
       },
@@ -888,13 +1028,23 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#17 镶嵌及几何校正、#20 坏波段剔除；推荐先用 #23 MNF 生成三通道后明确传入。"],
     downstream: ["对象光谱统计、标签多数投票、面向对象分类和矢量化。"],
-    demoFocus: ["联动 n_segments 与 compactness 展示欠分割、过分割和近方格化，并揭示当前使用前三原始波段。"],
+    demoFocus: ["调节 n_segments 与 compactness，核对欠分割、过分割和近方格化。当前使用前三原始波段。"],
   },
   {
     id: "26_patch_build",
     purpose: "为每个有效标注像素切出空间邻域立方体，供 CNN 训练。",
     why: "2D/3D-CNN 吃的是 patch，不是单光谱。",
     formula: "奇数边长 P，半径 (P−1)/2，edge 填充后切片",
+    scenarioCases: [
+      {
+        title: "给空谱 CNN 切固定邻域块",
+        body: "标签已质检、空间已分区后，对有效标注像元切奇数窗口立方体，供 2D/3D CNN 训练。",
+      },
+      {
+        title: "只切块，不训练",
+        body: "标签没配准、还没做空间独立划分，或模型要整图分割时，不要用这一页当训练集已经合格。",
+      },
+    ],
     steps: ["读立方体与标签", "对 label>0 的像元切 patch", "打包 NPZ"],
     viz: {
       kind: "cnn_arch",
@@ -915,7 +1065,7 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "穷举相邻 patch 空间泄漏，OA 会虚高。",
     checks: ["为何 patch 必须是奇数？"],
     summary: {
-      definition: "以每个 label>0 的像元为中心，从光谱立方体切取奇数边长的 P×P×B 邻域并打包监督样本。",
+      definition: "以标注像元为中心，从立方体切取邻域块作为空谱网络的训练样本。",
       value: "把中心像元光谱与局部空间上下文组合成 2D/3D-CNN 可直接读取的训练输入。",
       keyInput: "空间完全对齐的 H×W×B 立方体和 H×W 标签栅格，0 表示忽略，patch_size 为正奇数。",
       keyOutput: "包含 patches、labels、coords 的 patches.npz，另有 manifest.json 和平均 Patch 预览。",
@@ -958,6 +1108,6 @@ export const L2_PRINCIPLES: PrincipleDoc[] = [
     ],
     upstream: ["#20–#24 预处理与特征固化、标签配准和按地块/区域的空间独立划分。"],
     downstream: ["2D/3D-CNN 训练、空谱分类及基于 coords 的误差回写；需另行实现数据集划分和采样器。"],
-    demoFocus: ["可视化相邻 Patch 的重叠像元与 edge 填充，比较随机切分和地块切分，量化空间泄漏造成的 OA 虚高。"],
+    demoFocus: ["核对相邻 Patch 的重叠像元与 edge 填充；比较随机切分和地块切分，量化空间泄漏造成的 OA 虚高。"],
   },
 ];

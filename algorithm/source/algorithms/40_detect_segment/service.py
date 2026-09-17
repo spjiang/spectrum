@@ -1,4 +1,4 @@
-"""语义分割/目标检测：ACE 自适应余弦估计（高光谱目标探测标准）。"""
+"""低NDVI种子ACE目标检测。"""
 from __future__ import annotations
 
 import json
@@ -20,7 +20,7 @@ from common.response import err_response, ok_response
 from common.rs.target import ace_score, detect_mask
 
 ALGORITHM_ID = "40_detect_segment"
-TITLE = "语义分割/目标检测"
+TITLE = "低NDVI种子ACE目标检测"
 IMPLEMENTED = True
 LEVEL = "L3"
 

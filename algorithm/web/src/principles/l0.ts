@@ -7,6 +7,20 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     why: "漏飞区无法用后期算法补回。重叠不足则镶嵌裂缝、立体失败。",
     formula: "GSD = H × 像元尺寸 / 焦距；航带间距 = 幅宽 × (1 − 旁向重叠)",
     formulaNote: "本仓库在测区外包矩形上铺 lawnmower 往返航点。",
+    scenarioCases: [
+      {
+        title: "起飞前看覆盖够不够",
+        body: "测区多边形加上航高、焦距、重叠，用来估地面分辨率、航带间距和航点。适合平坦或起伏不大的测区，先判断会不会漏飞、飞多久。",
+      },
+      {
+        title: "改航高看分辨率和带宽",
+        body: "航高降低，GSD 变细，但单带覆盖变窄、航带变多。用来权衡「看得清」和「飞得完」。",
+      },
+      {
+        title: "不要这样用",
+        body: "当前只在外包矩形上铺直线往返，没有 DEM、障碍、禁飞和飞控格式。不能当可飞批复，也不能直接导入飞控。",
+      },
+    ],
     steps: ["读入测区 Polygon", "由相机与航高算 GSD 和幅宽", "按重叠率算间距", "奇数航带反向生成航点", "估计路程与时长"],
     viz: { kind: "lawnmower", caption: "往返航带：奇数带反向，重叠区用于拼接。" },
     inputs: [
@@ -20,7 +34,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "无 DEM、禁飞区、转弯半径与飞控航线格式。",
     checks: ["航高减半时 GSD 与航带数如何变？", "旁向重叠降低会在哪一侧漏缝？"],
     summary: {
-      definition: "依据测区边界、相机成像几何和重叠要求生成矩形包络内的往返航带与航点。",
+      definition: "地面采样距离 GSD = 航高 × 像元尺寸 / 焦距；航带间距 = 地面幅宽 × (1 − 旁向重叠)。",
       value: "在起飞前量化覆盖完整性、地面分辨率、航程和预计时长，降低漏飞与重飞成本。",
       keyInput: "测区 Polygon，以及航高、焦距、像元尺寸、航向/旁向重叠和巡航速度。",
       keyOutput: "含 GSD、航带间距、航点、路程和时长的任务 JSON及航点 GeoJSON。",
@@ -53,13 +67,23 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["外包矩形会在不规则测区外产生冗余航点。", "未使用 DEM 时，起伏地形中的实际 GSD 和重叠率会偏离计划值。"],
     upstream: ["测区边界测绘与坐标核验。", "载荷内参、续航和采集频率确认。"],
     downstream: ["飞控任务编排与现场安全审查。", "航后覆盖质检、正射与镶嵌。"],
-    demoFocus: ["联动调整航高和旁向重叠，观察 GSD、航带数与预计时长的变化。", "在地图上核对奇偶航带反向后的连续往返路径。"],
+    demoFocus: ["调节航高和旁向重叠，核对 GSD、航带数与预计时长。", "在地图上核对奇偶航带反向后的连续往返路径。"],
   },
   {
     id: "02_sync_timestamp",
     purpose: "把高光谱、RGB、POS 对齐到同一时间轴，避免图对不上姿态。",
     why: "各传感器时钟独立。差几十毫秒，8 m/s 巡航就会偏几十厘米。",
     formula: "以 HSI 曝光时刻为基准：POS 线性/最短弧内插，RGB 最近邻 + 钟差",
+    scenarioCases: [
+      {
+        title: "三路设备各记各的钟",
+        body: "高光谱、RGB、POS 时间戳不齐时，先对齐到高光谱曝光时刻，再给每帧插姿态、配最近 RGB。有独立日志、时钟能对上的航后整理用这个。",
+      },
+      {
+        title: "不要当硬件同步",
+        body: "钟差用中位数，RGB 最近邻，没有容差拒绝，也不是 PPS/PTP。不能当微秒级触发一致，也不能当精密直接地理定位。",
+      },
+    ],
     steps: ["读取三路时间戳", "估计 RGB 钟差", "对每帧 HSI 内插 POS", "匹配最近 RGB 帧"],
     viz: {
       kind: "pipeline",
@@ -71,7 +95,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "无 PPS/PTP 硬件同步，无曝光中心 IMU 高速率内插。",
     checks: ["姿态为何必须最短弧插值？", "钟差 20 ms 在 8 m/s 下偏多少米？"],
     summary: {
-      definition: "以高光谱曝光时刻为主时间轴，内插 POS 并为每帧匹配最近的 RGB 观测。",
+      definition: "把定位定姿轨迹内插到各影像的曝光时刻，完成多传感器时间与外方位对齐。",
       value: "建立光谱影像、可见光影像与外方位元素的逐帧对应关系，避免后续空间定位错配。",
       keyInput: "带时间戳的 hsi_frames、rgb_frames、pos 序列及 RGB 钟差设置。",
       keyOutput: "逐 HSI 帧记录对应位置、姿态和 RGB 帧的 aligned.json。",
@@ -97,13 +121,23 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["固定钟差估计错误会形成沿航向的系统位移。", "低频 POS 在快速姿态变化段内插可能掩盖真实运动。"],
     upstream: ["设备时钟配置与采集日志导出。", "时间戳单位、时区和历元标准化。"],
     downstream: ["POS 解算与相机中心轨迹生成。", "粗定位、正射和 HSI/RGB 配准。"],
-    demoFocus: ["用飞行速度换算钟差对应的地面位移，直观说明对时价值。", "展示航向跨 360°时最短弧插值与普通线性插值的差异。"],
+    demoFocus: ["按飞行速度换算钟差对应的地面位移。", "比较航向跨 360° 时最短弧插值与线性插值的差异。"],
   },
   {
     id: "03_pos_solution",
-    purpose: "把 GNSS/IMU 粗轨迹做成可用的位置与姿态（POS）。",
+    purpose: "把已有 POS 粗轨迹平滑，并按姿态施加杠杆臂校正。",
     why: "正射、镶嵌都吃这条轨迹。跳点会让整条航带扭歪。",
     formula: "位置互补滤波：α·预测 + (1−α)·观测，再 RTS 平滑，最后杠杆臂归到相机",
+    scenarioCases: [
+      {
+        title: "已有飞控轨迹要顺一下",
+        body: "对 GNSS/姿态记录做粗差、互补滤波和 RTS 平滑，再把杠杆臂收到相机中心。给后续粗定位或正射当连续 POS。",
+      },
+      {
+        title: "不要当测绘级导航解",
+        body: "不是 GNSS/IMU 紧组合，也不读原始 IMU 比力。厘米级可追溯精度、完整惯导积分不要用这一页。",
+      },
+    ],
     steps: ["剔除 GNSS 速度粗差", "互补滤波融合", "RTS 平滑", "杠杆臂改正"],
     viz: {
       kind: "pipeline",
@@ -118,7 +152,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "不是紧组合 EKF，无 IMU 比力积分，无 RTK 质量门控。",
     checks: ["杠杆臂 0.3 m、滚转 10° 平面大约偏多少？"],
     summary: {
-      definition: "对 GNSS/姿态轨迹做速度粗差剔除、互补融合、RTS 平滑，并将天线/IMU 位置改正到相机中心。",
+      definition: "RTS 固定区间平滑：正向滤波后再反向递推，用未来观测修正过去状态。",
       value: "为粗定位与正射提供连续、低跳变且坐标基准明确的外方位轨迹。",
       keyInput: "含 time、lat、lon、alt、roll、pitch、yaw 的 CSV，以及互补系数和杠杆臂。",
       keyOutput: "平滑后的位置、姿态、速度与相机中心轨迹 CSV/JSON。",
@@ -146,22 +180,32 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
       },
     ],
     resultInterpretation: ["比较平滑前后速度与轨迹残差；平滑不应把真实转弯削成不符合飞行运动的路径。", "输出连续不代表绝对精度达标，仍需结合 RTK 状态、控制点或已知轨迹验证。"],
-    applicable: ["已有飞控 GNSS/姿态记录的航后轨迹清理。", "为教学或工程预览生成连续 POS 的轻量流程。"],
+    applicable: ["已有飞控 GNSS/姿态记录的航后轨迹清理。", "为生产预处理或工程预览生成连续 POS 的轻量流程。"],
     notApplicable: ["需要厘米级可追溯精度的测绘级紧组合解算。", "只有原始 IMU 比力和角速度、需要完整惯导积分的数据。"],
     risks: ["粗差阈值可能误删真实急转弯段。", "经纬度直接处理与局部米制计算混用会引入尺度误差。"],
     upstream: ["时间同步与轨迹格式标准化。", "相机—IMU 杆臂及安装角标定。"],
     downstream: ["逐帧直接地理定位。", "DEM 正射、镶嵌与质量评估。"],
-    demoFocus: ["叠加展示原始与平滑轨迹，定位 GNSS 跳点被抑制的位置。", "切换杠杆臂改正，观察姿态变化段的相机中心偏移。"],
+    demoFocus: ["比较原始轨迹与平滑轨迹，定位 GNSS 跳点被抑制的位置。", "启用杠杆臂改正后，核对姿态变化段的相机中心偏移。"],
   },
   {
     id: "04_flight_qc",
     purpose: "判断本架 DN 是否过曝/欠曝、信噪比是否可用。",
     why: "坏架次进管线只会污染后续所有产品。",
     formula: "过曝：DN ≥ 饱和×0.98；SNRᵢ ≈ μᵢ / σᵢ；通过：过曝比例 ≤ 阈值",
+    scenarioCases: [
+      {
+        title: "落地后先看过不过曝",
+        body: "用过曝/欠曝比例和全图相对指标，快速决定要不要复飞。实验室或工业立方体也可查动态范围。",
+      },
+      {
+        title: "不要当成传感器鉴定",
+        body: "全图均值除以标准差不是 EMVA 传感器 SNR。丢帧、虚焦、振动不在这一页。",
+      },
+    ],
     steps: ["推断饱和电平", "统计过曝/欠曝比例", "逐波段 SNR", "给出是否建议复飞"],
     viz: {
       kind: "pipeline",
-      caption: "质检闸门：过曝与 SNR 不通过则建议复飞。",
+      caption: "质检闸门：仅由过曝比例触发通过/复飞；场景 SNR 只作诊断。",
       steps: ["DN 立方体", "饱和判定", "SNR", "通过/复飞"],
     },
     inputs: [
@@ -169,10 +213,10 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
       { name: "params.max_saturated_ratio", meaning: "默认 0.01" },
     ],
     outputs: [{ name: "report.json", meaning: "passed、比例、逐波段 SNR" }],
-    industryGap: "标题含丢帧，当前未检测时间间隙；SNR 用全图而非均匀区。",
+    industryGap: "当前未检测时间间隙；SNR 用全图而非均匀区。",
     checks: ["为何全图 SNR 会把纹理当成噪声？"],
     summary: {
-      definition: "从 DN 立方体统计饱和、欠曝和逐波段近似 SNR，并按过曝比例生成采集可用性结论。",
+      definition: "按位深检测辐射饱和；信噪比为均匀辐照下信号均值与噪声标准差之比。",
       value: "在昂贵的预处理和反演前拦截曝光失败或噪声严重的数据，支持及时复飞决策。",
       keyInput: "原始 DN GeoTIFF、传感器位深或饱和电平，以及允许的最大过曝比例。",
       keyOutput: "包含 passed、过曝/欠曝比例和逐波段 SNR 的 report.json。",
@@ -205,13 +249,23 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["高反射小目标可能主导过曝告警，需结合业务区域解释。", "纹理丰富场景会导致全图 SNR 偏低。"],
     upstream: ["原始数据完整性与元数据校验。", "采集曝光、增益和位深确认。"],
     downstream: ["暗电流、坏像元和辐射定标。", "复飞或重新设置曝光的作业决策。"],
-    demoFocus: ["同时展示过曝掩膜比例与逐波段 SNR 曲线。", "强调当前报告不包含丢帧检测，避免把标题能力等同于实现能力。"],
+    demoFocus: ["核对过曝掩膜比例与逐波段 SNR 曲线。", "本报告不含丢帧检测，不能替代完整架次质检。"],
   },
   {
     id: "05_cloud_shadow",
     purpose: "标出云和云影，避免当正常地表去做指数和分类。",
     why: "云很亮、影很暗，会制造假长势和假变化。",
-    formula: "云：可见光亮 ∧ NDVI 低 ∧ 白度高；影：晴空 NIR 低分位",
+    formula: "云：可见光亮 ∧ NDVI 低 ∧ 可见光波段间相对差异较小（低白度指标）；暗区：非云非水 NIR 低分位",
+    scenarioCases: [
+      {
+        title: "指数和分类前先挡云影",
+        body: "室外航飞、有可见光和近红外时，做云和暗区初筛，避免把云当植被。",
+      },
+      {
+        title: "不要用在实验室或当业务云产品",
+        body: "室内、传送带没有云层。这也不是卫星业务级云概率、云高或几何云影定位。",
+      },
+    ],
     steps: ["算 NDVI 与白度", "光谱规则判云", "NIR 低值判影", "形态学去碎斑"],
     viz: {
       kind: "index_spectrum",
@@ -227,7 +281,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "无热红外的简化 Fmask，低空树影易误报。",
     checks: ["高 NDVI 的亮像元为什么不太像云？"],
     summary: {
-      definition: "结合可见光亮度、白度、NDVI 与晴空近红外低分位规则识别云和云影，并做形态学整理。",
+      definition: "用可见光–近红外光谱规则检测云，并以非云、非水区域的 NIR 低分位标记候选暗区。",
       value: "为植被指数、分类和变化检测提供不可用像元掩膜，减少云影造成的假异常。",
       keyInput: "含蓝、红、近红外等可配置波段的多波段影像。",
       keyOutput: "云、云影及组合分类掩膜，其中 0 为晴空、1 为影、2 为云。",
@@ -260,13 +314,23 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["亮屋顶、盐碱地可能被判云。", "水体、树影和地形阴影可能被判云影。"],
     upstream: ["辐射一致化与有效波段确认。", "波段中心波长和索引映射。"],
     downstream: ["植被/水体指数计算。", "分类、变化检测和地块统计中的质量掩膜。"],
-    demoFocus: ["并排展示真彩色、NDVI 与云/影组合掩膜。", "指出树影或水体误报案例，说明无热红外实现边界。"],
+    demoFocus: ["核对真彩色、NDVI 与云/影组合掩膜。", "树影或水体可能误报；本实现无热红外通道。"],
   },
   {
     id: "06_dark_current",
     purpose: "减去无光本底和列向固定模式噪声。",
     why: "暗电流会抬高 DN，条纹会进入辐亮度。",
     formula: "DN′ = DN − dark；再减（列均值 − 全局均值）",
+    scenarioCases: [
+      {
+        title: "辐射定标前减本底",
+        body: "有匹配暗帧时相减，没有则用波段最小值，再扣列固定噪声。原始 DN 进入定标前用。",
+      },
+      {
+        title: "不要用在已经不可逆处理过的图",
+        body: "厂商 ISP、未知黑电平、温漂和曝光依赖模型，这一页做不了。",
+      },
+    ],
     steps: ["有暗帧则相减，否则用波段最小值", "估计列 FPN", "减 FPN 并截到 ≥0"],
     viz: {
       kind: "pipeline",
@@ -281,7 +345,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "无温度/积分时间模型；用场景最小值当代暗帧会伤暗地物。",
     checks: ["为何必须先暗电流再辐射定标？"],
     summary: {
-      definition: "以同尺寸暗帧或场景替代估计扣除无光本底，再校正列向固定模式偏置。",
+      definition: "暗电流是无光照下的热生电荷信号；固定模式噪声是像元间稳定的响应差。用暗帧扣除本底。",
       value: "恢复 DN 零点并减轻固定条纹，避免本底误差被增益放大到辐亮度产品。",
       keyInput: "原始 DN 立方体及可选的同配置暗帧。",
       keyOutput: "非负截断的去暗电流、去列 FPN 立方体 dn_dark_corrected.tif。",
@@ -307,13 +371,23 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["以场景最小值代替暗帧会削弱水体、阴影等真实低信号。", "负值截零会隐藏过扣程度并改变低信号分布。"],
     upstream: ["暗场采集与采集参数记录。", "原始数据解码及位深确认。"],
     downstream: ["坏像元检测、去条带。", "DN 到辐亮度的线性定标。"],
-    demoFocus: ["对比校正前后暗区直方图与列均值曲线。", "分别演示真实暗帧和场景最小值替代，突出替代方案风险。"],
+    demoFocus: ["比较校正前后暗区直方图与列均值曲线。", "分别使用真实暗帧与场景最小值替代，核对替代方案风险。"],
   },
   {
     id: "07_bad_pixel",
     purpose: "检测并修复热/死像元和坏列。",
     why: "坏点会变成分类噪点和假吸收。",
     formula: "|DN − 中值滤波| > z_thr × MAD（默认 6σ），坏列再 4σ",
+    scenarioCases: [
+      {
+        title: "稀疏热像元、坏列的工程修复",
+        body: "推扫坏列或面阵坏点，邻域还能代表时，检出后用邻域均值填。",
+      },
+      {
+        title: "不要填大面积失效或细小目标",
+        body: "成片饱和、邻域也坏，或定量任务要保住细线、小点，不要用空间插值硬修。",
+      },
+    ],
     steps: ["中值残差检测像元", "检测坏列", "合并手工表", "3×3 邻域填充"],
     viz: {
       kind: "majority",
@@ -327,7 +401,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "非沿轨方向插值；无出厂坏元时序表。",
     checks: ["坏列和条带噪声如何区分？"],
     summary: {
-      definition: "通过局部中值残差与 MAD 阈值检测热/死像元和统计异常列，并以邻域值修复。",
+      definition: "缺陷像元是相对邻域显著偏离的热像元、死像元或闪烁像元，检测后用邻域修复。",
       value: "阻止孤立缺陷和坏列形成假吸收、分类椒盐与异常探测误报。",
       keyInput: "DN 立方体，以及可选的手工 bad_cols、bad_pixels 缺陷表。",
       keyOutput: "已合并自动与手工缺陷掩膜并完成 3×3 邻域填充的 dn_repaired.tif。",
@@ -360,13 +434,23 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["高对比边缘可能触发假阳性。", "3×3 填充会平滑小目标并制造人工光谱。"],
     upstream: ["暗电流与黑电平校正。", "设备缺陷像元表维护。"],
     downstream: ["去条带、smile/keystone 校正。", "辐射定标与光谱分析。"],
-    demoFocus: ["叠加显示坏点掩膜和修复前后局部放大图。", "区分整列缺陷与缓慢亮暗条带，避免把两类问题混讲。"],
+    demoFocus: ["核对坏点掩膜及修复前后局部结果。", "整列缺陷与缓慢亮暗条带分属不同问题，不可混用同一处理。"],
   },
   {
     id: "08_destriping",
     purpose: "去掉推扫列向亮暗条纹。",
     why: "各探测元响应不一致，表现为竖条。",
     formula: "x′ = (x − μ列)/σ列 × σ全局 + μ全局",
+    scenarioCases: [
+      {
+        title: "推扫列条纹、又没有平场表",
+        body: "条带跟探测列固定对应时，用列矩匹配做场景级去条带。",
+      },
+      {
+        title: "不要用在面阵随机纹理",
+        body: "不是列向噪声、照明渐变，或列间地物差很大又要保绝对辐射时，不要用。沿列真实纹理可能被改。",
+      },
+    ],
     steps: ["逐列均值标准差", "对齐到全局矩", "输出去条带立方体"],
     viz: {
       kind: "pipeline",
@@ -378,7 +462,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "会轻微改变真实纵向纹理；无平场实验室校正。",
     checks: ["沿列的真实河流会被误伤吗？"],
     summary: {
-      definition: "将各探测列的均值和标准差匹配到全局统计矩，以减弱推扫响应不一致形成的亮暗条带。",
+      definition: "矩匹配去条带：将各探测器列的均值与方差对齐到参考统计，校正推扫响应不一致。",
       value: "改善航带与专题图的空间均匀性，降低固定列响应对分类和目视判读的干扰。",
       keyInput: "存在列向条纹的 DN 或辐亮度立方体。",
       keyOutput: "逐列矩匹配后的 destripe.tif。",
@@ -404,13 +488,23 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["真实纵向纹理可能被压制。", "近零标准差列可能导致不稳定缩放或放大噪声。"],
     upstream: ["暗电流和固定偏置校正。", "坏像元、坏列检测与修复。"],
     downstream: ["光谱/空间几何校正。", "辐射定标、镶嵌和分类。"],
-    demoFocus: ["展示列均值曲线和去条带前后同一区域剖面。", "选取沿列真实地物作为反例，说明矩匹配假设。"],
+    demoFocus: ["比较去条带前后的列均值曲线与同一区域剖面。", "沿列真实地物会违反矩匹配假设。"],
   },
   {
     id: "09_smile_keystone",
     purpose: "校正光谱弯曲（smile）与波段间空间错位（keystone）。",
     why: "否则「同一波段」实际不是同一波长，红边和光谱库全偏。",
     formula: "场景内互相关求亚像元偏移，再三次样条/双线性重采样",
+    scenarioCases: [
+      {
+        title: "推扫光谱仪缺实验室查找表",
+        body: "有连续色散、场景有纹理时，用互相关估微笑和关键石，做相对校正或演示。",
+      },
+      {
+        title: "不要用在滤光片相机或无纹理场景",
+        body: "分立滤光片、多相机多光谱没有连续光谱轴。绝对波长标定、几乎没有纹理的数据也不适用。",
+      },
+    ],
     steps: ["各列光谱对中心列估 smile", "光谱维重采样", "各波段估 keystone", "空间维重采样"],
     viz: {
       kind: "spectrum_smooth",
@@ -421,7 +515,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "无实验室波长查找表，依赖场景纹理。",
     checks: ["0.5 个波段的 smile 在 10 nm 采样下是多少纳米？"],
     summary: {
-      definition: "以中心列/参考波段为基准，通过场景互相关估计光谱 smile 与空间 keystone 偏移并重采样校正。",
+      definition: "关键石是同一空间列上不同波长的空间错位；光谱微笑是视场内波长中心随列变化。",
       value: "使同名波段在全视场对应更一致的波长和地面位置，保护红边、吸收峰与光谱匹配精度。",
       keyInput: "具有足够光谱和空间纹理的 DN 或辐亮度立方体。",
       keyOutput: "完成光谱维与空间维重采样的 smile_corrected.tif。",
@@ -449,18 +543,28 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
       },
     ],
     resultInterpretation: ["检查校正前后特征峰位置随列号的变化，理想结果应更接近水平。", "空间边缘跨波段重合改善表明 keystone 降低，但不能替代独立标定靶验证。"],
-    applicable: ["连续色散的推扫成像光谱仪，且场景纹理足以支持相关估计。", "缺少实验室 LUT 时的场景内相对校正或教学演示。"],
+    applicable: ["连续色散的推扫成像光谱仪，且场景纹理足以支持相关估计。", "缺少实验室 LUT 时的场景内相对校正或演示。"],
     notApplicable: ["分立滤光片、多相机多光谱或没有连续光谱轴的设备。", "要求可溯源绝对波长标定或场景几乎无纹理的数据。"],
     risks: ["相关峰错误会造成反向或过量重采样。", "插值可能平滑窄吸收峰并改变像元间噪声。"],
     upstream: ["暗电流、坏像元和去条带。", "波长表、实验室灯线或几何标定资料。"],
     downstream: ["辐射定标与反射率转换。", "红边提取、SAM/SID 与光谱库匹配。"],
-    demoFocus: ["展示不同列同一吸收峰在校正前后的对齐。", "同时说明 0.5 波段偏移需乘实际波长采样间隔才能解释为纳米。"],
+    demoFocus: ["核对不同列同一吸收峰在校正前后的对齐。", "0.5 波段偏移须乘实际波长采样间隔后才可按纳米解释。"],
   },
   {
     id: "10_radiance_calibration",
     purpose: "把仪器计数 DN 变成有单位的辐亮度。",
     why: "DN 不能跨相机比较；大气校正吃的是辐亮度。",
     formula: "L = gain × DN + offset（gain/offset 可为逐波段）",
+    scenarioCases: [
+      {
+        title: "有线性增益偏置的原始 DN",
+        body: "DN 乘增益加偏置得到辐亮度，再进反射率或大气校正。",
+      },
+      {
+        title: "默认系数只是演示数据缺省",
+        body: "默认增益 0.01、偏置 0 不能证明来自实验室。拉伸图、未知 ISP、明显非线性不要用这一页交差。",
+      },
+    ],
     steps: ["读取增益偏置", "线性变换整个立方体", "写出辐亮度 GeoTIFF"],
     viz: {
       kind: "pipeline",
@@ -469,17 +573,17 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     },
     inputs: [
       { name: "file", meaning: "DN 立方体" },
-      { name: "params.gain / offset", meaning: "默认 0.01 / 0，仅为教学量级" },
+      { name: "params.gain / offset", meaning: "默认 0.01 / 0，仅为演示缺省量级" },
     ],
     outputs: [{ name: "radiance.tif", meaning: "L1 辐亮度" }],
     industryGap: "无非线性、渐晕、温度漂移；默认增益不是真实相机系数。",
     checks: ["曝光加倍时 DN 变、gain 该不该变？"],
     summary: {
-      definition: "使用标量或逐波段 gain、offset 将传感器 DN 线性转换为具有物理单位的辐亮度。",
+      definition: "线性辐射定标：辐亮度 = 增益 × DN + 偏置，将量化计数转为物理量。",
       value: "建立跨时间、跨曝光和跨设备比较的物理量入口，并为大气校正提供正确输入层级。",
       keyInput: "已完成基础缺陷校正的 DN 立方体及设备对应的 gain/offset 定标系数。",
       keyOutput: "按线性定标生成的 L1 辐亮度立方体 radiance.tif。",
-      keyLimit: "当前只支持线性 gain/offset，不校正非线性、渐晕、温漂；默认 0.01/0 仅用于教学。",
+      keyLimit: "当前只支持线性 gain/offset，不校正非线性、渐晕、温漂；默认 0.01/0 仅用于演示数据缺省。",
     },
     background: [
       "DN 是电子计数，受位深、增益、曝光和设备响应影响，本身没有跨设备可比性。",
@@ -505,16 +609,26 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     resultInterpretation: ["先核对输出单位和合理范围，再比较已知稳定目标在不同曝光下的辐亮度一致性。", "线性结果看似平滑并不证明系数真实，必须通过定标源或参考目标验证。"],
     applicable: ["拥有对应线性定标系数的原始 DN 数据。", "需要进入反射率、大气校正或定量光谱分析的流程。"],
     notApplicable: ["只有显示拉伸影像或未知 ISP 输出的数据。", "传感器明显非线性且缺少分段/多项式响应模型的场景。"],
-    risks: ["将教学默认系数用于项目会产生无物理依据的数值。", "重复暗场校正或单位混淆会造成系统偏差。"],
+    risks: ["将演示数据默认系数用于项目会产生无物理依据的数值。", "重复暗场校正或单位混淆会造成系统偏差。"],
     upstream: ["暗电流、坏像元、去条带与几何校正。", "实验室辐射定标和系数版本管理。"],
     downstream: ["参考板反射率或大气校正。", "跨架次辐射比较与定量反演。"],
-    demoFocus: ["展示 DN 与辐亮度的线性关系及逐波段系数差异。", "在界面明确标注默认系数仅为教学量级。"],
+    demoFocus: ["核对 DN 与辐亮度的线性关系及逐波段系数差异。", "默认系数仅为演示缺省量级，不可当作出厂定标。"],
   },
   {
     id: "11_relative_radiometric",
     purpose: "把待校正景的亮度分布拉到参考景，便于镶嵌。",
     why: "多架次光照不同会出现「一块亮一块暗」。",
     formula: "逐波段直方图匹配到参考景",
+    scenarioCases: [
+      {
+        title: "多航带看起来要匀一下",
+        body: "同传感器、地物差不多，镶嵌前把亮度分布拉到参考景，方便人看。",
+      },
+      {
+        title: "不要用在定量和变化检测",
+        body: "直方图匹配会改绝对量纲。要保真实时相变化、或两景还没配准、波段响应不同，不要用。",
+      },
+    ],
     steps: ["读取两景", "重叠窗口裁剪", "逐波段 match_histograms"],
     viz: {
       kind: "pipeline",
@@ -529,7 +643,7 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     industryGap: "不做配准；不适合定量反演前的科学产品。",
     checks: ["变化检测前做直方图匹配可能抹掉什么？"],
     summary: {
-      definition: "将待校正景逐波段的累计分布映射到参考景，实现相对亮度和对比度一致。",
+      definition: "直方图匹配：把源图像的累积分布映射到参考图像，使灰度分布一致。",
       value: "减弱多架次或多航带的整体亮度差，使镶嵌显示与部分相对分析更连贯。",
       keyInput: "待校正影像和波段数一致的参考影像。",
       keyOutput: "逐波段直方图匹配后的 radiometric_aligned.tif。",
@@ -562,6 +676,6 @@ export const L0_PRINCIPLES: PrincipleDoc[] = [
     risks: ["真实变化可能被压缩或抹除。", "参考景偏差会系统性传递给全部待校正景。"],
     upstream: ["基础辐射校正和云影质量筛选。", "几何配准与有效重叠区确认。"],
     downstream: ["影像镶嵌与展示产品。", "需谨慎使用的相对跨架次比较。"],
-    demoFocus: ["并排展示匹配前后重叠区接缝和波段直方图。", "明确演示输出不作为绝对反射率科学产品。"],
+    demoFocus: ["比较匹配前后重叠区接缝与波段直方图。", "输出不是绝对反射率科学产品。"],
   },
 ];

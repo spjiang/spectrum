@@ -1,4 +1,4 @@
-"""云/云影：Fmask 光谱规则（无热红外）。"""
+"""云/暗区：受 Fmask 启发的简化光谱规则。"""
 from __future__ import annotations
 
 from fastapi import UploadFile
@@ -15,7 +15,7 @@ LEVEL = "L0"
 
 
 async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
-    """Zhu & Woodcock Fmask 光谱潜在云 + 近红外云影。"""
+    """受 Fmask 启发的简化光谱规则 + 近红外候选暗区。"""
     _ = file2
     params, err = parse_params(params_json)
     if err:
@@ -41,12 +41,12 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     save_geotiff(cloud, cloud_tif, profile=profile)
     save_geotiff(shadow, shadow_tif, profile=profile)
     save_geotiff(mask, combo_tif, profile=profile)
-    save_preview_png(mask.astype(float), png, title="Fmask cloud=2 shadow=1")
+    save_preview_png(mask.astype(float), png, title="cloud=2 candidate-shadow=1")
     return ok_response(
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="Fmask 光谱云/云影检测完成",
+        message="简化光谱云与候选暗区检测完成",
         data={
             "method": "fmask_spectral",
             "n_cloud": int(cloud.sum()),

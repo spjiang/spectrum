@@ -35,16 +35,19 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     evi = 2.5 * (nir - red) / (nir + 6 * red - 7.5 * blue + 1)
     savi = (1 + soil_l) * (nir - red) / (nir + red + soil_l)
     msavi = 0.5 * (2 * nir + 1 - np.sqrt((2 * nir + 1) ** 2 - 8 * (nir - red)))
-    stack = np.stack([evi, savi, msavi], axis=-1).astype(np.float32)
-    tif = job / "evi_savi_msavi.tif"
+    evi_tif = job / "evi.tif"
+    savi_tif = job / "savi.tif"
+    msavi_tif = job / "msavi.tif"
     png = job / "evi_preview.png"
-    save_geotiff(stack, tif, profile=profile)
+    save_geotiff(evi.astype(np.float32), evi_tif, profile=profile)
+    save_geotiff(savi.astype(np.float32), savi_tif, profile=profile)
+    save_geotiff(msavi.astype(np.float32), msavi_tif, profile=profile)
     save_preview_png(evi, png, title="EVI")
     return ok_response(
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="已计算 EVI/SAVI/MSAVI（波段顺序：EVI,SAVI,MSAVI）",
+        message="已计算 EVI、SAVI、MSAVI，分别写出单波段 GeoTIFF",
         data={
             "blue_band": blue_i,
             "red_band": red_i,
@@ -53,8 +56,13 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
             "evi_mean": float(np.nanmean(evi)),
             "savi_mean": float(np.nanmean(savi)),
             "msavi_mean": float(np.nanmean(msavi)),
-            "shape": list(stack.shape),
+            "shape": list(evi.shape),
             "format": "GeoTIFF",
         },
-        files={"indices_tif": str(tif.resolve()), "preview_png": str(png.resolve())},
+        files={
+            "evi_tif": str(evi_tif.resolve()),
+            "savi_tif": str(savi_tif.resolve()),
+            "msavi_tif": str(msavi_tif.resolve()),
+            "preview_png": str(png.resolve()),
+        },
     )

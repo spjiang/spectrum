@@ -51,7 +51,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         implemented=True,
         message=f"已修复 {int(mask.sum())} 个坏像元位置（含自动检测）",
         data={
-            "method": "median_residual_6sigma + bilinear_fill",
+            "method": "median_residual_sigma + neighborhood_mean_fill",
             "n_bad_cols": len(set(bad_cols)),
             "n_auto_cols": len(auto_cols),
             "n_masked": int(mask.sum()),

@@ -1,4 +1,4 @@
-"""HTTP 路由：匀色与接缝线优化。"""
+"""HTTP 路由：Wallis局部匀色。"""
 from __future__ import annotations
 
 from common.routing import build_router

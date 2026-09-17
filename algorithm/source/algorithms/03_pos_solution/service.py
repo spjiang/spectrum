@@ -10,7 +10,7 @@ from common.response import err_response, ok_response
 from common.rs.ins import solve_pos
 
 ALGORITHM_ID = "03_pos_solution"
-TITLE = "POS解算（GPS+IMU）"
+TITLE = "POS轨迹平滑与杠杆臂校正"
 IMPLEMENTED = True
 LEVEL = "L0"
 

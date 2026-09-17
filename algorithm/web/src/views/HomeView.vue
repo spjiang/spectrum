@@ -3,7 +3,7 @@
     <p class="kicker">全流程</p>
     <h2>从采集到结论</h2>
     <p class="lede">
-      三张图用故事来讲同一条产线：业务是「飞 → 校 → 看图 → 出表」；技术是「网页按钮钻进算法抽屉」；数据是「计数变成地块上的一个数」。点图画可进入算法。
+      覆盖采集规划、辐射与几何处理、指数与识别、地块统计共 55 项算法。下列三图分别给出业务链路、服务调用路径与数据层级；点击节点进入对应算法。
     </p>
 
     <nav class="page-tabs" aria-label="架构图切换">
@@ -17,7 +17,7 @@
     <DataArch v-else />
 
     <p class="kicker" style="margin-top: 48px">按菜单进入</p>
-    <h2 class="section-h">九段产线</h2>
+    <h2 class="section-h">处理层级</h2>
     <div class="flow">
       <div v-for="(s, i) in stages" :key="s.id" class="stage" @click="go(s.first)">
         <div class="stage-top">
@@ -40,7 +40,7 @@
       </div>
     </div>
     <p class="legend">
-      下图九段与左侧菜单同名。算法页默认打开「算法原理」，可切换「运行演示」对照输入与输出，或打开「产品分析」查看与中达瑞和各型号的合作适配。
+      下列九段与左侧菜单同名。算法页默认打开「算法原理」，可切换「运行演示」核对输入与输出，或打开「产品分析」查看与中达瑞和各型号的适配关系。
     </p>
   </div>
 </template>

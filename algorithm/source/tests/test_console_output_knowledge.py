@@ -2,12 +2,77 @@
 
 from __future__ import annotations
 
+import asyncio
 import builtins
+import importlib
+import json
+import shutil
 import unittest
+from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
+
+import numpy as np
+from fastapi import UploadFile
+from rasterio.crs import CRS
+from rasterio.io import MemoryFile
+from rasterio.transform import from_origin
 
 from common.console_catalog import get_console_algorithm, list_console_algorithms
 from common.console_output_knowledge import _collect_layer_knowledge, get_algorithm_output_knowledge
+from common.io import load_raster
+from common.rs.cloud import fmask_spectral
+from common.rs.mosaic import mosaic_georeferenced
+from common.rs.qc import band_snr
+from common.rs.sensor import fill_bad_pixels
+
+
+ALGORITHM_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_TEST_CRS = object()
+
+
+def read_algorithm_file(relative_path: str) -> str:
+    return (ALGORITHM_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def geotiff_upload(
+    cube: np.ndarray,
+    filename: str = "input.tif",
+    *,
+    crs: CRS | None | object = DEFAULT_TEST_CRS,
+    nodata: float | None = None,
+) -> UploadFile:
+    """把手工可核验的小立方体编码为真实 GeoTIFF 上传对象。"""
+    bands = np.moveaxis(cube, -1, 0).astype(np.float32)
+    with MemoryFile() as memory_file:
+        with memory_file.open(
+            driver="GTiff",
+            height=cube.shape[0],
+            width=cube.shape[1],
+            count=cube.shape[2],
+            dtype="float32",
+            crs=CRS.from_epsg(4326) if crs is DEFAULT_TEST_CRS else crs,
+            transform=from_origin(114.06, 22.54, 0.00001, 0.00001),
+            nodata=nodata,
+        ) as dataset:
+            dataset.write(bands)
+        payload = memory_file.read()
+    return UploadFile(file=BytesIO(payload), filename=filename)
+
+
+def json_upload(payload: dict, filename: str = "input.geojson") -> UploadFile:
+    """把字典编码为真实 JSON/GeoJSON 上传对象。"""
+    return UploadFile(
+        file=BytesIO(json.dumps(payload, ensure_ascii=False).encode("utf-8")),
+        filename=filename,
+    )
+
+
+def remove_job_output(response: dict) -> None:
+    """清理真实 service 运行产生的单次作业目录。"""
+    if response.get("files"):
+        first_path = Path(next(iter(response["files"].values())))
+        shutil.rmtree(first_path.parent, ignore_errors=True)
 
 REQUIRED_OUTPUT_DETAILS = {
     "label",
@@ -162,14 +227,20 @@ L2_EXPECTED = {
 }
 
 L3_EXPECTED = {
-    "27_ndvi": {"files": {"ndvi_tif", "preview_png"}, "data": {"min", "max", "mean"}},
-    "28_ndre": {"files": {"ndre_tif", "preview_png"}, "data": {"min", "max", "mean"}},
+    "27_ndvi": {
+        "files": {"ndvi_tif", "preview_png"},
+        "data": {"min", "max", "mean", "red_band", "nir_band", "shape", "format"},
+    },
+    "28_ndre": {
+        "files": {"ndre_tif", "preview_png"},
+        "data": {"min", "max", "mean", "re_band", "nir_band", "shape", "format"},
+    },
     "29_evi_savi": {
-        "files": {"indices_tif", "preview_png"},
+        "files": {"evi_tif", "savi_tif", "msavi_tif", "preview_png"},
         "data": {"L", "evi_mean", "savi_mean", "msavi_mean"},
     },
     "30_ndmi_ndwi": {
-        "files": {"indices_tif", "preview_png"},
+        "files": {"ndmi_tif", "ndwi_tif", "mndwi_tif", "preview_png"},
         "data": {"ndmi_mean", "ndwi_mean", "mndwi_mean"},
     },
     "31_red_edge_params": {
@@ -189,7 +260,20 @@ L3_EXPECTED = {
     },
     "33_physical_inversion": {
         "files": {"lai_tif", "cab_tif", "preview_png"},
-        "data": {"model", "lut_size", "lai_mean", "lai_max", "cab_mean", "wavelengths_nm"},
+        "data": {
+            "model",
+            "lut_size",
+            "n_lai",
+            "n_cab",
+            "best_n",
+            "cost_method",
+            "n_boundary_lai",
+            "n_boundary_cab",
+            "lai_mean",
+            "lai_max",
+            "cab_mean",
+            "wavelengths_nm",
+        },
     },
     "34_svm_rf_classify": {
         "files": {"pred_map_tif", "preview_png"},
@@ -299,12 +383,627 @@ L3_EXPECTED = {
         "files": {"report_json", "parcel_geojson"},
         "data": {"mode", "n_parcels", "n_parcels_with_pixels", "scene", "parcels"},
     },
+    "46_reci": {
+        "files": {"reci_tif", "preview_png"},
+        "data": {"min", "max", "mean", "re_band", "nir_band", "shape", "format"},
+    },
+    "47_gndvi": {
+        "files": {"gndvi_tif", "preview_png"},
+        "data": {"min", "max", "mean", "green_band", "nir_band", "shape", "format"},
+    },
+    "48_osavi": {
+        "files": {"osavi_tif", "preview_png"},
+        "data": {"min", "max", "mean", "red_band", "nir_band", "L", "shape", "format"},
+    },
+    "49_arvi": {
+        "files": {"arvi_tif", "preview_png"},
+        "data": {"min", "max", "mean", "blue_band", "red_band", "nir_band", "gamma", "shape", "format"},
+    },
+    "50_vari": {
+        "files": {"vari_tif", "preview_png"},
+        "data": {"min", "max", "mean", "blue_band", "green_band", "red_band", "shape", "format"},
+    },
+    "51_lai_index": {
+        "files": {"lai_index_tif", "preview_png"},
+        "data": {"min", "max", "mean", "blue_band", "red_band", "nir_band", "shape", "format"},
+    },
+    "52_nbr": {
+        "files": {"nbr_tif", "preview_png"},
+        "data": {"min", "max", "mean", "nir_band", "swir_band", "shape", "format"},
+    },
+    "53_sipi": {
+        "files": {"sipi_tif", "preview_png"},
+        "data": {"min", "max", "mean", "blue_band", "red_band", "nir_band", "shape", "format"},
+    },
+    "54_gci": {
+        "files": {"gci_tif", "preview_png"},
+        "data": {"min", "max", "mean", "green_band", "nir_band", "shape", "format"},
+    },
+    "55_ndsi": {
+        "files": {"ndsi_tif", "preview_png"},
+        "data": {"min", "max", "mean", "green_band", "swir_band", "shape", "format"},
+    },
 }
 
 ALL_EXPECTED = {**L0_EXPECTED, **L2_EXPECTED, **L3_EXPECTED}
 
 
 class ConsoleOutputKnowledgeTests(unittest.TestCase):
+    def test_regression_rejects_unknown_preprocess_without_outputs(self) -> None:
+        """#32 非 snv/none 参数必须 fail closed。"""
+        rng = np.random.default_rng(7)
+        cube = rng.uniform(0.1, 0.9, size=(4, 5, 5)).astype(np.float32)
+        truth = cube[:, :, :1]
+        service = importlib.import_module("algorithms.32_regression_inversion.service")
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(cube, "invalid-preprocess.tif"),
+                file2=geotiff_upload(truth, "truth.tif"),
+                params_json='{"preprocess": "autoscale"}',
+            )
+        )
+        self.assertFalse(response["success"])
+        self.assertIn("snv", response["message"])
+        self.assertIn("none", response["message"])
+        self.assertFalse(response.get("files"))
+
+    def test_parcel_stats_rejects_unknown_mode_without_outputs(self) -> None:
+        """#45 非 continuous/categorical 模式必须 fail closed。"""
+        service = importlib.import_module("algorithms.45_parcel_zonal_stats.service")
+        values = np.arange(4, dtype=np.float32).reshape(2, 2, 1)
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(values, "invalid-mode.tif"),
+                file2=None,
+                params_json='{"mode": "classes"}',
+            )
+        )
+        self.assertFalse(response["success"])
+        self.assertIn("continuous", response["message"])
+        self.assertIn("categorical", response["message"])
+        self.assertFalse(response.get("files"))
+
+    def test_parcel_geojson_categorical_excludes_invalid_and_marks_empty(self) -> None:
+        """#45 真实多边形统计须统一有效像元分母并序列化空地块。"""
+        service = importlib.import_module("algorithms.45_parcel_zonal_stats.service")
+        values = np.array(
+            [
+                [1, 1, np.nan, -9999],
+                [1, 2, np.nan, -9999],
+                [2, 2, np.nan, -9999],
+                [2, 1, np.nan, -9999],
+            ],
+            dtype=np.float32,
+        )
+        full = [
+            [114.0600001, 22.5399601],
+            [114.0600399, 22.5399601],
+            [114.0600399, 22.5399999],
+            [114.0600001, 22.5399999],
+            [114.0600001, 22.5399601],
+        ]
+        empty_cell = [
+            [114.0600301, 22.5399901],
+            [114.0600399, 22.5399901],
+            [114.0600399, 22.5399999],
+            [114.0600301, 22.5399999],
+            [114.0600301, 22.5399901],
+        ]
+        geo = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"id": "all"},
+                    "geometry": {"type": "Polygon", "coordinates": [full]},
+                },
+                {
+                    "type": "Feature",
+                    "properties": {"id": "empty"},
+                    "geometry": {"type": "Polygon", "coordinates": [empty_cell]},
+                },
+            ],
+        }
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(
+                    values[:, :, None], "parcel-categorical.tif", nodata=-9999
+                ),
+                file2=json_upload(geo, "parcels.geojson"),
+                params_json='{"mode": "categorical"}',
+            )
+        )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+        parcels = {row["id"]: row for row in response["data"]["parcels"]}
+        self.assertEqual(8, parcels["all"]["pixel_count"])
+        self.assertEqual({"1": 4, "2": 4}, parcels["all"]["class_pixel_count"])
+        self.assertEqual({"1": 0.5, "2": 0.5}, parcels["all"]["class_area_ratio"])
+        self.assertEqual(0, parcels["empty"]["pixel_count"])
+        self.assertIs(parcels["empty"]["empty"], True)
+        self.assertEqual("empty", parcels["empty"]["status"])
+        self.assertNotIn("class_pixel_count", parcels["empty"])
+        json.dumps(response["data"], ensure_ascii=False, allow_nan=False)
+
+    def test_regression_preprocess_echo_matches_both_executed_branches(self) -> None:
+        """#32 必须真实执行并准确回显 snv/none 两条分支。"""
+        rng = np.random.default_rng(42)
+        cube = rng.uniform(0.05, 0.8, size=(4, 5, 5)).astype(np.float32)
+        truth = (
+            0.7 * cube[:, :, 0] - 0.2 * cube[:, :, 2] + 0.1 * cube[:, :, 4]
+        )[:, :, None]
+        service = importlib.import_module("algorithms.32_regression_inversion.service")
+        for preprocess in ("snv", "none"):
+            with self.subTest(preprocess=preprocess):
+                response = asyncio.run(
+                    service.run(
+                        file=geotiff_upload(cube, f"cube-{preprocess}.tif"),
+                        file2=geotiff_upload(truth, f"truth-{preprocess}.tif"),
+                        params_json=f'{{"preprocess": "{preprocess}"}}',
+                    )
+                )
+                self.addCleanup(remove_job_output, response)
+                self.assertTrue(response["success"])
+                self.assertEqual(preprocess, response["data"]["preprocess"])
+                self.assertIn(preprocess, response["message"].lower())
+
+    def test_svm_fits_training_scaler_once_and_reuses_it_for_all_predictions(self) -> None:
+        """#34 SVM scaler 只 fit 训练集，并复用于测试集与整图。"""
+        from sklearn.preprocessing import StandardScaler
+
+        cube = np.arange(6 * 5 * 3, dtype=np.float32).reshape(6, 5, 3) + 1
+        labels = np.tile(np.array([1, 2, 1, 2, 1], dtype=np.float32), (6, 1))
+        service = importlib.import_module("algorithms.34_svm_rf_classify.service")
+        original_fit = StandardScaler.fit
+        original_transform = StandardScaler.transform
+        fit_rows: list[int] = []
+        transform_calls: list[tuple[int, int]] = []
+
+        def tracked_fit(scaler, values, *args, **kwargs):
+            fit_rows.append(len(values))
+            return original_fit(scaler, values, *args, **kwargs)
+
+        def tracked_transform(scaler, values, *args, **kwargs):
+            transform_calls.append((id(scaler), len(values)))
+            return original_transform(scaler, values, *args, **kwargs)
+
+        with patch.object(StandardScaler, "fit", new=tracked_fit), patch.object(
+            StandardScaler, "transform", new=tracked_transform
+        ):
+            response = asyncio.run(
+                service.run(
+                    file=geotiff_upload(cube),
+                    file2=geotiff_upload(labels[:, :, None], "labels.tif"),
+                    params_json='{"model": "svm", "test_size": 0.3}',
+                )
+            )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+        self.assertEqual([response["data"]["n_train"]], fit_rows)
+        self.assertEqual(
+            {response["data"]["n_train"], response["data"]["n_test"], cube.shape[0] * cube.shape[1]},
+            {rows for _, rows in transform_calls},
+        )
+        self.assertEqual(1, len({scaler_id for scaler_id, _ in transform_calls}))
+
+    def test_rf_does_not_fit_standard_scaler(self) -> None:
+        """#34 RF 分支保持原始特征，不强制标准化。"""
+        from sklearn.preprocessing import StandardScaler
+
+        cube = np.arange(6 * 5 * 3, dtype=np.float32).reshape(6, 5, 3) + 1
+        labels = np.tile(np.array([1, 2, 1, 2, 1], dtype=np.float32), (6, 1))
+        service = importlib.import_module("algorithms.34_svm_rf_classify.service")
+        with patch.object(StandardScaler, "fit", wraps=StandardScaler.fit) as fit:
+            response = asyncio.run(
+                service.run(
+                    file=geotiff_upload(cube),
+                    file2=geotiff_upload(labels[:, :, None], "labels-rf.tif"),
+                    params_json='{"model": "rf", "test_size": 0.3, "n_estimators": 5}',
+                )
+            )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+        fit.assert_not_called()
+
+    def test_red_edge_derivative_contract_is_half_open_680_to_760_nm(self) -> None:
+        """#31 页面、知识和代码须统一为 [680, 760) nm 与 1988 文献。"""
+        principle = read_algorithm_file("web/src/principles/l3.ts")
+        knowledge = read_algorithm_file("source/common/console_output_knowledge/l3.py")
+        rededge = read_algorithm_file("source/common/rs/rededge.py")
+        for text in (principle, knowledge):
+            self.assertIn("680–760 nm", text)
+        self.assertIn("[680, 760)", rededge)
+        self.assertIn("Guyot & Baret 1988", rededge)
+
+    def test_spectral_matching_principle_uses_response_file_keys(self) -> None:
+        """#35 原理页输出名必须与 API files 键一致。"""
+        principle = read_algorithm_file("web/src/principles/l3.ts")
+        section = principle.split('id: "35_spectral_matching"', 1)[1].split(
+            'id: "36_cnn1d_classify"', 1
+        )[0]
+        self.assertIn('name: "pred_map_tif"', section)
+        self.assertIn('name: "angle_tif"', section)
+        self.assertNotIn('name: "sam_class.tif"', section)
+        self.assertNotIn('name: "angle.tif"', section)
+
+    def test_parcel_scene_stats_exclude_real_nodata_and_nan(self) -> None:
+        """#45 连续与分类整景统计只基于真实有效像元。"""
+        service = importlib.import_module("algorithms.45_parcel_zonal_stats.service")
+        values = np.array([[1.0, 2.0], [np.nan, -9999.0]], dtype=np.float32)
+        for mode in ("continuous", "categorical"):
+            with self.subTest(mode=mode):
+                response = asyncio.run(
+                    service.run(
+                        file=geotiff_upload(
+                            values[:, :, None], f"zonal-{mode}.tif", nodata=-9999
+                        ),
+                        file2=None,
+                        params_json=f'{{"mode": "{mode}"}}',
+                    )
+                )
+                self.addCleanup(remove_job_output, response)
+                self.assertTrue(response["success"])
+                scene = response["data"]["scene"]
+                if mode == "continuous":
+                    self.assertEqual(1.5, scene["mean"])
+                    self.assertEqual(1.0, scene["min"])
+                    self.assertEqual(2.0, scene["max"])
+                else:
+                    self.assertEqual({"1": 1, "2": 1}, scene["class_pixel_count"])
+                    self.assertEqual({"1": 0.5, "2": 0.5}, scene["class_area_ratio"])
+
+    def test_parcel_stats_reject_scene_with_no_valid_pixels(self) -> None:
+        """#45 空有效区必须明确失败，不能伪造零统计。"""
+        service = importlib.import_module("algorithms.45_parcel_zonal_stats.service")
+        values = np.array([[np.nan, -9999.0]], dtype=np.float32)
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(values[:, :, None], "empty.tif", nodata=-9999),
+                file2=None,
+                params_json='{"mode": "continuous"}',
+            )
+        )
+        self.assertFalse(response["success"])
+        self.assertIn("有效像元", response["message"])
+
+    def test_mosaic_rejects_mismatched_crs_before_writing_output(self) -> None:
+        """不同 CRS 的真实 GeoTIFF 必须在镶嵌前 fail closed。"""
+        cube = np.arange(4 * 5 * 2, dtype=np.float32).reshape(4, 5, 2)
+        service = importlib.import_module("algorithms.17_mosaic.service")
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(
+                    cube,
+                    "scene-4326.tif",
+                    crs=CRS.from_epsg(4326),
+                ),
+                file2=geotiff_upload(
+                    cube,
+                    "scene-3857.tif",
+                    crs=CRS.from_epsg(3857),
+                ),
+                params_json="{}",
+            )
+        )
+        self.addCleanup(remove_job_output, response)
+        self.assertFalse(response["success"])
+        self.assertIn("CRS", response["message"])
+        self.assertFalse(response.get("files"))
+
+    def test_mosaic_rejects_missing_crs_before_writing_output(self) -> None:
+        """缺失 CRS 的真实 GeoTIFF 必须在镶嵌前 fail closed。"""
+        cube = np.arange(4 * 5 * 2, dtype=np.float32).reshape(4, 5, 2)
+        service = importlib.import_module("algorithms.17_mosaic.service")
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(cube, "scene-with-crs.tif"),
+                file2=geotiff_upload(cube, "scene-without-crs.tif", crs=None),
+                params_json="{}",
+            )
+        )
+        self.assertFalse(response["success"])
+        self.assertIn("CRS", response["message"])
+        self.assertFalse(response.get("files"))
+
+    def test_mosaic_accepts_equivalent_crs_encodings(self) -> None:
+        """语义等价的 CRS 表达不得被误拒绝。"""
+        cube = np.arange(4 * 5 * 2, dtype=np.float32).reshape(4, 5, 2)
+        epsg = CRS.from_epsg(4326)
+        equivalent_wkt = CRS.from_wkt(epsg.to_wkt())
+        service = importlib.import_module("algorithms.17_mosaic.service")
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(cube, "scene-epsg.tif", crs=epsg),
+                file2=geotiff_upload(
+                    cube,
+                    "scene-wkt.tif",
+                    crs=equivalent_wkt,
+                ),
+                params_json="{}",
+            )
+        )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+
+    def test_mosaic_core_rejects_missing_or_different_crs(self) -> None:
+        """直接调用核心函数时也必须执行相同的 CRS 防御检查。"""
+        cube = np.ones((3, 4, 1), dtype=np.float32)
+        transform = from_origin(114.06, 22.54, 0.00001, 0.00001)
+        with self.assertRaisesRegex(ValueError, "CRS"):
+            mosaic_georeferenced(
+                [cube, cube],
+                [
+                    {"transform": transform, "crs": CRS.from_epsg(4326)},
+                    {"transform": transform, "crs": None},
+                ],
+            )
+        with self.assertRaisesRegex(ValueError, "CRS"):
+            mosaic_georeferenced(
+                [cube, cube],
+                [
+                    {"transform": transform, "crs": CRS.from_epsg(4326)},
+                    {"transform": transform, "crs": CRS.from_epsg(3857)},
+                ],
+            )
+
+    def test_bad_band_scene_ratio_is_mean_over_std(self) -> None:
+        """兼容函数计算场景像元均值/标准差比，但不得冒充传感器 SNR。"""
+        cube = np.array(
+            [
+                [[1.0, 2.0, 9.0], [3.0, 6.0, 9.0]],
+                [[5.0, 10.0, 9.0], [7.0, 14.0, 9.0]],
+            ]
+        )
+        got = band_snr(cube)
+        expected = cube.mean((0, 1)) / (cube.std((0, 1)) + 1e-12)
+        np.testing.assert_allclose(got, expected)
+        self.assertIn("场景像元均值/标准差比", band_snr.__doc__ or "")
+
+        principle = read_algorithm_file("web/src/principles/l2.ts")
+        self.assertNotIn("传感器信噪比", principle)
+        self.assertIn("场景像元均值/标准差比", principle)
+
+    def test_superpixel_disables_lab_conversion_for_raw_spectral_bands(self) -> None:
+        """前三原始光谱波段不是 RGB，SLIC 不得自动转换到 Lab。"""
+        cube = np.arange(6 * 7 * 4, dtype=np.float32).reshape(6, 7, 4)
+        service = importlib.import_module("algorithms.25_superpixel.service")
+        captured: dict[str, object] = {}
+
+        def fake_slic(image: np.ndarray, **kwargs: object) -> np.ndarray:
+            captured["image"] = image.copy()
+            captured.update(kwargs)
+            return np.ones(image.shape[:2], dtype=np.int32)
+
+        with patch.object(service, "slic", side_effect=fake_slic):
+            response = asyncio.run(
+                service.run(
+                    file=geotiff_upload(cube),
+                    file2=None,
+                    params_json='{"n_segments": 4}',
+                )
+            )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+        np.testing.assert_allclose(captured["image"], cube[:, :, :3])
+        self.assertIs(captured["convert2lab"], False)
+        self.assertNotIn("前三主成分", service.run.__doc__ or "")
+        self.assertIn("前三原始波段", service.run.__doc__ or "")
+
+    def test_superpixel_principle_describes_raw_spectral_feature_scaling(self) -> None:
+        """原则页不得把原始光谱特征冒充 RGB/CIELAB SLIC。"""
+        principle = read_algorithm_file("web/src/principles/l2.ts")
+        for forbidden in ("取前三波段当 RGB", "颜色与平面坐标"):
+            self.assertNotIn(forbidden, principle)
+        for required in (
+            "前三个原始光谱波段作为三通道特征",
+            "光谱特征与平面坐标",
+            "全局 min-max",
+            "某个波段可能主导",
+            "不等同于标准 CIELAB SLIC",
+        ):
+            self.assertIn(required, principle)
+
+    def test_bad_band_user_copy_never_claims_snr_or_denoising(self) -> None:
+        """#20 用户文案必须只描述场景比值筛选与波段剔除。"""
+        paths = (
+            "source/common/catalog.py",
+            "source/algorithms/20_bad_band_remove/service.py",
+            "source/algorithms/20_bad_band_remove/router.py",
+            "source/algorithms/20_bad_band_remove/README.md",
+            "source/algorithms/20_bad_band_remove/testdata/README.md",
+            "docs/算法API测试清单.md",
+            "docs/采集到算法-算法清单.md",
+            "docs/build_algorithm_word.py",
+            "docs/generate_training_ppt.py",
+            "docs/generate_training_ppt_v4.py",
+            "shared/scientific_evidence.json",
+            "web/src/principles/l2.ts",
+            "web/src/sources.ts",
+        )
+        combined = "\n".join(read_algorithm_file(path) for path in paths)
+        for forbidden in (
+            "坏波段剔除与光谱去噪",
+            "按信噪比/水汽吸收特征",
+            "光谱维轻度去噪",
+            "自动 SNR 判定",
+        ):
+            self.assertNotIn(forbidden, combined)
+        field_knowledge = read_algorithm_file(
+            "source/common/console_field_knowledge.py"
+        )
+        self.assertNotIn("自动 SNR 判定", field_knowledge)
+        self.assertIn(
+            "场景像元均值/标准差比（非传感器 SNR）",
+            combined + field_knowledge,
+        )
+
+    def test_cloud_copy_matches_low_whiteness_metric(self) -> None:
+        """防止移除低可见波段差异条件，或把简化检测冒充完整 Fmask。"""
+        cube = np.full((5, 7, 4), 0.1, dtype=np.float64)
+        cube[1:4, 0:3, :3] = 0.4
+        cube[1:4, 0:3, 3] = 0.4
+        cube[1:4, 4:7, 0] = 0.8
+        cube[1:4, 4:7, 1:4] = 0.05
+        cloud, _ = fmask_spectral(cube, swir=None)
+        self.assertTrue(np.all(cloud[1:4, 0:3] == 1))
+        self.assertEqual(0, int(cloud[1:4, 4:7].sum()))
+
+        service = importlib.import_module("algorithms.05_cloud_shadow.service")
+        response = asyncio.run(
+            service.run(file=geotiff_upload(cube), file2=None, params_json="{}")
+        )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+        self.assertNotIn("Fmask", response["message"])
+        knowledge = get_algorithm_output_knowledge("05_cloud_shadow")
+        knowledge_text = " ".join(
+            [
+                *knowledge["summary"].values(),
+                *(
+                    str(value)
+                    for row in knowledge["outputs"].values()
+                    for value in row.values()
+                ),
+            ]
+        )
+        self.assertNotIn("完整 Fmask", knowledge_text)
+        self.assertIn("暗区启发式", knowledge_text)
+
+        principle = read_algorithm_file("web/src/principles/l0.ts")
+        self.assertNotIn("白度高", principle)
+        self.assertIn("相对差异较小", principle)
+
+    def test_flight_qc_principle_keeps_snr_out_of_gate(self) -> None:
+        """防止原则页声称场景 SNR 会触发通过/复飞门控。"""
+        principle = read_algorithm_file("web/src/principles/l0.ts")
+        self.assertNotIn("过曝与 SNR 不通过则建议复飞", principle)
+        self.assertIn("仅由过曝比例触发通过/复飞", principle)
+
+    def test_bad_pixel_method_uses_neighborhood_mean_name(self) -> None:
+        """防止坏点采用非邻域均值填充，或响应误报插值方法。"""
+        band = np.arange(1, 10, dtype=np.float64).reshape(3, 3)
+        cube = band[:, :, np.newaxis]
+        mask = np.zeros((3, 3), dtype=bool)
+        mask[1, 1] = True
+        repaired = fill_bad_pixels(cube, mask)
+        self.assertAlmostEqual(5.0, float(repaired[1, 1, 0]))
+
+        service_cube = np.full((5, 5, 1), 10.0, dtype=np.float64)
+        service = importlib.import_module("algorithms.07_bad_pixel.service")
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(service_cube),
+                file2=None,
+                params_json='{"bad_pixels": [[2, 2]], "z_thr": 1000000}',
+            )
+        )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+        self.assertEqual(
+            "median_residual_sigma + neighborhood_mean_fill",
+            response["data"]["method"],
+        )
+
+    def test_sync_timestamp_copy_does_not_claim_configured_tolerance(self) -> None:
+        """防止输出知识把不存在的配置容差写成可执行质检规则。"""
+        item = get_algorithm_output_knowledge("02_sync_timestamp")
+        copy = " ".join(
+            [
+                *item["summary"].values(),
+                *(
+                    str(value)
+                    for row in item["outputs"].values()
+                    for value in row.values()
+                ),
+            ]
+        )
+        self.assertNotIn("配置容差", copy)
+        self.assertNotIn("无限放宽时间容差", copy)
+
+    def test_smile_summary_uses_scene_cross_correlation(self) -> None:
+        """防止场景互相关估计被写成实验室标定偏移。"""
+        item = get_algorithm_output_knowledge("09_smile_keystone")
+        summary = " ".join(item["summary"].values())
+        output_copy = " ".join(
+            str(value)
+            for row in item["outputs"].values()
+            for value in row.values()
+        )
+        self.assertNotIn("标定偏移", summary)
+        self.assertNotIn("标定偏移", output_copy)
+        self.assertIn("场景互相关估计偏移", summary)
+
+    def test_default_radiance_message_does_not_claim_laboratory_calibration(self) -> None:
+        """防止线性转换数值错误，或成功消息冒充实验室定标。"""
+        cube = np.array(
+            [
+                [[1.0, 2.0], [3.0, 4.0]],
+                [[5.0, 6.0], [7.0, 8.0]],
+            ],
+            dtype=np.float64,
+        )
+        service = importlib.import_module(
+            "algorithms.10_radiance_calibration.service"
+        )
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(cube),
+                file2=None,
+                params_json='{"gain": [2, 3], "offset": [1, -1]}',
+            )
+        )
+        self.addCleanup(remove_job_output, response)
+        self.assertTrue(response["success"])
+        output, _ = load_raster(Path(response["files"]["radiance_tif"]))
+        expected = np.empty_like(cube)
+        expected[:, :, 0] = cube[:, :, 0] * 2 + 1
+        expected[:, :, 1] = cube[:, :, 1] * 3 - 1
+        np.testing.assert_allclose(output, expected)
+        self.assertEqual(
+            "已按输入 gain/offset 完成线性转换 DN→辐亮度",
+            response["message"],
+        )
+        self.assertNotIn("实验室", response["message"])
+
+    def test_pos_and_flight_qc_titles_match_implemented_scope(self) -> None:
+        """防止标题继续声称未实现的 GPS/IMU 解算或丢帧检测。"""
+        expected = {
+            "03_pos_solution": "POS轨迹平滑与杠杆臂校正",
+            "04_flight_qc": "架次过曝与场景统计质检",
+        }
+        items = {item["id"]: item for item in list_console_algorithms()}
+        for algorithm_id, title in expected.items():
+            with self.subTest(algorithm_id=algorithm_id):
+                service = read_algorithm_file(
+                    f"source/algorithms/{algorithm_id}/service.py"
+                )
+                self.assertEqual(title, items[algorithm_id]["title"])
+                self.assertIn(f'TITLE = "{title}"', service)
+
+    def test_l2_narrowed_titles_match_implemented_scope(self) -> None:
+        """防止 #15/#18/#19 用户文案继续声称未实现能力。"""
+        expected = {
+            "15_geo_locate": "POS中心点与GSD粗定位",
+            "18_color_balance": "Wallis局部匀色",
+            "19_multi_source_register": "HSI-RGB全局平移配准",
+        }
+        items = {item["id"]: item for item in list_console_algorithms()}
+        evidence = {
+            row["algorithmId"]: row
+            for row in __import__(
+                "common.scientific_evidence",
+                fromlist=["load_scientific_evidence"],
+            ).load_scientific_evidence()
+        }
+        for algorithm_id, title in expected.items():
+            with self.subTest(algorithm_id=algorithm_id):
+                self.assertEqual(title, items[algorithm_id]["title"])
+                self.assertEqual(title, evidence[algorithm_id]["title"])
+                service = read_algorithm_file(
+                    f"source/algorithms/{algorithm_id}/service.py"
+                )
+                self.assertIn(f'TITLE = "{title}"', service)
+
     def test_catalog_exposes_output_summary_and_core_metrics(self) -> None:
         """防止控制台遗漏算法摘要、真实文件或核心指标独立行。"""
         item = get_console_algorithm("27_ndvi")
@@ -748,7 +1447,7 @@ class ConsoleOutputKnowledgeTests(unittest.TestCase):
         """防止把当前镶嵌实现描述成支持跨 CRS 统一重投影。"""
         item = get_algorithm_output_knowledge("17_mosaic")
         caution = item["summary"]["caution"]
-        for expected in ("两景必须同 CRS", "不同 CRS", "结果无效"):
+        for expected in ("两景必须同 CRS", "不同", "拒绝"):
             self.assertIn(expected, caution)
 
         for path in ("files.mosaic_tif", "data.bounds", "data.resolution"):
@@ -764,9 +1463,9 @@ class ConsoleOutputKnowledgeTests(unittest.TestCase):
                     )
                 )
                 self.assertIn("两景必须同 CRS", explanation)
-                self.assertIn("不同 CRS", explanation)
+                self.assertIn("不同", explanation)
                 self.assertTrue(
-                    "结果无效" in explanation or "不可直接使用" in explanation,
+                    "拒绝" in explanation or "fail closed" in explanation,
                     path,
                 )
                 self.assertNotIn("跨 CRS 统一重投影", explanation)
@@ -875,11 +1574,123 @@ class ConsoleOutputKnowledgeTests(unittest.TestCase):
                     self.assertTrue(row["abnormalSigns"], path)
                     self.assertTrue(row["misuseWarning"].strip(), path)
 
+    def test_evi_savi_writes_three_single_band_geotiffs(self) -> None:
+        """一次计算三个指数，但按业界交付写成三个单波段 GeoTIFF。"""
+        blue, red, nir = 0.05, 0.08, 0.40
+        soil_l = 0.5
+        cube = np.zeros((2, 3, 4), dtype=np.float32)
+        cube[..., 0] = blue
+        cube[..., 2] = red
+        cube[..., 3] = nir
+        expected = {
+            "evi_tif": 2.5 * (nir - red) / (nir + 6 * red - 7.5 * blue + 1),
+            "savi_tif": (1 + soil_l) * (nir - red) / (nir + red + soil_l),
+            "msavi_tif": 0.5 * (2 * nir + 1 - np.sqrt((2 * nir + 1) ** 2 - 8 * (nir - red))),
+        }
+        service = importlib.import_module("algorithms.29_evi_savi.service")
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(cube, "evi-savi.tif"),
+                file2=None,
+                params_json='{"blue_band": 0, "red_band": 2, "nir_band": 3, "L": 0.5}',
+            )
+        )
+        try:
+            self.assertTrue(response["success"], response.get("message"))
+            self.assertEqual(
+                set(response["files"]),
+                {"evi_tif", "savi_tif", "msavi_tif", "preview_png"},
+            )
+            self.assertNotIn("indices_tif", response["files"])
+            for key, value in expected.items():
+                path = Path(response["files"][key])
+                self.assertEqual(path.name, f"{key.removesuffix('_tif')}.tif")
+                arr, _profile = load_raster(path)
+                self.assertEqual(arr.ndim, 2, key)
+                np.testing.assert_allclose(arr, value, rtol=1e-5, atol=1e-6)
+            preview = Path(response["files"]["preview_png"])
+            self.assertEqual(preview.name, "evi_preview.png")
+            self.assertTrue(preview.is_file())
+        finally:
+            remove_job_output(response)
+
+    def test_ndmi_ndwi_writes_three_single_band_geotiffs(self) -> None:
+        """一次计算三个指数，但按业界交付写成三个单波段 GeoTIFF。"""
+        green, nir, swir = 0.08, 0.35, 0.12
+        cube = np.zeros((2, 3, 6), dtype=np.float32)
+        cube[..., 1] = green
+        cube[..., 3] = nir
+        cube[..., 5] = swir
+        expected = {
+            "ndmi_tif": (nir - swir) / (nir + swir + 1e-12),
+            "ndwi_tif": (green - nir) / (green + nir + 1e-12),
+            "mndwi_tif": (green - swir) / (green + swir + 1e-12),
+        }
+        service = importlib.import_module("algorithms.30_ndmi_ndwi.service")
+        response = asyncio.run(
+            service.run(
+                file=geotiff_upload(cube, "ndmi-ndwi.tif"),
+                file2=None,
+                params_json='{"green_band": 1, "nir_band": 3, "swir_band": 5}',
+            )
+        )
+        try:
+            self.assertTrue(response["success"], response.get("message"))
+            self.assertEqual(
+                set(response["files"]),
+                {"ndmi_tif", "ndwi_tif", "mndwi_tif", "preview_png"},
+            )
+            self.assertNotIn("indices_tif", response["files"])
+            for key, value in expected.items():
+                path = Path(response["files"][key])
+                self.assertEqual(path.name, f"{key.removesuffix('_tif')}.tif")
+                arr, _profile = load_raster(path)
+                self.assertEqual(arr.ndim, 2, key)
+                np.testing.assert_allclose(arr, value, rtol=1e-5, atol=1e-6)
+            preview = Path(response["files"]["preview_png"])
+            self.assertEqual(preview.name, "ndwi_preview.png")
+            self.assertTrue(preview.is_file())
+        finally:
+            remove_job_output(response)
+
+    def test_evi_filename_is_previewed_as_index(self) -> None:
+        """evi/savi/msavi/ndmi/ndwi/mndwi 单波段必须走指数色带，不能当成假彩色。"""
+        from common.console_preview import guess_mode
+        from common.console_router import _guess_preview_mode
+
+        plane = np.linspace(0.1, 0.6, 16, dtype=np.float32).reshape(4, 4)
+        for name in ("evi.tif", "savi.tif", "msavi.tif", "ndmi.tif", "ndwi.tif", "mndwi.tif"):
+            with self.subTest(name=name):
+                self.assertEqual(_guess_preview_mode(name), "index")
+                self.assertEqual(guess_mode(name, 1, plane), "index")
+
+    def test_index_preview_exposes_numeric_color_scale(self) -> None:
+        """指数预览必须标出红端/绿端对应的具体读数。"""
+        import tempfile
+
+        from common.console_preview import raster_meta, raster_png_bytes
+        from common.io import save_geotiff
+
+        plane = np.linspace(0.20, 0.50, 100, dtype=np.float32).reshape(10, 10)
+        plane[0, 0] = -8.0
+        plane[-1, -1] = 9.0
+        finite = plane[np.isfinite(plane)]
+        expected_low, expected_high = np.percentile(finite, (2, 98))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "evi.tif"
+            save_geotiff(plane, path)
+            png, preview_meta = raster_png_bytes(path, mode="index")
+            meta = raster_meta(path)
+        self.assertGreater(len(png), 200)
+        for row in (preview_meta, meta):
+            self.assertAlmostEqual(row["colorLow"], float(expected_low), places=5)
+            self.assertAlmostEqual(row["colorHigh"], float(expected_high), places=5)
+            self.assertEqual(row["colorMap"], "RdYlGn")
+            self.assertIn("colorMid", row)
+
     def test_l3_fixed_multiband_products_preserve_band_order(self) -> None:
         """防止固定多波段产品的波段名称或顺序与真实写出顺序不一致。"""
         expected = {
-            ("29_evi_savi", "files.indices_tif"): ["EVI", "SAVI", "MSAVI"],
-            ("30_ndmi_ndwi", "files.indices_tif"): ["NDMI", "NDWI", "MNDWI"],
             ("31_red_edge_params", "files.params_tif"): [
                 "guyot_rep_nm",
                 "red_edge_amplitude",
@@ -1022,8 +1833,8 @@ class ConsoleOutputKnowledgeTests(unittest.TestCase):
         self.assertNotIn("训练标签", explanation)
         self.assertNotIn("混淆矩阵", explanation)
 
-    def test_l3_regression_preprocess_echo_cannot_prove_snv_execution(self) -> None:
-        """防止把固定 preprocess 回显误当实际执行 SNV 的证据。"""
+    def test_l3_regression_preprocess_knowledge_matches_executed_branch(self) -> None:
+        """#32 知识说明须反映 snv/none 真实执行分支。"""
         row = get_algorithm_output_knowledge("32_regression_inversion")["outputs"][
             "data.preprocess"
         ]
@@ -1037,13 +1848,15 @@ class ConsoleOutputKnowledgeTests(unittest.TestCase):
             )
         )
         for expected in (
-            "仅当请求参数 preprocess",
-            "固定回显",
-            "可能与实际执行不一致",
-            "不能据此确认",
+            "实际执行分支",
+            "snv",
+            "none",
             "请求参数和处理记录",
+            "fail closed",
         ):
             self.assertIn(expected, explanation)
+        self.assertNotIn("固定回显", explanation)
+        self.assertNotIn("未知取值按 none", explanation)
 
     def test_l3_detect_threshold_documents_seed_fallback_and_stale_echo(self) -> None:
         """防止把算法 40 原始 NDVI 阈值回显称为始终实际使用的种子阈值。"""

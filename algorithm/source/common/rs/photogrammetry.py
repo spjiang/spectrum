@@ -6,6 +6,8 @@ import math
 import numpy as np
 from scipy.ndimage import map_coordinates
 
+from common.rs.parallel import map_threads, worker_count
+
 
 def meters_per_deg(lat_deg: float) -> tuple[float, float]:
     """返回 (米/度经度, 米/度纬度)。"""
@@ -96,10 +98,12 @@ def orthorectify_collinearity(
     focal_mm: float,
     pixel_um: float,
     gsd_out: float | None = None,
+    tile_rows: int | None = None,
+    workers: int = 0,
 ) -> tuple[np.ndarray, dict]:
     """
     单片直接地理定位正射：共线方程 + DEM 迭代交会。
-    输出网格与输入同尺寸，地面采样用 GSD。
+    输出网格与输入同尺寸，地面采样用 GSD。行块可多线程。
     """
     h, w, b = cube.shape
     dem = dem.astype(np.float64)
@@ -114,23 +118,38 @@ def orthorectify_collinearity(
     rot = rpy_to_rotation(roll_deg, pitch_deg, yaw_deg)
     xs = (np.arange(w) - cx) * gsd
     ys = (cy - np.arange(h)) * gsd
-    xx, yy = np.meshgrid(xs, ys)
     z_cam = float(altitude_m)
-    vec = np.stack([xx, yy, dem - z_cam], axis=-1).reshape(-1, 3)
-    cam = vec @ rot  # R.T @ v
-    cam_z = cam[:, 2].reshape(h, w)
-    cam_z = np.where(np.abs(cam_z) < 1e-6, 1e-6, cam_z)
-    denom = np.where(cam_z < 0, -cam_z, cam_z)
-    samples_c = cx + f_px * cam[:, 0].reshape(h, w) / denom
-    samples_r = cy + f_px * cam[:, 1].reshape(h, w) / denom
+    step = int(tile_rows) if tile_rows else h
+    step = max(1, min(h, step))
+    ranges = [(r0, min(h, r0 + step)) for r0 in range(0, h, step)]
+    n_workers = worker_count(workers) if len(ranges) > 1 else 1
+
+    def _one(pair: tuple[int, int]) -> tuple[int, int, np.ndarray]:
+        r0, r1 = pair
+        yy = ys[r0:r1, None]
+        xx = xs[None, :]
+        xxb, yyb = np.broadcast_arrays(xx, yy)
+        vec = np.stack([xxb, yyb, dem[r0:r1] - z_cam], axis=-1).reshape(-1, 3)
+        cam = vec @ rot
+        block_h = r1 - r0
+        cam_z = cam[:, 2].reshape(block_h, w)
+        cam_z = np.where(np.abs(cam_z) < 1e-6, 1e-6, cam_z)
+        denom = np.where(cam_z < 0, -cam_z, cam_z)
+        samples_c = cx + f_px * cam[:, 0].reshape(block_h, w) / denom
+        samples_r = cy + f_px * cam[:, 1].reshape(block_h, w) / denom
+        block = np.empty((block_h, w, b), dtype=np.float64)
+        for bi in range(b):
+            block[:, :, bi] = map_coordinates(
+                cube[:, :, bi],
+                [samples_r, samples_c],
+                order=1,
+                mode="nearest",
+            )
+        return r0, r1, block
+
     out = np.empty_like(cube, dtype=np.float64)
-    for bi in range(b):
-        out[:, :, bi] = map_coordinates(
-            cube[:, :, bi],
-            [samples_r, samples_c],
-            order=1,
-            mode="nearest",
-        )
+    for r0, r1, block in map_threads(_one, ranges, n_workers):
+        out[r0:r1] = block
     meta = {
         "method": "collinearity_direct_georeferencing",
         "gsd_m": gsd,
@@ -141,5 +160,7 @@ def orthorectify_collinearity(
         "yaw_deg": yaw_deg,
         "dem_min": float(dem.min()),
         "dem_max": float(dem.max()),
+        "tile_rows": step,
+        "workers": n_workers,
     }
     return out, meta

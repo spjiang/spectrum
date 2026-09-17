@@ -22,7 +22,7 @@ from common.console_paths import (
     resolve_testdata,
     testdata_dir,
 )
-from common.console_preview import raster_meta, raster_png_bytes, spectrum_at
+from common.console_preview import INDEX_FILE_KEYS, raster_meta, raster_png_bytes, spectrum_at
 
 router = APIRouter(prefix="/api/v1/console", tags=["console"])
 
@@ -62,7 +62,7 @@ def _guess_preview_mode(name: str) -> str:
     n = name.lower()
     if any(k in n for k in ("mask", "class", "pred", "label", "superpixel")):
         return "class"
-    if any(k in n for k in ("ndvi", "ndre", "score", "lai", "cab", "inversion", "magnitude", "chi2", "abundance")):
+    if any(k in n for k in INDEX_FILE_KEYS):
         return "index"
     return "auto"
 

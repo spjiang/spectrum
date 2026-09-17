@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""生成《高光谱45项算法能力与服务封装方案》Word。"""
+"""生成《高光谱55项算法能力与服务封装方案》Word。"""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ from docx.shared import Cm, Inches, Pt, RGBColor
 DOCS_DIR = Path(__file__).resolve().parent
 SOURCE_DIR = DOCS_DIR.parent / "source"
 ASSET_DIR = DOCS_DIR / "word-assets"
-OUTPUT_DOCX = DOCS_DIR / "高光谱45项算法能力与服务封装方案.docx"
+OUTPUT_DOCX = DOCS_DIR / "高光谱55项算法能力与服务封装方案.docx"
 LIST_MD = DOCS_DIR / "采集到算法-算法清单.md"
 SERVICE_MD = DOCS_DIR / "当前服务简单介绍.md"
 API_MD = DOCS_DIR / "算法API测试清单.md"
@@ -51,8 +51,8 @@ LIGHT_GRAY = "F2F2F2"
 PRINCIPLES = {
     1: "把测区边界转成平行航线，并结合航高、视场角、旁向/航向重叠率估算航带间距和触发点；本质是满足覆盖约束下的路径优化。",
     2: "以统一时钟或触发脉冲为基准，对各设备时间戳做偏移估计和插值匹配，建立“影像帧—GPS/IMU姿态”的一一对应关系。",
-    3: "融合GPS位置与IMU角速度、加速度，通过组合导航滤波抑制单一传感器漂移，连续解算平台位置、速度和姿态。",
-    4: "对帧序列做完整性、亮度分布、饱和比例、模糊度和POS连续性检查，把不可恢复的数据在进入高成本处理前拦截。",
+    3: "对已解算 POS CSV 做粗差剔除、轨迹平滑和杠杆臂校正，输出平滑后的位置、姿态与速度；不读取原始 IMU 比力或角速度。",
+    4: "由位深或数据最大值推断饱和电平，统计过曝/欠曝比例与全景场景指标，并仅以过曝比例门控通过与复飞；不检测丢帧、模糊或曝光日志。",
     5: "利用云的高亮、低温或特定光谱响应，以及云影的暗值和空间邻接关系，输出像素级遮挡掩膜。",
     6: "用遮光条件下采集的暗参考估计探测器本底响应，并从每个像元的原始DN中扣除，降低固定模式偏置。",
     7: "依据坏像元标定表或统计异常检测定位坏点、坏列，再使用邻域、同波段或跨波段插值恢复连续影像。",
@@ -63,12 +63,12 @@ PRINCIPLES = {
     12: "用已知反射率参考板建立辐亮度到反射率的经验线关系，抵消当时光照条件，适合低空无人机快速定标。",
     13: "通过辐射传输模型估计大气吸收、散射和路径辐射，从传感器观测辐亮度反演地表真实反射率。",
     14: "建模太阳—地物—传感器几何导致的方向性反射差异，将不同观测角数据归一到统一参考角度。",
-    15: "把每帧POS、相机内外参数代入共线方程或直接地理定位模型，计算像素在地面的初始坐标。",
+    15: "以单个 POS 中心点和估算 GSD 写北向上仿射，供落点预览；不使用姿态，也不是共线方程或完整直接地理定位。",
     16: "结合相机模型、POS和DEM进行地形反投影与重采样，消除倾斜摄影和地形起伏造成的位置偏差。",
-    17: "在航带重叠区提取并匹配同名点，优化相对位姿后进行几何融合，生成覆盖完整测区的连续数据立方体。",
-    18: "在重叠区估计亮度/色彩差异，选择低冲突接缝线并进行渐变融合，减少拼接硬边和明暗跳变。",
-    19: "通过控制点、特征匹配或地理坐标重投影，把高光谱、RGB和矢量边界统一到相同坐标系、分辨率和像元网格。",
-    20: "按信噪比、水汽吸收区或统计异常剔除不可靠波段，并可结合平滑滤波降低随机噪声，为后续建模保留稳定信息。",
+    17: "把同 CRS 的两幅栅格落到统一网格，重叠像元按到边缘的距离加权羽化；不提取同名点，也不搜索接缝线。",
+    18: "对单幅多波段栅格逐波段做 Wallis 局部匀色；不读取相邻影像，也不搜索或优化接缝线。",
+    19: "把 HSI 与 RGB 均波段成灰度后估计一个全局亚像元平移并重采样 RGB；不接受矢量控制，也不是矢量边界配准。",
+    20: "按场景像元均值/标准差比（非传感器 SNR）、水汽吸收区或指定索引剔除不可靠波段；本算法只剔除波段，不执行光谱平滑或去噪。",
     21: "Savitzky–Golay在移动窗口内做低阶多项式拟合以平滑噪声；包络线去除则归一化光谱背景、突出吸收谷形态。",
     22: "按波段或样本计算均值方差、最小最大值，把不同量纲特征变换到可比较范围，避免大数值波段支配模型。",
     23: "PCA寻找最大方差正交方向，MNF同时考虑噪声协方差，ICA强调统计独立性；共同目标是压缩冗余波段。",
@@ -81,19 +81,29 @@ PRINCIPLES = {
     30: "通过近红外、短波红外或绿光波段的归一化差异，利用水分吸收和水体反射特性突出冠层含水或开放水体。",
     31: "在连续光谱的一阶导数或吸收特征上定位拐点、峰谷和面积，形成红边位置、谷深等可解释生理参数。",
     32: "用地面化验值监督建立光谱特征到连续生化指标的映射，PLS适合共线数据，随机森林和神经网络可拟合非线性。",
-    33: "用PROSAIL等辐射传输模型模拟参数—光谱关系，再通过查找表、优化或贝叶斯方法反求LAI、叶绿素等物理参数。",
+    33: "不用化验图，一次给出叶面积和叶绿素两张图，用来分清是叶子少还是叶子黄。",
     34: "SVM寻找最大间隔分类边界，随机森林汇总多棵随机决策树投票；适合小样本光谱分类并可输出精度指标。",
     35: "把像素光谱与端元库向量计算光谱角或相似度，角度越小表示光谱形状越接近，从而完成已知物质识别。",
-    36: "1D-CNN沿波长轴学习局部吸收模式，RNN建模波段序列依赖，在不使用空间邻域时完成像素级分类。",
+    36: "1D-CNN沿波长轴学习局部吸收模式，在不使用空间邻域时完成像素级分类；RNN未实现。",
     37: "2D-CNN学习空间纹理，3D-CNN同时在空间和光谱维卷积，利用邻域上下文提升相似地物的区分能力。",
-    38: "Transformer用自注意力连接远距离波段或空间位置，GCN在超像素/样本图上传播信息，适合复杂全局关系。",
-    39: "通过预训练、域适配、度量学习或少样本原型，把已有区域知识迁移到仅有少量标签的新区域。",
-    40: "分割模型为每个像素预测目标概率，检测模型输出对象位置；当前示例以低NDVI得分、阈值和连通域提取胁迫斑块。",
+    38: "SpectralFormer将相邻波段编成token，以缩小Transformer建模光谱序列并分类；GCN未实现。",
+    39: "SAM均值原型按每类少量支持光谱的均值构造原型，再以最小光谱角分类；迁移学习未实现。",
+    40: "低NDVI种子ACE目标检测由低NDVI候选构造目标光谱，经ACE得分、阈值和连通域形成候选斑块；语义分割未实现。",
     41: "把混合光谱表示为多个端元光谱的组合，约束丰度非负且和为一，估计一个像素内各物质所占比例。",
     42: "RX检测以背景均值和协方差建立统计分布，计算像素的马氏距离；距离异常大的像素被标记为未知异常。",
     43: "对已配准多时相数据做差异向量、指数变化或模型对比，经过阈值与分类后输出变化位置和变化类型。",
     44: "用形态学开闭运算、多数滤波、CRF或连通域面积规则清理孤立点和小斑块，使分类结果符合空间连续性。",
     45: "按地块矢量对分类图或连续指标做分区统计，将像素结果聚合为面积、均值、占比和阈值告警，形成决策级产品。",
+    46: "RECI用近红外与红边反射率比值减1，表征叶绿素相关相对差异；须有真实红边，值域不是负一到一。",
+    47: "GNDVI用绿光代替红光做归一化差，得到绿光通道的相对绿度，不能直接当作叶绿素含量。",
+    48: "OSAVI在NDVI分母上加固定土壤项，文献常用L=0.16，用于稀疏植被压土壤亮度。",
+    49: "ARVI用蓝光修正红光后再做归一化差，减轻气溶胶一类残差，不能替代大气校正。",
+    50: "VARI只用可见光三通道估相对覆盖，不是覆盖度百分数，也不能替代NDVI。",
+    51: "由EVI线性变换得到教学叶面积指数，不是PROSAIL物理反演，产物为lai_index.tif。",
+    52: "NBR用近红外与短波红外归一化差看过火相关相对差异；教学SWIR约1600 nm，不是Landsat SWIR2。",
+    53: "SIPI用近红外减蓝光除以近红外减红光，看色素比值相关相对差异，值域不必在负一到一。",
+    54: "GCI用近红外除以绿光再减1，与RECI同型但分母是绿光，不能直接当作叶绿素含量。",
+    55: "NDSI用绿光与短波红外归一化差看积雪；与MNDWI同型不同用途，不输出二值雪图。",
 }
 
 
@@ -102,7 +112,7 @@ def read_text(path: Path) -> str:
 
 
 def parse_algorithms() -> list[dict[str, Any]]:
-    """从三份文档解析45项算法，以最新API测试表作为状态权威来源。"""
+    """从三份文档解析55项算法，以最新API测试表作为状态权威来源。"""
     list_text = read_text(LIST_MD)
     api_text = read_text(API_MD)
 
@@ -113,7 +123,7 @@ def parse_algorithms() -> list[dict[str, Any]]:
         re.M,
     ):
         n = int(m.group(1))
-        if 1 <= n <= 45 and n not in summaries:
+        if 1 <= n <= 55 and n not in summaries:
             summaries[n] = tuple(x.strip().replace("**", "") for x in m.groups()[1:])
 
     details: dict[int, dict[str, str]] = {}
@@ -150,7 +160,7 @@ def parse_algorithms() -> list[dict[str, Any]]:
         params[n] = pm.group(1) if pm else "{}"
 
     items = []
-    for n in range(1, 46):
+    for n in range(1, 56):
         level, summary_title, summary = summaries[n]
         detail = details[n]
         state = statuses[n]
@@ -201,14 +211,14 @@ def validate_algorithms(items: list[dict[str, Any]]) -> None:
     numbers = [x["number"] for x in items]
     ids = [x["id"] for x in items]
     counts = Counter(x["status"] for x in items)
-    assert numbers == list(range(1, 46)), f"编号异常：{numbers}"
-    assert len(ids) == len(set(ids)) == 45, "算法ID重复或缺失"
-    assert counts["可运行"] == 12 and counts["骨架"] == 33, f"状态统计异常：{counts}"
+    assert numbers == list(range(1, 56)), f"编号异常：{numbers}"
+    assert len(ids) == len(set(ids)) == 55, "算法ID重复或缺失"
+    assert counts.get("可运行", 0) == 55 and counts.get("骨架", 0) == 0, f"状态统计异常：{counts}"
     for item in items:
         assert len(item["principle"]) >= 30, f"#{item['number']} 原理说明过短"
         strategy = packaging_strategy(item)
         assert len(strategy) >= 60, f"#{item['number']} 封装建议过短"
-    print("算法数据校验通过：45 项；可运行 12；骨架 33")
+    print("算法数据校验通过：55 项；可运行 55；骨架 0")
 
 
 def configure_chinese_font() -> None:
@@ -259,7 +269,7 @@ def build_diagrams(asset_dir: Path) -> dict[str, Path]:
         ax.text(x + 0.0825, 0.47, desc, ha="center", va="center", fontsize=11, linespacing=1.6)
         if i < 4:
             ax.annotate("", xy=(x + 0.193, 0.54), xytext=(x + 0.168, 0.54), arrowprops={"arrowstyle": "->", "lw": 2, "color": "#1F4E78"})
-    ax.text(0.5, 0.88, "高光谱数据产品 L0–L4 全链路与 45 项算法分布", ha="center", fontsize=18, weight="bold", color="#1F4E78")
+    ax.text(0.5, 0.88, "高光谱数据产品 L0–L4 全链路与 55 项算法分布", ha="center", fontsize=18, weight="bold", color="#1F4E78")
     ax.text(0.5, 0.16, "采集质检 → 辐射校正 → 反射率与正射 → 指数与识别 → 地块汇总", ha="center", fontsize=12, color="#555555")
     assets["pipeline"] = save_figure(fig, asset_dir / "l0-l4-pipeline.png")
 
@@ -280,7 +290,7 @@ def build_diagrams(asset_dir: Path) -> dict[str, Path]:
         ax.text(0.39, y, desc, ha="left", va="center", fontsize=11)
     for y1, y2 in zip([0.765, 0.605, 0.445, 0.285], [0.715, 0.555, 0.395, 0.235]):
         ax.annotate("", xy=(0.5, y2), xytext=(0.5, y1), arrowprops={"arrowstyle": "->", "lw": 1.8, "color": "#1F4E78"})
-    ax.text(0.5, 0.95, "45 项算法统一服务封装架构", ha="center", fontsize=18, weight="bold", color="#1F4E78")
+    ax.text(0.5, 0.95, "55 项算法统一服务封装架构", ha="center", fontsize=18, weight="bold", color="#1F4E78")
     ax.text(0.5, 0.06, "横向治理：配置中心 · 日志审计 · 指标监控 · 模型/算法版本 · 产物生命周期", ha="center", fontsize=11, color="#555555")
     assets["architecture"] = save_figure(fig, asset_dir / "service-architecture.png")
 
@@ -516,7 +526,7 @@ def configure_document(doc: Document) -> None:
     for section in doc.sections:
         header = section.header.paragraphs[0]
         header.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = header.add_run("高光谱 45 项算法能力与服务封装方案")
+        run = header.add_run("高光谱 55 项算法能力与服务封装方案")
         set_run_font(run, size=9, color=GRAY)
         footer = section.footer.paragraphs[0]
         footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -528,7 +538,7 @@ def add_cover(doc: Document) -> None:
         doc.add_paragraph()
     title = doc.add_paragraph()
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = title.add_run("高光谱 45 项算法能力\n与服务封装方案")
+    run = title.add_run("高光谱 55 项算法能力\n与服务封装方案")
     set_run_font(run, "方正小标宋简体", 28, True, BLUE)
     doc.add_paragraph()
     sub = doc.add_paragraph()
@@ -556,7 +566,7 @@ def add_overview_table(doc: Document, items: list[dict[str, Any]]) -> None:
     section.orientation = WD_ORIENT.LANDSCAPE
     section.page_width, section.page_height = section.page_height, section.page_width
     section.left_margin = section.right_margin = Cm(1.5)
-    add_heading(doc, "45 项算法能力总览", 1)
+    add_heading(doc, "55 项算法能力总览", 1)
     table = doc.add_table(rows=1, cols=6)
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -591,8 +601,8 @@ def build_document(items: list[dict[str, Any]], assets: dict[str, Path], output_
 
     add_heading(doc, "一、执行摘要", 1)
     doc.add_paragraph(
-        "本报告将高光谱数据从采集到地块汇总划分为 L0–L4 五级，并与控制台九段菜单对齐，形成 45 项算法/工程能力清单，并以单进程 FastAPI 服务提供统一 HTTP 入口。"
-        "根据 2026-08-09 最近一次自动测试记录，45/45 接口返回 HTTP 200 且 success=true；其中 12 项已有可运行实现并产出文件，33 项为统一契约骨架。"
+        "本报告将高光谱数据从采集到地块汇总划分为 L0–L4 五级，并与控制台九段菜单对齐，形成 55 项算法/工程能力清单，并以单进程 FastAPI 服务提供统一 HTTP 入口。"
+        "根据 2026-09-08 最近一次自动测试记录，55/55 接口返回 HTTP 200 且 success=true；55 项均已有可运行实现并产出文件。"
     )
     p = doc.add_paragraph()
     run = p.add_run("重要口径：")
@@ -601,25 +611,25 @@ def build_document(items: list[dict[str, Any]], assets: dict[str, Path], output_
     add_key_value_table(
         doc,
         [
-            ("能力覆盖", "45 项，覆盖航线规划、采集质检、辐射校正、反射率与正射、镶嵌与特征、指数与识别、图斑整理和地块汇总"),
-            ("当前实现", "12 项可运行；33 项骨架"),
-            ("接口验证", "HTTP 200 = 45/45；success=true = 45/45；可运行项产出 files = 12/12"),
+            ("能力覆盖", "55 项，覆盖航线规划、采集质检、辐射校正、反射率与正射、镶嵌与特征、指数与识别、图斑整理和地块汇总"),
+            ("当前实现", "55 项可运行；0 项骨架"),
+            ("接口验证", "HTTP 200 = 55/55；success=true = 55/55；可运行项产出 files = 55/55"),
             ("服务定位", "当前适合培训、联调与能力地图；生产化需补鉴权、异步调度、监控、算法精度验收"),
         ],
     )
-    add_picture(doc, assets["pipeline"], "图 1  高光谱 L0–L4 全链路与 45 项算法分布")
+    add_picture(doc, assets["pipeline"], "图 1  高光谱 L0–L4 全链路与 55 项算法分布")
 
     add_heading(doc, "二、服务现状与总体架构", 1)
     doc.add_paragraph(
         "当前服务采用“一个进程、一个端口、一算法一目录”的结构。调用方上传 GeoTIFF、GeoJSON 或 CSV，通过统一 `/api/v1/{algorithm_id}/run` 契约获取 JSON，"
         "其中 `data` 返回统计/指标，`files` 返回专题图、栅格、矢量或模型产物路径。该设计降低联调成本，但生产环境还需在执行、存储与治理层进一步拆分。"
     )
-    add_picture(doc, assets["architecture"], "图 2  45 项算法统一服务封装架构")
+    add_picture(doc, assets["architecture"], "图 2  55 项算法统一服务封装架构")
     add_picture(doc, assets["request_flow"], "图 3  一次算法调用的数据流与交付闭环")
 
     add_overview_table(doc, items)
 
-    add_heading(doc, "四、45 项算法逐项说明", 1)
+    add_heading(doc, "四、55 项算法逐项说明", 1)
     current_group = ""
     for item in items:
         group = item["level"].split("→")[0].replace("前", "")
@@ -661,7 +671,7 @@ def build_document(items: list[dict[str, Any]], assets: dict[str, Path], output_
     add_heading(doc, "六、真实服务与算法产物截图", 1)
     screenshot_specs = [
         ("swagger", "图 4  FastAPI Swagger 交互文档（本地真实服务）", 6.3),
-        ("algorithm_list", "图 5  `/api/v1/algorithms` 45 项算法列表（本地真实响应）", 6.3),
+        ("algorithm_list", "图 5  `/api/v1/algorithms` 55 项算法列表（本地真实响应）", 6.3),
         ("27_ndvi", "图 6  NDVI 算法真实调用与产物", 6.3),
         ("34_svm_rf_classify", "图 7  SVM/随机森林分类真实调用与产物", 6.3),
         ("42_anomaly_detect", "图 8  RX 异常检测真实调用与产物", 6.3),
@@ -674,7 +684,7 @@ def build_document(items: list[dict[str, Any]], assets: dict[str, Path], output_
     add_key_value_table(
         doc,
         [
-            ("第一阶段：加固", "对现有 12 项补参数 Schema、真实样本、精度基线、异常码、单元/回归测试和性能测试。"),
+            ("第一阶段：加固", "对现有 55 项补参数 Schema、真实样本、精度基线、异常码、单元/回归测试和性能测试。"),
             ("第二阶段：高频补齐", "优先实现 L2 清洗/特征与 L3 指数、变化检测、后处理等业务高频算法，形成可组合流水线。"),
             ("第三阶段：重能力接入", "正射、大气校正、镶嵌等采用成熟库或厂商 SDK；深度模型进入 GPU 异步服务与模型注册中心。"),
             ("第四阶段：业务闭环", "围绕地块、作物和任务组织 L4 报表、告警、复核、反馈与模型迭代，形成可量化业务价值。"),
@@ -717,7 +727,7 @@ def verify_docx(path: Path, items: list[dict[str, Any]]) -> None:
         media = [n for n in archive.namelist() if n.startswith("word/media/")]
         assert len(media) >= 8, f"图片数量不足：{len(media)}"
         assert "word/document.xml" in archive.namelist()
-    print(f"Word 验证通过：45 项标题完整；内嵌图片 {len(media)} 张；未发现密钥")
+    print(f"Word 验证通过：55 项标题完整；内嵌图片 {len(media)} 张；未发现密钥")
 
 
 def main() -> None:

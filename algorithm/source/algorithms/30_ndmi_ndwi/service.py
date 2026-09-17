@@ -34,25 +34,33 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     ndmi = ndvi_like(swir, nir)
     ndwi = ndvi_like(nir, green)
     mndwi = ndvi_like(swir, green)
-    stack = np.stack([ndmi, ndwi, mndwi], axis=-1).astype(np.float32)
-    tif = job / "ndmi_ndwi_mndwi.tif"
+    ndmi_tif = job / "ndmi.tif"
+    ndwi_tif = job / "ndwi.tif"
+    mndwi_tif = job / "mndwi.tif"
     png = job / "ndwi_preview.png"
-    save_geotiff(stack, tif, profile=profile)
+    save_geotiff(ndmi.astype(np.float32), ndmi_tif, profile=profile)
+    save_geotiff(ndwi.astype(np.float32), ndwi_tif, profile=profile)
+    save_geotiff(mndwi.astype(np.float32), mndwi_tif, profile=profile)
     save_preview_png(ndwi, png, title="NDWI")
     return ok_response(
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="已计算 NDMI/NDWI/MNDWI（波段顺序：NDMI,NDWI,MNDWI）",
+        message="已计算 NDMI、NDWI、MNDWI，分别写出单波段 GeoTIFF",
         data={
             "green_band": g_i,
             "nir_band": n_i,
             "swir_band": s_i,
-            "ndmi_mean": float(ndmi.mean()),
-            "ndwi_mean": float(ndwi.mean()),
-            "mndwi_mean": float(mndwi.mean()),
-            "shape": list(stack.shape),
+            "ndmi_mean": float(np.nanmean(ndmi)),
+            "ndwi_mean": float(np.nanmean(ndwi)),
+            "mndwi_mean": float(np.nanmean(mndwi)),
+            "shape": list(ndmi.shape),
             "format": "GeoTIFF",
         },
-        files={"indices_tif": str(tif.resolve()), "preview_png": str(png.resolve())},
+        files={
+            "ndmi_tif": str(ndmi_tif.resolve()),
+            "ndwi_tif": str(ndwi_tif.resolve()),
+            "mndwi_tif": str(mndwi_tif.resolve()),
+            "preview_png": str(png.resolve()),
+        },
     )

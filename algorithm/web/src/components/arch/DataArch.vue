@@ -1,6 +1,6 @@
 <template>
   <div class="story">
-    <p class="story-one">一句话：同一块地，数据先是「相机数的数」，再变成「光有多强」，再变成「地有多绿」，最后变成「3 号田的一个数字」。</p>
+    <p class="story-one">数据层级：DN → 辐亮度 → 正射反射率立方体 → 指数/分类图 → 地块统计量。</p>
 
     <div class="morph">
       <button type="button" class="morph-card" @click="go('04_flight_qc')">
@@ -11,8 +11,8 @@
           <text x="78" y="70" fill="var(--paper)" font-size="22" font-family="Georgia, serif">247</text>
         </svg>
         <em>L0 采集质检</em>
-        <strong>相机里的计数</strong>
-        <span>像「亮度旋钮的刻度」，还没有物理单位。</span>
+        <strong>原始 DN</strong>
+        <span>DN 为量化计数，尚无物理单位。</span>
       </button>
       <span class="morph-arr">变成</span>
       <button type="button" class="morph-card" @click="go('10_radiance_calibration')">
@@ -24,8 +24,8 @@
           <circle cx="108" cy="64" r="7" fill="var(--viz-warm)" />
         </svg>
         <em>L1 辐射校正</em>
-        <strong>光有多强</strong>
-        <span>定标之后，不同相机、不同天可以比。</span>
+        <strong>辐亮度</strong>
+        <span>定标后不同传感器、不同时相的辐亮度可比较。</span>
       </button>
       <span class="morph-arr">变成</span>
       <button type="button" class="morph-card" @click="go('16_orthorectify')">
@@ -35,8 +35,8 @@
           <polygon points="70,22 150,36 150,92 70,78" fill="rgba(17, 78, 75, 0.35)" />
         </svg>
         <em>L2 反射率与正射</em>
-        <strong>能贴到地图上的立方体</strong>
-        <span>正射 + 反射率。指数、分类都吃这个。</span>
+        <strong>正射反射率立方体</strong>
+        <span>正射反射率立方体是指数与分类的标准输入。</span>
       </button>
       <span class="morph-arr">抽出</span>
       <button type="button" class="morph-card" @click="go('27_ndvi')">
@@ -47,8 +47,8 @@
           <rect x="142" y="18" width="36" height="104" fill="#d4a24a" />
         </svg>
         <em>L3 指数与识别</em>
-        <strong>绿旺黄弱，或类别色块</strong>
-        <span>立方体被压成一张「人能看懂」的图。</span>
+        <strong>指数或分类专题图</strong>
+        <span>由立方体生成指数或分类专题图。</span>
       </button>
       <span class="morph-arr">汇总</span>
       <button type="button" class="morph-card" @click="go('45_parcel_zonal_stats')">
@@ -59,8 +59,8 @@
           <text x="48" y="96" font-size="11" fill="var(--ink-soft)">平均 NDVI</text>
         </svg>
         <em>L4 地块汇总</em>
-        <strong>一块地一个数</strong>
-        <span>给领导看的是这张纸，不是立方体。</span>
+        <strong>地块统计量</strong>
+        <span>交付地块统计结果，而非原始立方体。</span>
       </button>
     </div>
 
@@ -75,7 +75,7 @@
         <rect x="450" y="18" width="70" height="52" fill="var(--ok)" />
         <text x="530" y="50" font-size="13" fill="var(--ink-soft)">NDVI</text>
       </svg>
-      <p>最容易错的一步：不要从原始计数直接跳到植被指数。中间必须经过「光有多强 → 能上地图的反射率」。</p>
+      <p>不可从原始 DN 直接计算植被指数。中间须经过辐亮度定标，再到正射反射率立方体。</p>
     </div>
   </div>
 </template>

@@ -1,4 +1,4 @@
-# testdata · Transformer/GCN分类
+# testdata · SpectralFormer光谱分类
 
 Cube + 标签 GeoTIFF。
 

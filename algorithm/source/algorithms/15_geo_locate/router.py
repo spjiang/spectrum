@@ -1,4 +1,4 @@
-"""HTTP 路由：几何粗校正/地理定位。"""
+"""HTTP 路由：POS中心点与GSD粗定位。"""
 from __future__ import annotations
 
 from common.routing import build_router

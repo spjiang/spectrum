@@ -1,4 +1,4 @@
-"""业界栅格/矢量读写：GeoTIFF 为主，兼容 ENVI；教学用 npy 仅作回退。"""
+"""业界栅格/矢量读写：GeoTIFF 为主，兼容 ENVI；npy 仅作演示数据回退。"""
 from __future__ import annotations
 
 import json
@@ -13,7 +13,7 @@ from rasterio.transform import from_origin
 
 from common.config import OUTPUT_DIR, UPLOAD_DIR
 
-# 教学样例默认地理参考（深圳附近，约 1m 分辨率示意）
+# 演示数据默认地理参考（深圳附近，约 1m 分辨率示意）
 DEFAULT_CRS = "EPSG:4326"
 DEFAULT_ORIGIN = (114.0600, 22.5400)  # lon, lat（左上）
 DEFAULT_RES = (0.00001, 0.00001)  # 约 1m 量级示意
@@ -72,7 +72,7 @@ def load_raster(path: Path) -> tuple[np.ndarray, dict[str, Any] | None]:
     - .tif / .tiff / .geotiff → GeoTIFF（业界主推）
     - .dat / .img + 同名 .hdr → ENVI（GDAL 打开）
     - .hdr → 尝试打开配对数据文件
-    - .npy → 仅兼容旧教学数据（无地理参考）
+    - .npy → 仅兼容旧演示数据（无地理参考）
     """
     suffix = path.suffix.lower()
     if suffix in {".tif", ".tiff", ".geotiff", ".img", ".dat"}:
@@ -89,7 +89,7 @@ def load_raster(path: Path) -> tuple[np.ndarray, dict[str, Any] | None]:
     raise ValueError(
         f"不支持的栅格类型: {suffix}。"
         "业界请使用 GeoTIFF（.tif）或 ENVI（.hdr+.dat）；"
-        ".npy 仅兼容教学旧数据。"
+        ".npy 仅兼容旧演示数据。"
     )
 
 

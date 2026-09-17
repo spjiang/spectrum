@@ -8,6 +8,7 @@ from fastapi import UploadFile
 from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
 from common.io import as_cube, load_raster, new_job_dir, save_geotiff, save_preview_png, save_upload
@@ -72,18 +73,25 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     )
     if model_name == "rf":
         clf = RandomForestClassifier(n_estimators=int(params.get("n_estimators", 200)), random_state=42, n_jobs=-1)
+        x_train_model = x_train
+        x_test_model = x_test
+        flat_model = cube.reshape(-1, cube.shape[2])
     else:
+        scaler = StandardScaler()
+        scaler.fit(x_train)
+        x_train_model = scaler.transform(x_train)
+        x_test_model = scaler.transform(x_test)
+        flat_model = scaler.transform(cube.reshape(-1, cube.shape[2]))
         clf = SVC(kernel=kernel, gamma="scale")
         model_name = "svm"
-    clf.fit(x_train, y_train)
-    y_pred_test = clf.predict(x_test)
+    clf.fit(x_train_model, y_train)
+    y_pred_test = clf.predict(x_test_model)
     oa = float(accuracy_score(y_test, y_pred_test))
     kappa = float(cohen_kappa_score(y_test, y_pred_test))
     cm = confusion_matrix(y_test, y_pred_test)
     aa = _aa_from_cm(cm)
 
-    flat = cube.reshape(-1, cube.shape[2])
-    pred_map = clf.predict(flat).reshape(cube.shape[:2]).astype(np.int32)
+    pred_map = clf.predict(flat_model).reshape(cube.shape[:2]).astype(np.int32)
 
     pred_path = job / "pred_map.tif"
     png_path = job / "pred_preview.png"

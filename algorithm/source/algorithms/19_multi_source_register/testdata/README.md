@@ -1,4 +1,4 @@
-# testdata · 多源配准 HSI-RGB-矢量
+# testdata · HSI-RGB全局平移配准
 
 input=HSI GeoTIFF；file2=RGB GeoTIFF。
 

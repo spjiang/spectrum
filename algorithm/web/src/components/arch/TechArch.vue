@@ -1,6 +1,6 @@
 <template>
   <div class="story">
-    <p class="story-one">一句话：你在网页上点「执行」，请求钻进一台算法服务，45 个抽屉里有一个被打开，算完把图画回来。</p>
+    <p class="story-one">调用路径：控制台提交请求，算法服务按接口执行对应模块，返回 GeoTIFF 与 JSON。</p>
 
     <svg class="story-wide" viewBox="0 0 1040 320" role="img" aria-label="技术路径示意">
       <rect width="1040" height="320" fill="var(--paper-3)" />
@@ -15,7 +15,7 @@
         <rect x="52" y="148" width="64" height="18" fill="var(--viz-warm)" />
         <circle cx="88" cy="268" r="22" fill="var(--forest)" />
         <rect x="70" y="288" width="36" height="22" fill="var(--forest-2)" />
-        <text x="128" y="276" fill="var(--ink)" font-size="14" font-family="PingFang SC, sans-serif">你点按钮</text>
+        <text x="128" y="276" fill="var(--ink)" font-size="14" font-family="PingFang SC, sans-serif">控制台</text>
         <text x="40" y="236" fill="var(--ink-soft)" font-size="12">控制台 :5173</text>
       </g>
 
@@ -30,17 +30,17 @@
         <circle cx="384" cy="88" r="6" fill="var(--ok)" />
         <text x="400" y="92" fill="var(--gold-soft)" font-size="13">算法服务 :28800</text>
         <text x="366" y="132" fill="var(--nav-text)" font-size="12">收到文件 + 参数</text>
-        <text x="366" y="154" fill="var(--nav-text)" font-size="12">打开对应算法抽屉</text>
+        <text x="366" y="154" fill="var(--nav-text)" font-size="12">路由至对应算法</text>
         <text x="366" y="190" fill="var(--gold-soft)" font-size="13">POST /run</text>
-        <text x="366" y="214" fill="#9aa394" font-size="11">一台进程，45 个入口</text>
+        <text x="366" y="214" fill="#9aa394" font-size="11">一台进程，55 个入口</text>
       </g>
 
       <path d="M564 148 L630 148" stroke="var(--viz-warm)" stroke-width="4" />
       <polygon points="630,140 650,148 630,156" fill="var(--viz-warm)" />
 
-      <!-- 45 抽屉墙 -->
+      <!-- 55 项算法网格 -->
       <g>
-        <text x="668" y="48" fill="var(--ink-soft)" font-size="12">45 个算法抽屉</text>
+        <text x="668" y="48" fill="var(--ink-soft)" font-size="12">55 项算法</text>
         <g v-for="r in 5" :key="'r' + r">
           <g v-for="c in 9" :key="'c' + r + c">
             <rect
@@ -65,13 +65,13 @@
         <rect x="910" y="70" width="108" height="86" fill="#2b3d32" />
         <rect x="922" y="84" width="40" height="58" fill="var(--ok)" />
         <rect x="966" y="84" width="40" height="58" fill="#d4a24a" />
-        <text x="910" y="182" fill="var(--ink)" font-size="13">把图画回网页</text>
+        <text x="910" y="182" fill="var(--ink)" font-size="13">返回结果</text>
         <text x="910" y="202" fill="var(--ink-soft)" font-size="11">GeoTIFF / JSON</text>
       </g>
     </svg>
 
     <p class="story-foot">
-      不必记端口号：左边是人用的网页，中间是算的机器，右边是算完的图。点「看图」类抽屉可进入 NDVI 示例。
+      左侧为控制台，中间为算法服务，右侧为返回的 GeoTIFF / JSON。点击结果区可进入 NDVI 示例。
     </p>
   </div>
 </template>

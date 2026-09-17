@@ -1,4 +1,4 @@
-"""HTTP 路由：语义分割/目标检测。"""
+"""HTTP 路由：低NDVI种子ACE目标检测。"""
 from __future__ import annotations
 
 from common.routing import build_router

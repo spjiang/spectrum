@@ -11,7 +11,7 @@ from common.response import err_response, ok_response
 from .model import train_and_predict
 
 ALGORITHM_ID = "38_transformer_classify"
-TITLE = "Transformer/GCN分类"
+TITLE = "SpectralFormer光谱分类"
 IMPLEMENTED = True
 LEVEL = "L3"
 

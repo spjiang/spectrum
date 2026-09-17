@@ -6,14 +6,15 @@
         <span class="pill">{{ groupTitle(algo.level) }}</span>
         <span class="pill quiet">{{ algo.level }}</span>
         <span class="pill quiet">{{ algo.method }}</span>
-        <AbbrGlossary :terms="headTerms" compact />
-        <p class="lede" style="margin: 12px 0 0">{{ purposeText }}</p>
-        <div class="endpoint"><span>调用地址</span> <code class="mono">{{ algo.endpoint }}</code></div>
-        <SourcePanel :algorithm-id="algo.id" />
+        <p class="lede">{{ purposeText }}</p>
       </div>
-      <button class="btn ghost field-open" type="button" @click="openDrawer('inputs')">
-        接口字段
-      </button>
+      <div class="algo-actions">
+        <details class="api-fold">
+          <summary class="btn ghost">API 地址</summary>
+          <p class="api-fold-panel"><code class="mono">{{ algo.endpoint }}</code></p>
+        </details>
+        <button class="btn ghost" type="button" @click="openDrawer('inputs')">接口字段</button>
+      </div>
     </div>
 
     <nav class="page-tabs" aria-label="算法页面切换">
@@ -26,52 +27,42 @@
       <button type="button" :class="{ on: pageTab === 'product' }" @click="pageTab = 'product'">
         产品分析
       </button>
+      <button type="button" :class="{ on: pageTab === 'explore' }" @click="pageTab = 'explore'">
+        AI探索
+      </button>
+      <button
+        type="button"
+        class="tab-ref"
+        :class="{ on: pageTab === 'terms' }"
+        @click="pageTab = 'terms'"
+      >
+        名词对照
+      </button>
+      <button
+        type="button"
+        :class="{ on: pageTab === 'sources' }"
+        @click="pageTab = 'sources'"
+      >
+        算法文献
+      </button>
     </nav>
 
-    <PrinciplePanel
-      v-if="pageTab === 'principle'"
-      :algorithm-id="algo.id"
-      :level="algo.level"
-      :method="algo.method"
-    />
+    <PrinciplePanel v-if="pageTab === 'principle'" :algorithm-id="algo.id" />
     <ProductPanel v-else-if="pageTab === 'product'" :algorithm-id="algo.id" />
+    <AiExplorePanel
+      v-else-if="pageTab === 'explore'"
+      :algo="algo"
+      :result="result"
+      @goto-run="pageTab = 'run'"
+    />
+    <section v-else-if="pageTab === 'terms'" class="ref-page">
+      <AbbrGlossary :terms="headTerms" />
+    </section>
+    <section v-else-if="pageTab === 'sources'" class="ref-page">
+      <SourcePanel :algorithm-id="algo.id" />
+    </section>
 
-    <template v-else>
-    <div v-if="principle" class="run-intro">
-      <section class="run-position">
-        <p class="kicker">处理定位</p>
-        <h3>{{ principle.summary?.definition || principle.purpose }}</h3>
-        <p>{{ principle.purpose }}</p>
-        <p class="run-value"><strong>业务价值：</strong>{{ principle.summary?.value || principle.why }}</p>
-      </section>
-      <section>
-        <h4>使用前提</h4>
-        <ul><li v-for="item in principle.prerequisites" :key="item">{{ item }}</li></ul>
-      </section>
-      <section>
-        <h4>适用条件</h4>
-        <ul><li v-for="item in principle.applicable" :key="item">{{ item }}</li></ul>
-      </section>
-      <section class="run-warning">
-        <h4>不适用条件</h4>
-        <ul><li v-for="item in principle.notApplicable" :key="item">{{ item }}</li></ul>
-      </section>
-      <section class="run-focus">
-        <h4>演示重点</h4>
-        <ol><li v-for="item in principle.demoFocus" :key="item">{{ item }}</li></ol>
-      </section>
-    </div>
-    <div v-else class="cards">
-      <div class="card">
-        <h4>处理定位</h4>
-        <p>该算法的结构化运行说明尚未补齐，请先依据接口字段与示例数据完成验证。</p>
-      </div>
-      <div class="card">
-        <h4>使用边界</h4>
-        <p>投入业务使用前，应核对输入数据级别、单位、波段与空间参考条件。</p>
-      </div>
-    </div>
-
+    <template v-else-if="pageTab === 'run'">
     <div class="panel">
       <RunForm :algo="algo" @result="onRunResult" />
       <button
@@ -95,6 +86,7 @@
           <div>
             <p class="kicker">字段说明</p>
             <h3>{{ algo.title }}</h3>
+            <code class="mono drawer-endpoint">{{ algo.endpoint }}</code>
           </div>
           <button class="btn ghost" type="button" @click="drawerOpen = false">关闭</button>
         </header>
@@ -182,12 +174,15 @@ import RunForm from "../components/RunForm.vue";
 import OutputWorkbench from "../components/OutputWorkbench.vue";
 import PrinciplePanel from "../components/PrinciplePanel.vue";
 import ProductPanel from "../components/ProductPanel.vue";
+import AiExplorePanel from "../components/AiExplorePanel.vue";
 import AbbrGlossary from "../components/AbbrGlossary.vue";
 import SourcePanel from "../components/SourcePanel.vue";
 import { getAlgorithm } from "../api";
 import { groupTitle } from "../levels";
-import { termsForAlgorithm } from "../glossary";
+import { termsForPage } from "../glossary";
 import { getPrinciple } from "../principles";
+import { getAlgoSource } from "../sources";
+import { getWayhoAnalysis } from "../wayho";
 import { originalApiPayload } from "../outputWorkbench";
 import type { AlgorithmCard, FieldRow, RunResult } from "../types";
 
@@ -198,7 +193,7 @@ const loadError = ref("");
 const result = ref<RunResult | null>(null);
 const drawerOpen = ref(false);
 const drawerTab = ref<"inputs" | "outputs" | "json">("inputs");
-const pageTab = ref<"principle" | "run" | "product">("principle");
+const pageTab = ref<"principle" | "run" | "product" | "explore" | "terms" | "sources">("principle");
 const principle = computed(() => getPrinciple(props.id));
 
 function visZh(vis: string): string {
@@ -240,7 +235,7 @@ const purposeText = computed(() => withPeriod(algo.value?.purpose || algo.value?
 const headTerms = computed(() => {
   const a = algo.value;
   if (!a) return [];
-  return termsForAlgorithm(a.id, a.title, a.method, a.purpose);
+  return termsForPage(a.id, a, principle.value, getAlgoSource(a.id), getWayhoAnalysis(a.id));
 });
 
 function onRunResult(value: RunResult) {

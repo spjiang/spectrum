@@ -1,4 +1,4 @@
-"""几何粗校正：POS + GSD 直接地理定位写入仿射。"""
+"""POS 中心点与 GSD 粗定位：写入北向上仿射。"""
 from __future__ import annotations
 
 from fastapi import UploadFile
@@ -10,13 +10,13 @@ from common.response import err_response, ok_response
 from common.rs.photogrammetry import gsd_m, meters_per_deg
 
 ALGORITHM_ID = "15_geo_locate"
-TITLE = "几何粗校正/地理定位"
+TITLE = "POS中心点与GSD粗定位"
 IMPLEMENTED = True
 LEVEL = "L1→L2"
 
 
 async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
-    """以像主点 POS 为中心，GSD=H·像元/焦距，写 EPSG:4326 GeoTIFF。"""
+    """以 POS 为中心、按 GSD 写北向上仿射；不使用姿态。"""
     params, err = parse_params(params_json)
     if err:
         return err_response(algorithm_id=ALGORITHM_ID, algorithm=TITLE, message=err)
@@ -47,7 +47,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
     tif = job / "geolocated.tif"
     save_geotiff(cube, tif, profile=profile)
     meta = {
-        "method": "direct_georeferencing",
+        "method": "pos_center_gsd_affine",
         "lon": lon,
         "lat": lat,
         "alt_m": alt,
@@ -62,7 +62,7 @@ async def run(*, file: UploadFile, file2: UploadFile | None, params_json: str):
         algorithm_id=ALGORITHM_ID,
         algorithm=TITLE,
         implemented=True,
-        message="直接地理定位完成（POS + GSD 仿射）",
+        message="POS 中心点与 GSD 粗定位完成（北向上仿射，不使用姿态）",
         data={**meta, "shape": list(cube.shape), "format": "GeoTIFF"},
         files={"cube_tif": str(tif.resolve()), "meta_json": str(meta_path.resolve())},
     )
