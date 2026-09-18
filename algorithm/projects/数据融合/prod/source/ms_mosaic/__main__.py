@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from ms_mosaic.pipeline import run_mosaic
+from ms_mosaic.stage_runner import run_stages
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,7 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--bands",
         default=None,
-        help="逗号分隔波段，默认全部。例: Color 或 Color,550nm",
+        help="逗号分隔波段，默认全部。例: Color（仅 RGB）或 Color,550nm",
     )
     parser.add_argument(
         "--reuse-dsm",
@@ -31,24 +31,54 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="跳过密集匹配，复用已有 DSM.tif 并按足迹补北缘缺口",
     )
-    args = parser.parse_args(argv)
-    bands = None if not args.bands else tuple(s.strip() for s in args.bands.split(",") if s.strip())
-    kwargs = dict(
-        max_frames=args.max_frames,
-        max_index=args.max_index,
-        workers=args.workers,
-        bands=bands,
-        cache_dir=args.cache_dir,
-        reuse_dsm=args.reuse_dsm,
+    parser.add_argument(
+        "--run-mode",
+        choices=("full", "until_stage", "step"),
+        default="full",
+        help="full 全流程；until_stage 跑到 --stop-after-stage 后停；step 只跑 --start-stage 一阶段",
     )
+    parser.add_argument("--start-stage", default="S0_io", help="起始阶段，如 S2_at / S5_ortho")
+    parser.add_argument(
+        "--stop-after-stage",
+        default=None,
+        help="until_stage 时在该阶段结束后停止并返回 awaiting_continue",
+    )
+    args = parser.parse_args(argv)
+    bands = None if not args.bands else [s.strip() for s in args.bands.split(",") if s.strip()]
+    params = {
+        "input_dir": str(args.input),
+        "output_dir": str(args.out),
+        "max_frames": args.max_frames,
+        "max_index": args.max_index,
+        "workers": args.workers,
+        "bands": bands,
+        "cache_dir": str(args.cache_dir) if args.cache_dir else None,
+        "reuse_dsm": str(args.reuse_dsm) if args.reuse_dsm else None,
+        "run_mode": args.run_mode,
+        "start_stage": args.start_stage,
+        "stop_after_stage": args.stop_after_stage,
+    }
     if args.dsm_gsd is not None:
-        kwargs["dsm_gsd"] = args.dsm_gsd
-    result = run_mosaic(args.input, args.out, **kwargs)
-    print(f"shots={result['n_shots']}  elapsed={result['elapsed_s']}s  crs={result['crs']}")
-    print(f"mosaic={result['files'].get('mosaic_dir')}")
-    print(f"rgb={result['files'].get('rgb')}")
-    print(f"dsm={result['files'].get('dsm')}")
-    print(f"report={result['files'].get('report_pdf') or result['files'].get('report_json')}")
+        params["dsm_gsd"] = args.dsm_gsd
+    result = run_stages(args.input, args.out, params=params)
+    status = result.get("status", "succeeded")
+    print(f"status={status}")
+    if result.get("completed_stage"):
+        print(f"completed_stage={result['completed_stage']}")
+    if status == "failed":
+        print(f"error={result.get('error')}")
+        return 2
+    if status == "awaiting_continue":
+        print("阶段完成，可用相同 --out 并设置 --start-stage 为下一阶段继续")
+        return 10
+    if status == "cancelled":
+        return 130
+    files = result.get("files") or {}
+    print(f"shots={result.get('n_shots')}  elapsed={result.get('elapsed_s')}s  crs={result.get('crs')}")
+    print(f"mosaic={files.get('mosaic_dir')}")
+    print(f"rgb={files.get('rgb')}")
+    print(f"dsm={files.get('dsm')}")
+    print(f"report={files.get('report_pdf') or files.get('report_json')}")
     return 0
 
 
