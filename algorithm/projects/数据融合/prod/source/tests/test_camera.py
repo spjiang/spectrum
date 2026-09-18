@@ -132,6 +132,32 @@ def test_viewing_direction_is_down_for_nadir():
     np.testing.assert_allclose(pose.viewing_direction, np.array([0.0, 0.0, -1.0]), atol=1e-12)
 
 
+def test_large_batch_projection_raises_no_spurious_float_warnings():
+    """Apple Accelerate 的 BLAS 在大矩阵乘时会误置浮点异常标志位。
+    热点已改用 einsum 规避；这条测试防止以后有人改回 @ 又把告警引回来。"""
+    cam = Camera.initial("550nm", 2048, 1536)
+    pose = Pose.from_ypr(np.array([673000.0, 2620000.0, 1871.5]), -13.1, -89.2, -1.0)
+    n = 300000
+    rng = np.random.default_rng(0)
+    pts = np.stack(
+        [
+            673000.0 + rng.normal(0, 50, n),
+            2620000.0 + rng.normal(0, 50, n),
+            1760.0 + rng.normal(0, 20, n),
+        ],
+        axis=1,
+    )
+    old = np.seterr(all="raise")
+    try:
+        u, v, valid = project(cam, pose, pts)
+        uu = np.linspace(0, cam.width - 1, n)
+        vv = np.linspace(0, cam.height - 1, n)
+        intersect_plane(cam, pose, uu, vv, 1760.0)
+    finally:
+        np.seterr(**old)
+    assert np.isfinite(u).all() and np.isfinite(v).all()
+
+
 def test_off_nadir_angle_from_tilted_pose():
     pose = Pose.from_ypr(np.array([0.0, 0.0, 100.0]), 0.0, -80.0, 0.0)
     d = pose.viewing_direction

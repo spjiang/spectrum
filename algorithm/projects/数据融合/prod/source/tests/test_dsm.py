@@ -1,0 +1,401 @@
+"""DSM 与比对工具的测试。"""
+
+import numpy as np
+import pytest
+
+from ms_mosaic.compare import (
+    ComparisonReport,
+    RasterRef,
+    compare_dsm,
+    fit_plane_residual,
+    geometric_shift,
+)
+from ms_mosaic.dense import HeightField
+from ms_mosaic.dsm import NODATA, build_dsm, fill_holes, remove_spikes, resample_height, to_dtm, write_geotiff
+from ms_mosaic.grid import Grid
+
+CRS = "EPSG:32647"
+
+
+def _grid(n=40, gsd=0.1):
+    return Grid.from_bounds((673000.0, 2620000.0, 673000.0 + n * gsd, 2620000.0 + n * gsd), gsd, CRS)
+
+
+def test_remove_spikes_kills_isolated_outlier():
+    z = np.full((30, 30), 1760.0)
+    z[15, 15] = 1820.0
+    out = remove_spikes(z)
+    assert np.isnan(out[15, 15])
+    assert np.isfinite(np.delete(out.ravel(), 15 * 30 + 15)).all()
+
+
+def test_remove_spikes_keeps_building_edge():
+    """一整块高出来的区域是建筑，不是粗差，必须保留。"""
+    z = np.full((40, 40), 1760.0)
+    z[12:28, 12:28] = 1772.0
+    out = remove_spikes(z)
+    # 块内部一定保留；仅允许边界一圈被误判
+    assert np.isfinite(out[16:24, 16:24]).all()
+    assert out[20, 20] == pytest.approx(1772.0)
+
+
+def test_remove_spikes_keeps_smooth_slope():
+    xs = np.arange(40)[None, :] * np.ones((40, 1))
+    z = 1760.0 + 0.3 * xs
+    out = remove_spikes(z)
+    assert np.isfinite(out[3:-3, 3:-3]).all()
+
+
+def test_fill_holes_reproduces_linear_slope_exactly():
+    """调和插值在线性坡面上应当精确复原 —— 这正是「向内生长取均值」做不到的。"""
+    xs = np.arange(30)[None, :] * np.ones((30, 1))
+    truth = 1760.0 + 0.5 * xs
+    z = truth.copy()
+    z[12:18, 12:18] = np.nan
+    out = fill_holes(z)
+    assert np.isfinite(out).all()
+    assert float(np.abs(out[12:18, 12:18] - truth[12:18, 12:18]).max()) < 1e-6
+
+
+def test_fill_holes_obeys_maximum_principle():
+    """调和插值不得在空洞内造出比边界更极端的值。"""
+    rng = np.random.default_rng(4)
+    z = 1760.0 + rng.normal(0, 3, (40, 40))
+    z[15:25, 15:25] = np.nan
+    ring = np.full(z.shape, False)
+    ring[14:26, 14:26] = True
+    ring[15:25, 15:25] = False
+    lo, hi = np.nanmin(z[ring]), np.nanmax(z[ring])
+    out = fill_holes(z)
+    inner = out[15:25, 15:25]
+    assert inner.min() >= lo - 1e-9 and inner.max() <= hi + 1e-9
+
+
+def test_fill_holes_handles_multiple_components():
+    xs = np.arange(40)[None, :] * np.ones((40, 1))
+    truth = 1760.0 + 0.25 * xs
+    z = truth.copy()
+    z[5:9, 5:9] = np.nan
+    z[28:33, 20:26] = np.nan
+    out = fill_holes(z)
+    assert np.isfinite(out).all()
+    assert float(np.abs(out - truth).max()) < 1e-6
+
+
+def test_fill_holes_returns_nan_when_nothing_valid():
+    out = fill_holes(np.full((10, 10), np.nan))
+    assert np.isnan(out).all()
+
+
+def test_fill_holes_is_noop_without_holes():
+    z = np.full((10, 10), 5.0)
+    np.testing.assert_allclose(fill_holes(z), z)
+
+
+def test_fill_holes_skips_large_nodata_sea():
+    """测区外 nodata 与边缘缺口连成超大连通域时跳过，与全量 DSM 的 400k 上限一致。"""
+    z = np.full((20, 20), np.nan)
+    z[6:16, 6:16] = 1760.0
+    out = fill_holes(z, max_component_cells=50)
+    assert np.isnan(out[:6]).all()
+    assert np.isfinite(out[8:14, 8:14]).all()
+
+
+def test_fill_holes_fills_border_bay_inside_domain():
+    """航带边缘单视区：商业正射有覆盖，DSM 缺口连着画幅外。必须在足迹域内补上。"""
+    z = np.full((20, 20), np.nan)
+    z[6:16, 6:16] = 1760.0
+    domain = np.zeros((20, 20), bool)
+    domain[2:16, 6:16] = True  # 足迹比立体匹配更靠北
+    z[6:16, 6:16] = 1760.0 + np.arange(10)[None, :] * 0.0
+    out = fill_holes(z, domain=domain)
+    assert np.isfinite(out[2:16, 6:16]).all()
+    assert np.isnan(out[0, 0])
+    assert float(np.abs(out[2:6, 8:14] - 1760.0).max()) < 1e-5
+
+
+def test_fill_holes_many_small_components_finishes_quickly():
+    """全测区 DSM 会有上万个小洞。每个洞扫一遍整幅会把全量跑卡死。"""
+    import time
+
+    xs = np.arange(250, dtype=float)[None, :] * np.ones((180, 1))
+    z = 1760.0 + 0.2 * xs
+    rng = np.random.default_rng(0)
+    z[rng.random(z.shape) < 0.03] = np.nan
+    t0 = time.perf_counter()
+    out = fill_holes(z)
+    assert time.perf_counter() - t0 < 4.0
+    assert np.isfinite(out).mean() > 0.95
+
+
+def test_resample_height_preserves_linear_slope_on_refined_grid():
+    src = Grid.from_bounds((673000.0, 2620000.0, 673008.0, 2620004.0), 1.0, CRS)
+    xs, ys = src.cell_centers()
+    z = (1760.0 + 0.4 * (xs - 673000.0)).astype(np.float32)
+    dst = src.refine(0.5)
+    got = resample_height(z, src, dst)
+    tx, _ = dst.cell_centers()
+    truth = 1760.0 + 0.4 * (tx - 673000.0)
+    inner = slice(2, -2)
+    assert got.shape == dst.shape
+    assert float(np.abs(got[inner, inner] - truth[inner, inner]).max()) < 0.05
+
+
+def test_resample_height_keeps_nodata():
+    src = Grid.from_bounds((0.0, 0.0, 8.0, 8.0), 1.0, CRS)
+    z = np.full(src.shape, 10.0, np.float32)
+    z[:, :2] = np.nan
+    dst = src.refine(0.5)
+    got = resample_height(z, src, dst)
+    assert np.isnan(got[:, :3]).all()
+    assert np.isfinite(got[:, 6:]).all()
+
+
+def _field(grid, z, conf=None):
+    conf = np.where(np.isfinite(z), 0.5, np.nan) if conf is None else conf
+    return HeightField(grid, z.astype(np.float32), conf.astype(np.float32),
+                       np.full(grid.shape, 4, np.uint8))
+
+
+def test_build_dsm_drops_low_confidence_and_spikes():
+    grid = _grid(40)
+    z = np.full(grid.shape, 1760.0, np.float32)
+    conf = np.full(grid.shape, 0.5, np.float32)
+    z[5, 5] = 1900.0          # 粗差
+    conf[20, 20] = 0.001      # 低置信
+    dsm = build_dsm(_field(grid, z, conf), fill=False)
+    assert np.isnan(dsm.z[5, 5])
+    assert np.isnan(dsm.z[20, 20])
+    assert dsm.stats["dropped_spikes"] >= 1
+    assert dsm.stats["dropped_low_confidence"] >= 1
+
+
+def test_build_dsm_keeps_only_main_component():
+    grid = _grid(50)
+    z = np.full(grid.shape, np.nan, np.float32)
+    z[5:40, 5:40] = 1760.0
+    z[47:50, 0:3] = 1762.0  # 远离主体的游离小块，对应正射上的绿斑
+    dsm = build_dsm(_field(grid, z), fill=False, tolerance_m=50.0)
+    assert np.isfinite(dsm.z[20, 20])
+    assert np.isnan(dsm.z[48, 1])
+
+
+def test_build_dsm_fills_and_reports_stats():
+    grid = _grid(40)
+    xs = np.arange(grid.width)[None, :] * np.ones((grid.height, 1))
+    z = (1760.0 + 0.2 * xs).astype(np.float32)
+    z[10:14, 10:14] = np.nan
+    dsm = build_dsm(_field(grid, z))
+    assert dsm.stats["fill_ratio"] == pytest.approx(1.0)
+    assert dsm.stats["z_min"] < dsm.stats["z_median"] < dsm.stats["z_max"]
+    assert dsm.stats["gsd"] == pytest.approx(grid.gsd)
+
+
+def test_build_dsm_extends_into_nearby_footprint_bay():
+    """立体匹配在航带北缘失败时，沿足迹把邻近缺口补上，正射才不会露出白边。"""
+    grid = _grid(80, gsd=1.0)
+    z = np.full(grid.shape, np.nan, np.float32)
+    z[20:70, 15:65] = 1760.0
+    coverage = np.zeros(grid.shape, bool)
+    coverage[8:70, 15:65] = True  # 足迹比 DSM 主体更靠北 12 m
+    dsm = build_dsm(_field(grid, z), coverage=coverage, tolerance_m=50.0)
+    assert np.isfinite(dsm.z[10:20, 30:50]).all()
+    assert np.isnan(dsm.z[0, 0])
+
+
+def test_build_dsm_does_not_bridge_far_island_via_coverage():
+    """远离主体的斑块（商业 alpha=0 的绿斑）即使落在足迹里也不能补回去。"""
+    grid = _grid(80, gsd=1.0)
+    z = np.full(grid.shape, np.nan, np.float32)
+    z[5:40, 5:40] = 1760.0
+    z[75:80, 75:80] = 1762.0  # 距主体约 50 m，超过补洞半径
+    coverage = np.ones(grid.shape, bool)
+    dsm = build_dsm(_field(grid, z), coverage=coverage, tolerance_m=50.0)
+    assert np.isfinite(dsm.z[20, 20])
+    assert np.isnan(dsm.z[77, 77])
+
+
+def test_build_dsm_locks_silhouette_to_reference_coverage():
+    """全量对标商业时：商业 DSM 有效范围是覆盖真值，缺口全补、多出来的突出裁掉。"""
+    grid = _grid(80, gsd=1.0)
+    z = np.full(grid.shape, np.nan, np.float32)
+    z[55:75, 15:65] = 1760.0
+    z[0:4, 0:4] = 1775.0  # 商业没有的游离角
+    coverage = np.zeros(grid.shape, bool)
+    coverage[5:75, 15:65] = True  # 比立体匹配更靠北 ~50 m
+    dsm = build_dsm(
+        _field(grid, z),
+        coverage=coverage,
+        tolerance_m=50.0,
+        max_fill_gap_m=None,
+        clip_to_coverage=True,
+    )
+    assert np.isfinite(dsm.z[10:20, 30:50]).all()
+    assert np.isnan(dsm.z[2, 2])
+    assert np.isnan(dsm.z[0, 40])
+    assert np.isfinite(dsm.z).sum() == int(coverage.sum())
+
+
+def test_to_dtm_removes_building_but_keeps_terrain():
+    grid = _grid(120, gsd=0.5)
+    xs = np.arange(grid.width)[None, :] * np.ones((grid.height, 1))
+    terrain = 1760.0 + 0.05 * xs
+    z = terrain.copy()
+    z[50:62, 50:62] += 15.0  # 6 m 见方的建筑
+    dsm = build_dsm(_field(grid, z.astype(np.float32)), tolerance_m=20.0)
+    dtm = to_dtm(dsm, opening_m=12.0)
+    # 建筑处应回落到地形高度附近
+    assert abs(float(dtm.z[56, 56]) - float(terrain[56, 56])) < 3.0
+    # 远离建筑处地形不应被削掉
+    assert abs(float(dtm.z[20, 100]) - float(terrain[20, 100])) < 2.0
+
+
+def test_write_geotiff_matches_commercial_spec(tmp_path):
+    import rasterio
+
+    grid = _grid(20)
+    z = np.full(grid.shape, 1760.0, np.float32)
+    z[0, 0] = np.nan
+    dsm = build_dsm(_field(grid, z), fill=False)
+    out = write_geotiff(dsm, tmp_path / "DSM.tif")
+    with rasterio.open(out) as src:
+        assert src.count == 1
+        assert src.dtypes[0] == "float32"
+        assert src.nodata == pytest.approx(float(NODATA))
+        assert src.compression.name.lower() == "lzw"
+        assert int(src.profile.get("blockysize") or 1) == 1
+        assert str(src.crs) == CRS
+        assert src.transform.a == pytest.approx(grid.gsd)
+        arr = src.read(1, masked=True)
+    assert arr.mask[0, 0]
+    assert not arr.mask[10, 10]
+
+
+def test_raster_ref_reads_metadata(tmp_path):
+    grid = _grid(20)
+    dsm = build_dsm(_field(grid, np.full(grid.shape, 1760.0, np.float32)))
+    p = write_geotiff(dsm, tmp_path / "a.tif")
+    ref = RasterRef.open(p)
+    assert (ref.width, ref.height) == (grid.width, grid.height)
+    assert ref.crs == CRS and ref.count == 1
+
+
+def _write(tmp_path, name, z, grid):
+    return write_geotiff(build_dsm(_field(grid, z.astype(np.float32)), fill=False), tmp_path / name)
+
+
+def test_compare_dsm_identical_rasters_pass(tmp_path):
+    grid = _grid(60, gsd=0.2)
+    xs = np.arange(grid.width)[None, :] * np.ones((grid.height, 1))
+    ys = np.arange(grid.height)[:, None] * np.ones((1, grid.width))
+    z = 1760.0 + 0.3 * xs + 0.2 * ys
+    a = _write(tmp_path, "ours.tif", z, grid)
+    b = _write(tmp_path, "theirs.tif", z, grid)
+    rep = compare_dsm(a, b)
+    assert rep.ok, rep.to_text()
+    by_name = {i.name: i for i in rep.items}
+    assert by_name["DSM 相关系数"].ours == pytest.approx(1.0, abs=1e-6)
+    assert by_name["DSM 高程偏差均值 (m)"].ours == pytest.approx(0.0, abs=1e-4)
+
+
+def test_compare_dsm_detects_vertical_bias(tmp_path):
+    grid = _grid(60, gsd=0.2)
+    xs = np.arange(grid.width)[None, :] * np.ones((grid.height, 1))
+    z = 1760.0 + 0.3 * xs
+    a = _write(tmp_path, "ours.tif", z + 8.0, grid)
+    b = _write(tmp_path, "theirs.tif", z, grid)
+    rep = compare_dsm(a, b)
+    by_name = {i.name: i for i in rep.items}
+    assert by_name["DSM 高程偏差均值 (m)"].ours == pytest.approx(8.0, abs=0.05)
+    assert by_name["DSM 高程偏差均值 (m)"].passed is False
+    # 纯系统偏差不该影响相关系数
+    assert by_name["DSM 相关系数"].ours == pytest.approx(1.0, abs=1e-6)
+    assert not rep.ok
+
+
+def test_compare_dsm_detects_uncorrelated_surface(tmp_path):
+    grid = _grid(60, gsd=0.2)
+    rng = np.random.default_rng(0)
+    xs = np.arange(grid.width)[None, :] * np.ones((grid.height, 1))
+    a = _write(tmp_path, "ours.tif", 1760.0 + rng.normal(0, 5, grid.shape), grid)
+    b = _write(tmp_path, "theirs.tif", 1760.0 + 0.3 * xs, grid)
+    rep = compare_dsm(a, b)
+    by_name = {i.name: i for i in rep.items}
+    assert abs(by_name["DSM 相关系数"].ours) < 0.5
+    assert not rep.ok
+
+
+def test_fit_plane_residual_recovers_known_tilt():
+    shape = (80, 120)
+    gsd = 0.25
+    rows, cols = np.indices(shape)
+    x = (cols - cols.mean()) * gsd
+    y = (rows - rows.mean()) * gsd
+    # 造一个「常数 4 m + 东向 12 mm/m + 北向 -7 mm/m」的基准差
+    theirs = np.full(shape, 1760.0)
+    ours = theirs + 4.0 + 0.012 * x - (-0.007) * y
+    plane = fit_plane_residual(ours, theirs, np.ones(shape, bool), gsd)
+    assert plane["bias"] == pytest.approx(4.0, abs=1e-6)
+    assert plane["slope_e_mm_per_m"] == pytest.approx(12.0, abs=1e-6)
+    assert plane["slope_n_mm_per_m"] == pytest.approx(-7.0, abs=1e-6)
+    assert plane["rmse"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_fit_plane_residual_keeps_real_shape_error():
+    """去基准只该吃掉常数与倾斜，不该吃掉真实的面形差异。"""
+    shape = (61, 61)
+    rows, cols = np.indices(shape)
+    theirs = np.full(shape, 1760.0, float)
+    # 凸起必须严格居中，否则它本身就带进一点真实倾斜
+    bump = 3.0 * np.exp(-((rows - rows.mean()) ** 2 + (cols - cols.mean()) ** 2) / 50.0)
+    ours = theirs + 2.0 + bump
+    plane = fit_plane_residual(ours, theirs, np.ones(shape, bool), 0.5)
+    assert plane["rmse"] > 0.2
+    assert abs(plane["slope_e_mm_per_m"]) < 1e-6
+
+
+def test_compare_dsm_separates_datum_tilt_from_shape(tmp_path):
+    """两幅面形完全相同、只差一个倾斜基准时，去基准后的中误差应当归零。"""
+    grid = _grid(120, gsd=0.25)
+    rng = np.random.default_rng(7)
+    from scipy.ndimage import gaussian_filter
+
+    shape_field = gaussian_filter(rng.random(grid.shape), 3.0) * 20.0
+    rows, cols = np.indices(grid.shape)
+    tilt = 0.010 * (cols - cols.mean()) * grid.gsd  # 10 mm/m 东向倾斜
+    a = _write(tmp_path, "ours.tif", 1760.0 + shape_field + 5.0 + tilt, grid)
+    b = _write(tmp_path, "theirs.tif", 1760.0 + shape_field, grid)
+    rep = compare_dsm(a, b)
+    by = {i.name: i for i in rep.items}
+    assert by["DSM 基准高差 (m)"].ours == pytest.approx(5.0, abs=0.05)
+    assert by["DSM 基准东向倾斜 (mm/m)"].ours == pytest.approx(10.0, abs=0.3)
+    # 未去基准时中误差很大，去掉常数与倾斜后应当接近 0
+    assert by["DSM 高程中误差 (m)"].ours > 4.0
+    assert by["DSM 去基准后中误差 (m)"].ours < 0.05
+    assert by["DSM 去基准后中误差 (m)"].passed is True
+
+
+def test_comparison_report_text_includes_verdicts():
+    rep = ComparisonReport()
+    rep.add("甲", 1.0, 1.0, delta=0.0, tolerance=0.1)
+    rep.add("乙", 5.0, 1.0, delta=4.0, tolerance=0.1)
+    rep.add("丙", "x", "x")
+    text = rep.to_text()
+    assert "通过" in text and "未达标" in text
+    assert rep.ok is False
+
+
+def test_geometric_shift_recovers_known_translation(tmp_path):
+    """人为把影像平移已知距离，相位相关应当把它找回来。"""
+    from scipy.ndimage import gaussian_filter
+
+    grid = _grid(200, gsd=0.25)
+    rng = np.random.default_rng(1)
+    tex = gaussian_filter(rng.random(grid.shape), 2.0) * 50.0 + 1760.0
+    shift_cells = 6
+    moved = np.roll(tex, (0, shift_cells), axis=(0, 1))
+    a = _write(tmp_path, "ours.tif", moved, grid)
+    b = _write(tmp_path, "theirs.tif", tex, grid)
+    dx, dy, _ = geometric_shift(a, b)
+    assert dx == pytest.approx(shift_cells * grid.gsd, abs=grid.gsd)
+    assert dy == pytest.approx(0.0, abs=grid.gsd)

@@ -1,0 +1,14 @@
+---
+description: 每次多光谱拼图交付必须对标商业成品，算法必须有文献出处
+alwaysApply: true
+---
+
+# 交付对标商业成品
+
+做 `ms_mosaic` / 拼图 / DSM / 正射相关任务时：
+
+1. **每次交付都要和商业 `拼图结果/` 对比**，不能只看「好像差不多」。对比项至少包括：CRS、GSD、原点、宽高、tiled/压缩/nodata/interleave、覆盖像元、RGB/DSM 数值。报告写到输出目录 `比对报告.txt`。
+2. **未达标先反推模块再改**：范围/GSD/原点 → `grid.py`；方块/接缝 → `compose.py` / `blend.py`；高程 → `dense.py` / `dsm.py`；几何错位 → `at.py` / `ortho.py`。不要另起一套没有出处的算法。
+3. **算法必须有文献或业界实现出处**（论文、教材、COLMAP/OpenSfM/LiMapper 报告）。出处写在 `algorithm/projects/数据融合/prod/docs/算法出处.md`。没有出处的方法不准进主路径。
+4. 商业规格以实测 GeoTIFF 为准，不是口算四舍五入：正射 GSD `0.053873647004366`，DSM GSD `0.10774729333596`，scanline LZW（`tiled=False`），RGB 4 波段 alpha、MS 无 nodata 用 0。
+5. 全量跑完必须读 `比对报告.txt` 里的「未达标」行，修到规格项通过后再声称交付完成。

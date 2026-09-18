@@ -2,8 +2,9 @@
 # MAX 多光谱拼图。输入目录只读，成果写到 --out。
 #
 # 用法（在 prod/source 下，或给脚本绝对路径）：
-#   ./run.sh                      # 全目录，输出到 ../runs/manual_时间戳
-#   ./run.sh --max-frames 12      # 先跑 12 帧看中途文件
+#   ./run.sh                      # 全目录 8 波段，输出 ../runs/manual_时间戳/拼图结果 + 质量报告.pdf
+#   ./run.sh --max-frames 12 --bands Color --dsm-gsd 0.4   # 快速预览 RGB
+#   ./run.sh --workers 8 --bands Color,550nm
 #   ./run.sh --out ../runs/my_run
 #   ./run.sh --input /path/to/MAX_xxx --out /path/to/out
 set -euo pipefail
@@ -59,4 +60,5 @@ printf 'run     '
 printf '%q ' "$PY" -m ms_mosaic "${args[@]}"
 echo
 cd "$ROOT"
+export PYTHONUNBUFFERED=1
 exec "$PY" -m ms_mosaic "${args[@]}"

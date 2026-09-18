@@ -153,3 +153,46 @@ def build_block(shots: Mapping[int, Shot], *, crs: str | None = None) -> Block:
     mean_alt = float(np.mean([block.gps[i][2] for i in block.gps]))
     block.ground_z = mean_alt - float(np.mean(agls))
     return block
+
+
+def transfer_band(
+    block: Block,
+    cameras: dict[str, Camera],
+    poses: dict[int, Pose],
+    band: str,
+) -> tuple[dict[int, Camera], dict[int, Pose], dict[int, Path]]:
+    """把主波段空三得到的外方位搬到同一曝光的其他波段。
+
+    MAX-S810 八个镜头刚体固连，相对方位未知时最稳的一阶近似是：同一曝光共用
+    平台位姿，内参按主波段自标定相对初值的比例缩放焦距，并把主点偏移与畸变
+    一并迁移。完整的 RigRelatives 联合平差是下一步，但这一步已经能先把 8 张
+    正射出出来。
+    """
+    primary_cam = cameras[PRIMARY_BAND]
+    primary_init = Camera.initial(
+        PRIMARY_BAND, primary_cam.width, primary_cam.height, kind="rgb"
+    )
+    if band == PRIMARY_BAND:
+        cam = primary_cam
+    else:
+        init = block.cameras[band]
+        ratio = primary_cam.f / primary_init.f
+        vec = init.to_vector()
+        vec[0] *= ratio
+        vec[1] = init.cx + (primary_cam.cx - primary_init.cx)
+        vec[2] = init.cy + (primary_cam.cy - primary_init.cy)
+        vec[3:] = primary_cam.to_vector()[3:]
+        cam = init.with_vector(vec)
+
+    primary_by_shot = {im.shot_index: im.index for im in block.primary()}
+    out_cam: dict[int, Camera] = {}
+    out_pose: dict[int, Pose] = {}
+    out_path: dict[int, Path] = {}
+    for im in block.by_band(band):
+        src = primary_by_shot.get(im.shot_index)
+        if src is None or src not in poses:
+            continue
+        out_cam[im.index] = cam
+        out_pose[im.index] = poses[src]
+        out_path[im.index] = Path(im.path)
+    return out_cam, out_pose, out_path

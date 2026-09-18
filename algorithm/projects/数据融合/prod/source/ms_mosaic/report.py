@@ -16,14 +16,26 @@ def write_report(out_dir: Path, payload: dict[str, Any]) -> dict[str, str]:
     json_path = report_dir / "quality.json"
     md_path = report_dir / "quality.md"
     log_path = log_dir / "run.json"
-    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    log_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    text = json.dumps(payload, ensure_ascii=False, indent=2, default=_json_default)
+    json_path.write_text(text, encoding="utf-8")
+    log_path.write_text(text, encoding="utf-8")
     md_path.write_text(_to_markdown(payload), encoding="utf-8")
     return {
         "report_json": str(json_path.resolve()),
         "report_md": str(md_path.resolve()),
         "log_json": str(log_path.resolve()),
     }
+
+
+def _json_default(obj):
+    if hasattr(obj, "item"):
+        try:
+            return obj.item()
+        except Exception:
+            pass
+    if hasattr(obj, "tolist"):
+        return obj.tolist()
+    return str(obj)
 
 
 def _to_markdown(payload: dict[str, Any]) -> str:

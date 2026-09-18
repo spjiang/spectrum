@@ -186,7 +186,10 @@ class Pose:
 
     def world_to_camera(self, pts: np.ndarray) -> np.ndarray:
         pts = np.atleast_2d(np.asarray(pts, float))
-        return (pts - self.center) @ self.rotation.T
+        # 用 einsum 而不是 @：Apple Accelerate 的 BLAS 在大矩阵乘时会误置浮点异常
+        # 标志位，刷出一堆虚假的 overflow/divide-by-zero 告警，掩盖真实问题。
+        # einsum(optimize=True) 在这个形状下还更快一点。
+        return np.einsum("ij,kj->ik", pts - self.center, self.rotation, optimize=True)
 
 
 def project(camera: Camera, pose: Pose, pts_world: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -205,7 +208,7 @@ def ray_directions(camera: Camera, pose: Pose, u: np.ndarray, v: np.ndarray) -> 
     """像素 → 世界系的视线方向（未归一化，z 分量按相机系 1 缩放）。"""
     xn, yn = camera.undistort_pixels(u, v)
     dirs_cam = np.stack([xn, yn, np.ones_like(xn)], axis=-1)
-    return dirs_cam @ pose.rotation
+    return np.einsum("ij,jk->ik", dirs_cam, pose.rotation, optimize=True)
 
 
 def intersect_plane(
