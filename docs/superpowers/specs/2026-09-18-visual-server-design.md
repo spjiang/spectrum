@@ -14,10 +14,12 @@
 1. 按**管线阶段**组织全部可配置参数；配置员能看清「参数属于哪一阶段、起什么作用」。
 2. 参数与执行记录落 **PostgreSQL**；执行时写入**不可变参数快照**，便于溯源。
 3. 执行过程可视化：当前阶段、总进度条、ETA；支持暂停（阶段边界）、续跑、取消。
-4. React 前端 + FastAPI 后端，目录独立于 `source`，路径为 `prod/visual_server/`。
-5. `docker-compose` 部署：PostgreSQL、RabbitMQ、backend、frontend（**不含**计算容器）。
-6. 计算仍在宿主机：`ms_mosaic` CLI 保持兼容；页面可点击下发同一套任务。
-7. 通过 **RabbitMQ** 解耦：API 不跑重计算；worker 消费任务并回传进度。
+4. **阶段运行控制**：可只跑到指定阶段停下验收；验收通过后手动「继续下一阶段」；某阶段有问题则不必往下跑，节约时间。
+5. **快速预览**：可配置仅拼 RGB（`Color`），跳过 7 个多光谱正射，尽快看到几何结果。
+6. React 前端 + FastAPI 后端，目录独立于 `source`，路径为 `prod/visual_server/`；另有**命令行教学页**，不部署可视化也能按文档/CLI 跑通。
+7. `docker-compose` 部署：PostgreSQL、RabbitMQ、backend、frontend（**不含**计算容器）。
+8. 计算仍在宿主机：`ms_mosaic` CLI 保持兼容；页面可点击下发同一套任务。
+9. 通过 **RabbitMQ** 解耦：API 不跑重计算；worker 消费任务并回传进度。
 
 ### 1.2 非目标（本期不做）
 
@@ -37,9 +39,10 @@
 | 账号 | 多角色：配置员 / 执行员 / 只读 / 管理员 + 审计 |
 | 并发 | 单任务串行 + 排队 |
 | 数据路径 | 宿主机绝对路径；compose 挂载数据根供 backend 校验与读日志/报告 |
-| 干预 | 取消 + 暂停/续跑（阶段检查点） |
+| 干预 | 取消 + 暂停/续跑（阶段检查点）+ **阶段性运行控制** |
+| 快速预览 | 支持「仅 RGB」波段集；可与阶段性运行组合 |
 | 计算部署 | 宿主机 worker；compose 不含 worker 镜像 |
-| CLI | `python -m ms_mosaic` 行为保持；可选接入同一上报通道 |
+| CLI | `python -m ms_mosaic` 行为保持；可选接入同一上报通道；前端提供命令行教学页 |
 
 ---
 
@@ -103,6 +106,42 @@ algorithm/projects/数据融合/prod/
 
 页面执行台用步骤条映射上述 stage；进度上报必须带 `stage_id`。
 
+### 4.1 阶段性运行控制（生产调试核心）
+
+目的：上阶段有问题就别跑后面；确认无误再手动继续，省时间。
+
+| 运行模式 `run_mode` | 行为 |
+| --- | --- |
+| `full` | 从 `start_stage`（默认 S0）一直跑到 S6（或到失败/取消） |
+| `until_stage` | 从 `start_stage` 跑到 `stop_after_stage`（含）后进入 **`awaiting_continue`**，不自动进入下一阶段 |
+| `step` | 每完成**一个**阶段就进入 `awaiting_continue`，等同于「一步一确认」 |
+
+控制动作（执行台按钮）：
+
+| 动作 | 语义 |
+| --- | --- |
+| 启动 | 按 `run_mode` / `start_stage` / `stop_after_stage` 入队 |
+| 继续下一阶段 | 仅当状态为 `awaiting_continue`：把下一阶段作为新的一段任务投递（复用同一 `job_id`、同一 `output_dir` 与检查点） |
+| 跑到某某阶段 | 在等待态修改本次的 `stop_after_stage` 后继续（可选快捷） |
+| 暂停 / 取消 | 同原设计 |
+
+规则：
+
+1. 阶段失败 → `failed`，**不**自动进入后续阶段。  
+2. `awaiting_continue` 不算占用「全局 running」槽，下一名排队任务可以开始（仍保证同时最多一个 `running`）。若业务希望调试任务独占队列，可由设置 `hold_queue_while_awaiting`（默认 false）控制。  
+3. 「继续」必须校验检查点齐全；缺失则拒绝并提示重跑该阶段。  
+4. CLI 同等能力：`--start-stage`、`--stop-after-stage`、`--run-mode step|until_stage|full`。
+
+### 4.2 仅 RGB 快速看图
+
+| 配置 | 效果 |
+| --- | --- |
+| 预设「仅 RGB」或 `bands=["Color"]` | S5 只正射 RGB；不生成 group1–7；空三仍用主波段 Color（与现逻辑一致） |
+| 可与 `until_stage=S5_ortho` 组合 | 更快得到可在 QGIS 打开的 `Orthomosaic_pix_surf_group0.tif` |
+| `reuse_dsm` + 仅 RGB | 跳过密集，进一步加速预览 |
+
+前端参数区提供一键预设：**仅 RGB 快速预览**（写入 bands + 可选推荐 `max_frames` 提示，不强制改帧数）。
+
 ---
 
 ## 5. 参数模型与详细字典
@@ -131,6 +170,10 @@ algorithm/projects/数据融合/prod/
 | `process_dir` | path | `{output_dir}/附件` | 中间过程图/调试产物根（与 `拼图结果/` 分离；对应代码中的 extras）。 |
 | `products_dir_name` | string | `拼图结果` | 商业对齐的成果子目录名。 |
 | `path_must_under_data_root` | bool | true | 输入/输出必须落在管理员配置的 `DATA_ROOT` 白名单下。 |
+| `run_mode` | enum | `full` | `full` / `until_stage` / `step`。阶段性调试见 §4.1。 |
+| `start_stage` | enum | `S0_io` | 从哪一阶段开始（须有检查点或从 S0）。 |
+| `stop_after_stage` | enum\|null | null | `until_stage` 时必填：跑完该阶段后等待人工继续；`full` 时忽略。 |
+| `preset` | enum\|null | null | 快捷预设：`rgb_preview`（仅 Color）等；保存模板时可展开为具体键值。 |
 
 #### S1_catalog — 扫描与过滤
 
@@ -196,7 +239,7 @@ algorithm/projects/数据融合/prod/
 
 | key | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `bands` | string[] | 全部 8 组 | 参与正射的波段列表，如 `Color,550nm`。 |
+| `bands` | string[] | 全部 8 组 | 参与正射的波段。**仅 RGB 快速预览**时设为 `["Color"]`，大幅缩短 S5。 |
 | `ortho_over_dsm` | float | 0.5 | 正射 GSD = DSM GSD × 该系数（商业 1:2）。 |
 | `max_tilt_deg_ortho` | float | 60.0 | 正射选片时最大倾角。 |
 | `occlusion_tolerance_m` | float | 0.6 | Z-buffer 遮挡容差（米）。 |
@@ -227,8 +270,11 @@ algorithm/projects/数据融合/prod/
 | `--dsm-gsd` | `dsm_gsd` |
 | `--workers` | `workers_dense` / 回退通用 workers |
 | `--cache-dir` | `cache_dir` |
-| `--bands` | `bands`（逗号分隔） |
+| `--bands` | `bands`（逗号分隔；仅 RGB：`Color`） |
 | `--reuse-dsm` | `reuse_dsm` |
+| `--run-mode` | `run_mode` |
+| `--start-stage` | `start_stage` |
+| `--stop-after-stage` | `stop_after_stage` |
 
 可选增强（不破坏旧用法）：`--job-id`、`--params-json`、`--profile-id`（需 API 可达时拉模板）。
 
@@ -239,14 +285,19 @@ algorithm/projects/数据融合/prod/
 ### 6.1 状态
 
 `draft` → `queued` → `running` ⇄ `paused` → `running` → `succeeded`  
+旁路：`running` → `awaiting_continue` →（继续）→ `queued`/`running` → …  
 分支：`cancelled`、`failed`。
+
+- **`awaiting_continue`**：按 `run_mode` 在阶段成功边界停下，等人确认；不自动进下一阶段。  
+- **`succeeded`**：到达最终目标（`full` 跑完 S6，或用户明确结束）才标记成功。若在 `awaiting_continue` 用户选择「结束任务」，记为 `succeeded`（部分完成）并在记录中标注 `completed_stage`。
 
 不变量：任意时刻最多一个 `running`（DB 约束或 advisory lock + worker 单实例约定）。
 
-### 6.2 暂停 / 续跑 / 取消
+### 6.2 暂停 / 续跑 / 取消 / 阶段继续
 
-- **pause**：backend → `mosaic.control`；worker 设标志；在阶段边界写检查点后置 `paused`。
-- **resume**：带 `resume_from_stage` 重新投递 `mosaic.jobs`。
+- **pause**：backend → `mosaic.control`；worker 设标志；在阶段边界写检查点后置 `paused`。  
+- **resume（暂停恢复）**：从暂停点继续当前计划。  
+- **continue（阶段继续）**：仅 `awaiting_continue` → 投递下一阶段（或到新的 `stop_after_stage`）。  
 - **cancel**：控制消息 + 终止子进程组；置 `cancelled`。
 
 ### 6.3 进度载荷
@@ -306,20 +357,34 @@ Backend 挂载 `DATA_ROOT`：用于存在性校验、日志尾部读取、PDF �
 
 - `POST /api/auth/login` → JWT  
 - CRUD `/api/param-definitions`（admin）、`/api/profiles`  
-- `POST /api/jobs`（executor）：profile + 路径覆盖 → 入队  
-- `POST /api/jobs/{id}/pause|resume|cancel`  
+- `POST /api/jobs`（executor）：profile + 路径覆盖 + `run_mode`/`start_stage`/`stop_after_stage`/`bands` → 入队  
+- `POST /api/jobs/{id}/pause|resume|cancel|continue`  
+  - `continue` body 可选：`stop_after_stage`（本次继续跑到哪）  
 - `GET /api/jobs`、`GET /api/jobs/{id}`  
 - `GET /api/jobs/{id}/logs?tail=`  
 - `GET /api/jobs/{id}/report.pdf`  
+- `GET /api/docs/cli-guide`：返回命令行教学 Markdown（与前端教学页同源）  
 - `WS /ws/jobs/{id}`  
 
 ### 9.2 前端页面
 
 1. 登录  
-2. 参数配置（阶段折叠 + 说明 + 保存模板）  
-3. 执行台（选模板、路径、启停控、步骤条、总进度、ETA）  
-4. 执行记录（列表 + 详情：快照、目录、日志、报告下载）  
-5. 用户与审计（admin）  
+2. 参数配置（阶段折叠 + 说明 + 保存模板；**仅 RGB 预设**；`run_mode` / 起止阶段）  
+3. 执行台（选模板、路径、启停控、**继续下一阶段**、步骤条、总进度、ETA；等待确认时高亮当前已完成阶段）  
+4. 执行记录（列表 + 详情：快照、目录、日志、报告下载、`completed_stage`）  
+5. **命令行使用教学**（独立页，只读开放给所有登录角色；可导出/复制命令）  
+6. 用户与审计（admin）  
+
+### 9.3 命令行教学页内容（必须覆盖）
+
+- 不部署 `visual_server` 时如何仅用 `source` 运行。  
+- 环境依赖、`run.sh` / `python -m ms_mosaic` 完整示例。  
+- **仅 RGB**：`--bands Color`。  
+- **跑到某阶段**：`--run-mode until_stage --stop-after-stage S4_dsm`。  
+- **逐步确认**：`--run-mode step`（每阶段结束退出码区分「阶段完成待继续」与「全流程成功」，文档写明）。  
+- 从检查点续跑：`--start-stage S5_ortho --reuse-dsm …`。  
+- 输入只读、输出不得落在输入内等安全约定。  
+- 常见问题：无 POS、白板过滤、路径、QGIS 打开成果。  
 
 语言：简体中文 UI。
 
@@ -328,9 +393,11 @@ Backend 挂载 `DATA_ROOT`：用于存在性校验、日志尾部读取、PDF �
 ## 10. source 改动边界
 
 1. `ProgressReporter` 协议：阶段开始/进度/结束；默认打印或静默，不影响 CLI。  
-2. 阶段边界调用 `checkpoint()`；轮询 `ControlState`（文件或内存，由 worker 注入）。  
-3. `python -m ms_mosaic.worker_main`：连接 MQ，组装 kwargs，调用 `run_mosaic`。  
-4. **禁止**把 visual_server 依赖写进热路径（无强制 import pika）；worker 入口单独依赖。  
+2. 阶段边界调用 `checkpoint()`；轮询 `ControlState`；支持 `stop_after_stage` / `run_mode=step` 在边界退出为「待继续」。  
+3. `run_mosaic`（或编排层）按 `start_stage`/`stop_after_stage`/`bands` 裁剪执行；缺检查点时失败信息明确。  
+4. `python -m ms_mosaic.worker_main`：连接 MQ，组装 kwargs，调用编排入口。  
+5. **禁止**把 visual_server 依赖写进热路径（无强制 import pika）；worker 入口单独依赖。  
+6. CLI 教学文案以 `source/README` 或 `docs/cli-usage.md` 为源，前端教学页引用同一份，避免两套说明漂移。  
 
 ---
 
