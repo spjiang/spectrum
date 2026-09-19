@@ -11,7 +11,16 @@ from ms_mosaic.compare import (
     geometric_shift,
 )
 from ms_mosaic.dense import HeightField
-from ms_mosaic.dsm import NODATA, build_dsm, fill_holes, remove_spikes, resample_height, to_dtm, write_geotiff
+from ms_mosaic.dsm import (
+    NODATA,
+    build_dsm,
+    fill_holes,
+    median_smooth,
+    remove_spikes,
+    resample_height,
+    to_dtm,
+    write_geotiff,
+)
 from ms_mosaic.grid import Grid
 
 CRS = "EPSG:32647"
@@ -44,6 +53,17 @@ def test_remove_spikes_keeps_smooth_slope():
     z = 1760.0 + 0.3 * xs
     out = remove_spikes(z)
     assert np.isfinite(out[3:-3, 3:-3]).all()
+
+
+def test_median_smooth_kills_salt_keeps_building_and_holes():
+    z = np.full((40, 40), 1760.0)
+    z[12:28, 12:28] = 1772.0
+    z[5, 5] = 1785.0  # 单格噪声
+    z[2, 2] = np.nan
+    out = median_smooth(z, cells=3)
+    assert np.isnan(out[2, 2])
+    assert out[5, 5] == pytest.approx(1760.0)
+    assert out[20, 20] == pytest.approx(1772.0)
 
 
 def test_fill_holes_reproduces_linear_slope_exactly():

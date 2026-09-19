@@ -135,7 +135,8 @@ def test_write_quality_pdf_is_valid_and_contains_metrics(tmp_path: Path):
     assert "0.335" in text
     assert "32647" in text
     assert "质量报告" in text
-    assert "LiMapper" in text
+    assert "ms_mosaic" in text
+    assert "LiMapper" not in text
     assert "基于DSM逐像素拼接" in text or "DSM" in text
     assert "基于GPS配准" in text
     assert "GPS配准列表" in text

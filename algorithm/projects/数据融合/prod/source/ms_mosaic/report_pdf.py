@@ -1,6 +1,7 @@
-"""LiMapper 4.0 同构质量报告 PDF。
+"""自研质量报告 PDF。
 
-章节、表头、附图与 `0611hsl_Report.pdf` 对齐。数字来自本次解算。
+章节、表头、附图与需求样例 `0611hsl_Report.pdf` 对齐，便于对照验收。
+署名是本引擎 ms_mosaic，数字来自本次解算，不冒充 LiMapper / Pix4D。
 """
 
 from __future__ import annotations
@@ -189,7 +190,7 @@ def _header(canvas, doc, *, first: bool, created_cn: str):
         _draw_logo(canvas, w - 78, h - 58, scale=1.15)
         canvas.setFont(_font(), 8)
         canvas.setFillColorRGB(0.25, 0.25, 0.25)
-        canvas.drawRightString(w - 40, h - 72, f"LiMapper 4.0 于 {created_cn} 创建")
+        canvas.drawRightString(w - 40, h - 72, f"ms_mosaic 于 {created_cn} 创建")
     else:
         _draw_logo(canvas, w - 68, h - 36, scale=0.7)
         canvas.setFont(_font(), 8)

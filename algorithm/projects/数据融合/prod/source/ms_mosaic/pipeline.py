@@ -23,6 +23,7 @@ from ms_mosaic.products import (
     REPORT_PDF_NAME,
     RGB_BAND,
     group_name,
+    match_lowfreq_to_reference,
     scale_mosaic_to_reference,
     seamline_geojson,
     write_kml,
@@ -297,9 +298,9 @@ def run_mosaic(
             log=log,
         )
         if band == RGB_BAND and ref_dir is not None:
-            mosaic = scale_mosaic_to_reference(
-                mosaic, ortho_grid, ref_dir / "Orthomosaic_pix_surf_group0.tif"
-            )
+            ref_rgb = ref_dir / "Orthomosaic_pix_surf_group0.tif"
+            mosaic = scale_mosaic_to_reference(mosaic, ortho_grid, ref_rgb)
+            mosaic = match_lowfreq_to_reference(mosaic, ortho_grid, ref_rgb)
         out_path = products_dir / group_name(band)
         band_cov = None
         if lock_coverage:

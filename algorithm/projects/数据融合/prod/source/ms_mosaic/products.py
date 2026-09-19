@@ -139,6 +139,62 @@ def quantize(
     return out, valid
 
 
+def match_lowfreq_to_reference(
+    mosaic: np.ndarray,
+    grid: Grid,
+    ref_path: Path,
+    *,
+    sigma_m: float = 2.5,
+) -> np.ndarray:
+    """用商业正射的低频底替换自研低频，保留自研高频纹理。
+
+    可见色斑主要是拼块/拼接线尺度（约 4–20 m，ORTHO_TILE=384 ≈ 20 m）。
+    高斯底只吸收宽度 ≫ σ 的台阶：σ=40 m 会把 4–20 m 色斑当细节留下。
+    σ≈2.5 m 才能把这类斑换进商业低频，树冠纹理（<2 m）仍留在自研细节。
+    Burt & Adelson 金字塔。只动 RGB，且必须与参考同格网。
+    """
+    import rasterio
+    from scipy.ndimage import gaussian_filter, zoom
+
+    with rasterio.open(ref_path) as ds:
+        if ds.width != grid.width or ds.height != grid.height:
+            return mosaic
+        if abs(float(ds.transform.c) - float(grid.transform.c)) > 1e-3:
+            return mosaic
+        if ds.count < 3:
+            return mosaic
+        ref = ds.read(indexes=list(range(1, min(4, ds.count) + 1))).astype(np.float32)
+        alpha = ds.read(4) > 0 if ds.count >= 4 else ref[0] > 0
+    valid = np.isfinite(mosaic).all(axis=0) & alpha
+    if int(valid.sum()) < 1000:
+        return mosaic
+    sigma_px = max(3.0, float(sigma_m) / max(grid.gsd, 1e-6))
+    # 2.5 m ≈ 46 正射像元；全分辨率高斯偏慢，抽到约 16 px 核再滤、再放大。
+    step = max(1, int(round(sigma_px / 16.0)))
+    sigma_coarse = sigma_px / step
+    out = mosaic.copy()
+    n = min(3, mosaic.shape[0], ref.shape[0])
+    h, w = mosaic.shape[1], mosaic.shape[2]
+    for b in range(n):
+        ours = np.where(valid, mosaic[b], np.nanmedian(mosaic[b][valid]))
+        theirs = np.where(valid, ref[b], np.median(ref[b][valid]))
+        ours_c = gaussian_filter(ours[::step, ::step], sigma_coarse, mode="nearest")
+        ref_c = gaussian_filter(theirs[::step, ::step], sigma_coarse, mode="nearest")
+        fy, fx = h / ours_c.shape[0], w / ours_c.shape[1]
+        ours_base = zoom(ours_c, (fy, fx), order=1, mode="nearest")[:h, :w]
+        ref_base = zoom(ref_c, (fy, fx), order=1, mode="nearest")[:h, :w]
+        if ours_base.shape != (h, w):
+            tmp = np.full((h, w), ours_base[-1, -1], np.float32)
+            tmp[: ours_base.shape[0], : ours_base.shape[1]] = ours_base
+            ours_base = tmp
+            tmp = np.full((h, w), ref_base[-1, -1], np.float32)
+            tmp[: ref_base.shape[0], : ref_base.shape[1]] = ref_base
+            ref_base = tmp
+        detail = mosaic[b] - ours_base
+        out[b] = np.where(valid, detail + ref_base, mosaic[b])
+    return out.astype(np.float32)
+
+
 def scale_mosaic_to_reference(mosaic: np.ndarray, grid: Grid, ref_path: Path) -> np.ndarray:
     """用重叠区中位数把 RGB 亮度拉到与商业正射同一档。
 

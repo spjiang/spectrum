@@ -8,6 +8,7 @@ from ms_mosaic.camera import Camera, Pose, project
 from ms_mosaic.dense import (
     DenseConfig,
     ImageCache,
+    MIN_REFINE_Z_MARGIN_M,
     _sample_bilinear,
     _sgm_aggregate,
     _subpixel_z,
@@ -15,6 +16,8 @@ from ms_mosaic.dense import (
     antialias_sigma,
     off_nadir_deg,
     prior_surface,
+    refine_z_margin,
+    search_bound_hits,
     sweep_tile,
 )
 from ms_mosaic.grid import Grid, grid_from_footprints, grid_from_points
@@ -147,6 +150,14 @@ def test_grid_refine_halves_gsd_and_keeps_bounds():
     assert r.gsd == pytest.approx(0.1)
     assert r.width == g.width * 2 and r.height == g.height * 2
     np.testing.assert_allclose(r.bounds, g.bounds, atol=1e-9)
+
+
+def test_grid_refine_coarsens_for_hierarchical_dsm():
+    g = Grid.from_bounds((0.0, 0.0, 40.0, 40.0), 0.1, CRS)
+    c = g.refine(4.0)
+    assert c.gsd == pytest.approx(0.4)
+    assert c.width == g.width // 4 and c.height == g.height // 4
+    np.testing.assert_allclose(c.bounds, g.bounds, atol=1e-9)
 
 
 def test_grid_cell_centers_match_transform():
@@ -507,3 +518,22 @@ def test_grid_from_footprints_is_larger_than_point_percentile_box():
     g_fp = grid_from_footprints(cams, poses, 1760.0, 1.0, CRS, pad_m=0.0)
     # 足迹比摄站连线更宽，格网不应再裁成一条细矩形
     assert g_fp.width * g_fp.height > g_pts.width * g_pts.height
+
+
+def test_refine_z_margin_does_not_collapse_to_one_step():
+    """±12 m / 48 层时旧公式细层只剩 ±1 m，必须抬到下限。"""
+    old = 2.0 * (2.0 * 12.0 / 47)
+    assert old == pytest.approx(24.0 / 47 * 2.0)
+    got = refine_z_margin(12.0, 48)
+    assert got == pytest.approx(MIN_REFINE_Z_MARGIN_M)
+    assert got > old
+    # 宽窗口粗层：细层取 max(4 m, 3 个粗步长)
+    wide = refine_z_margin(24.0, 48)
+    assert wide >= MIN_REFINE_Z_MARGIN_M
+    assert wide == pytest.approx(max(4.0, 3.0 * (48.0 / 47)))
+
+
+def test_search_bound_hits_marks_first_and_last_layer():
+    best = np.array([[0, 1], [23, 47]])
+    hits = search_bound_hits(best, 48)
+    assert hits.tolist() == [[True, False], [False, True]]

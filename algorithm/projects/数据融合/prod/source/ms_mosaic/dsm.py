@@ -17,6 +17,7 @@ from ms_mosaic.grid import Grid, inpaint_nearest, refine_coverage_mask
 NODATA = np.float32(-3.4028234663852886e38)  # 与商业 DSM.tif 一致
 SPIKE_MEDIAN_CELLS = 5
 SPIKE_TOLERANCE_M = 2.5
+SMOOTH_MEDIAN_CELLS = 3
 MIN_CONFIDENCE = 0.02
 DTM_OPENING_M = 12.0
 # 航带边缘单视区：立体匹配经常解不出，但相片足迹还盖得到。商业正射把这块
@@ -64,6 +65,28 @@ def remove_spikes(
     limit = np.maximum(tolerance_m, 4.0 * scale)
     bad = np.isfinite(filled) & (np.abs(residual) > limit)
     return np.where(bad, np.nan, filled)
+
+
+def median_smooth(
+    z: np.ndarray,
+    *,
+    cells: int = SMOOTH_MEDIAN_CELLS,
+) -> np.ndarray:
+    """有效格网上的中值平滑（Kraus《Photogrammetry》DSM 去噪）。
+
+    只改已有高程，不填空洞：空值用邻域中值作滤波垫，写回时仍保持 nan。
+    窗口 3 格（本测区约 0.3 m）压匹配噪声，建筑块不会被抹平。
+    """
+    from scipy.ndimage import median_filter
+
+    filled = np.asarray(z, np.float64)
+    ok = np.isfinite(filled)
+    size = int(cells) | 1
+    if int(ok.sum()) < 4 or size < 3:
+        return filled
+    proxy = np.where(ok, filled, np.nanmedian(filled[ok]))
+    smooth = median_filter(proxy, size=size, mode="nearest")
+    return np.where(ok, smooth, np.nan)
 
 
 OFFSETS = ((-1, 0), (1, 0), (0, -1), (0, 1))
@@ -213,6 +236,7 @@ def build_dsm(
 
     z = remove_spikes(z, tolerance_m=tolerance_m)
     after_spikes = int(np.isfinite(z).sum())
+    z = median_smooth(z)
     z = _clip_z_outliers(z)
     main = refine_coverage_mask(np.isfinite(z), max_hole_cells=0, merge_gap_cells=4)
     z = np.where(main, z, np.nan)

@@ -35,7 +35,7 @@ def main() -> None:
     ap.add_argument("--dsm-gsd", type=float, default=COMMERCIAL_DSM_GSD)
     ap.add_argument("--workers", type=int, default=10)
     ap.add_argument("--layers", type=int, default=48)
-    ap.add_argument("--z-margin", type=float, default=12.0)
+    ap.add_argument("--z-margin", type=float, default=24.0)
     ap.add_argument("--max-views", type=int, default=10)
     ap.add_argument("--tile", type=int, default=384)
     ap.add_argument("--pyramid", type=int, default=2, help="由粗到细的层级数")

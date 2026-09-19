@@ -22,9 +22,9 @@ import numpy as np
 from ms_mosaic.ortho import WarpedStack
 
 GAIN_SIGMA_N = 10.0
-GAIN_SIGMA_G = 0.1
-GAIN_LIMITS = (0.5, 2.0)
-BLEND_LEVELS = 5
+GAIN_SIGMA_G = 0.3
+GAIN_LIMITS = (0.65, 1.55)
+BLEND_LEVELS = 7
 MIN_OVERLAP_CELLS = 50
 
 
@@ -60,15 +60,32 @@ class OverlapStats:
         return sorted(seen)
 
 
-def accumulate_overlap(stack: WarpedStack, acc: OverlapStats) -> OverlapStats:
-    """把一个格网块里各视角两两重叠区的灰度和累加进全局统计。"""
+def merge_overlap(dst: OverlapStats, src: OverlapStats) -> OverlapStats:
+    """把另一块的重叠统计并进来。多进程按块统计后在主进程汇总。"""
+    for key, n in src.counts.items():
+        a, b = src.sums[key]
+        dst.add(key[0], key[1], a, b, n)
+    return dst
+
+
+def accumulate_overlap(
+    stack: WarpedStack, acc: OverlapStats, *, channel: int | None = None
+) -> OverlapStats:
+    """把一个格网块里各视角两两重叠区的灰度和累加进全局统计。
+
+    channel 为 None 时 RGB 用三通道均值（亮度），否则只用该通道 ——
+    分通道解增益才能把偏黄/偏青的整帧色差拉平。
+    """
     n_views = stack.pixels.shape[0]
     if n_views < 2:
         return acc
-    inten = stack.pixels[:, 0]
-    if stack.n_bands > 1:
-        with np.errstate(all="ignore"):
-            inten = np.nanmean(stack.pixels, axis=1)
+    if channel is None:
+        inten = stack.pixels[:, 0]
+        if stack.n_bands > 1:
+            with np.errstate(all="ignore"):
+                inten = np.nanmean(stack.pixels, axis=1)
+    else:
+        inten = stack.pixels[:, int(channel)]
     valid = np.isfinite(stack.scores) & np.isfinite(inten)
     for a in range(n_views):
         for b in range(a + 1, n_views):
@@ -119,20 +136,36 @@ def solve_gains(
         a[kj, ki] -= w * mi * mj
 
     gains = np.linalg.solve(a, b)
+    # 重叠项对整体乘数无约束；(1−g)² 在影像很多时会被数据项淹没，
+    # 全量 654 张曾全部落到下限 0.5，后面再按商业中位数一拉，相对增益为 0。
+    # 先把中位置回 1，再裁剪，相对曝光差才进得了正射。
+    med = float(np.median(gains))
+    if abs(med) > 1e-6:
+        gains = gains / med
     lo, hi = limits
     return {img: float(np.clip(gains[index[img]], lo, hi)) for img in images}
 
 
-def apply_gains(stack: WarpedStack, gains: dict[int, float]) -> WarpedStack:
-    """把增益乘到各视角像素上。未估出增益的视角按 1.0 处理。"""
+def apply_gains(
+    stack: WarpedStack,
+    gains: dict[int, float] | list[dict[int, float]],
+) -> WarpedStack:
+    """把增益乘到各视角像素上。未估出增益的视角按 1.0 处理。
+
+    传入 list 时按通道分别乘（RGB 色差）；单个 dict 则三通道共用亮度增益。
+    """
     if not gains:
         return stack
-    g = np.array([gains.get(v, 1.0) for v in stack.views], np.float32)
-    return WarpedStack(
-        stack.window, stack.views,
-        stack.pixels * g[:, None, None, None],
-        stack.scores,
-    )
+    px = stack.pixels.copy()
+    n_bands = px.shape[1]
+    if isinstance(gains, list):
+        for b in range(min(n_bands, len(gains))):
+            g = np.array([gains[b].get(v, 1.0) for v in stack.views], np.float32)
+            px[:, b] *= g[:, None, None]
+    else:
+        g = np.array([gains.get(v, 1.0) for v in stack.views], np.float32)
+        px *= g[:, None, None, None]
+    return WarpedStack(stack.window, stack.views, px, stack.scores)
 
 
 def _pyr_down(a: np.ndarray) -> np.ndarray:

@@ -16,8 +16,11 @@ LiMapper 报告写明「密集点云 类型 2.5D」，成品也确实是高程�
 对遮挡与局部失配有容忍度。随后沿 4 个方向做 SGM 式半全局动态规划
 （Hirschmüller, PAMI 2008），抑制弱纹理区的噪声并保持地物边缘。
 
-扫描范围由空三的稀疏点给出先验面，只在先验面附近 ±z_margin 内扫，
-把层数从上千层压到几十层 —— 这是能在可接受时间内做完的前提。
+扫描范围由空三的稀疏点给出先验面。先验面经过核回归平滑后，相对树冠/
+陡坎可偏十几米；±12 m 会把真表面挡在窗外，粗层一旦锁错，细层 ±1 m
+也无法跳回。因此先在约 4 倍 GSD 的粗格网上用 ±24 m 定位，再回到成品
+格网、在不少于 ±4 m 的窗口里精化（Gallup et al., CVPR 2007；架构 §4.5
+「先粗 GSD 定 Z 范围，再逐层细化」）。
 """
 
 from __future__ import annotations
@@ -33,7 +36,9 @@ from ms_mosaic.rawio import read_gray8
 
 NCC_WINDOW = 7
 N_LAYERS = 48
-Z_MARGIN_M = 12.0
+Z_MARGIN_M = 24.0
+MIN_REFINE_Z_MARGIN_M = 4.0
+COARSE_GSD_FACTOR = 4
 MAX_VIEWS = 10
 MIN_VIEWS = 2
 MAX_TILT_DEG = 60.0  # 与报告「最大倾斜角 60 度」一致
@@ -58,6 +63,7 @@ class DenseConfig:
     top_k_views: int = TOP_K_VIEWS
     tile: int = TILE
     pyramid_levels: int = 2
+    coarse_gsd_factor: int = COARSE_GSD_FACTOR
     workers: int | None = None
 
 
@@ -74,6 +80,28 @@ class HeightField:
     @property
     def valid(self) -> np.ndarray:
         return np.isfinite(self.z)
+
+
+def refine_z_margin(
+    prev_margin: float,
+    n_layers: int,
+    *,
+    min_margin_m: float = MIN_REFINE_Z_MARGIN_M,
+) -> float:
+    """由粗到细时下一级的高程搜索半宽。
+
+    旧写法取「上一级步长的 2 倍」，±12 m / 48 层时细层只剩 ±1 m。
+    粗层若落在错误的 NCC 峰上（重复纹理、树冠/地面），细层无法跳回真表面。
+    分层立体的常规是下一级覆盖上一级残差的数倍，且设下限
+    （Scharstein & Szeliski, IJCV 2002；Gallup et al., CVPR 2007）。
+    """
+    step = 2.0 * float(prev_margin) / max(int(n_layers) - 1, 1)
+    return max(float(min_margin_m), 3.0 * step)
+
+
+def search_bound_hits(best: np.ndarray, n_layers: int) -> np.ndarray:
+    """最优层贴在搜索窗两端：真高程很可能在窗外，不能当有效观测。"""
+    return (best <= 0) | (best >= n_layers - 1)
 
 
 def antialias_sigma(grid_gsd: float, image_gsd: float) -> float:
@@ -436,11 +464,15 @@ def _sweep_once(
     second = np.min(masked, axis=0)
     confidence = np.where(np.isfinite(second), (second - best_cost) / np.maximum(second, 1e-6), 0.0)
 
+    # 宽搜索窗贴边 = 真表面在窗外。细层（几米）贴边更常见，留给下一级
+    # 或补洞，不能在这里整片作废。
+    saturated = search_bound_hits(best, n_layers) if z_margin >= 8.0 else np.zeros_like(best, dtype=bool)
     bad = (
         (count < MIN_VIEWS)
         | (~np.isfinite(z))
         | (~np.isfinite(raw_cost))
         | (raw_cost > 1.0 - cfg.min_ncc)
+        | saturated
     )
     z = np.where(bad, np.nan, z).astype(np.float32)
     confidence = np.where(bad, np.nan, confidence).astype(np.float32)
@@ -474,9 +506,9 @@ def sweep_tile(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """对一个格网块做由粗到细的多层平面扫描。返回 (z, 置信度, 参与视图数)。
 
-    单层扫描要同时覆盖大搜索范围和细高程分辨率，层数会爆炸：±12 m 做到
-    0.1 m 分辨率需要 240 层。改成两级后，第一级 ±12 m/0.75 m 定位，
-    第二级只在第一级结果附近 ±1.5 m 内以 0.06 m 步长精化，总层数不到 60。
+    单层扫描要同时覆盖大搜索范围和细高程分辨率，层数会爆炸：±24 m 做到
+    0.1 m 分辨率需要 480 层。改成两级后，第一级 ±24 m 定位，第二级在
+    不少于 ±4 m 的窗口内精化，避免粗层锁错面后无法跳回。
     """
     row0, col0, rows, cols = window
     z_mid = float(np.nanmedian(prior_z))
@@ -495,47 +527,47 @@ def sweep_tile(
         )
         if level + 1 >= max(1, cfg.pyramid_levels):
             break
-        step = 2.0 * margin / max(layers - 1, 1)
-        # 下一级只需覆盖上一级的残差（约一个步长），留 2 倍余量
-        margin = 2.0 * step
+        # 下一级必须能跳回粗层可能锁错的面，不能只留一个步长
+        margin = refine_z_margin(margin, layers)
         prior = _next_prior(z, prior)
     return z, conf, count
 
 
-def compute_height_field(
+def _image_gsd(cameras: dict[int, Camera], poses: dict[int, Pose], prior: np.ndarray) -> float:
+    """影像地面采样距 ≈ 航高 / 焦距。"""
+    ground = float(np.nanmedian(prior))
+    agl = np.array([poses[i].center[2] - ground for i in poses])
+    return float(np.median([np.median(agl) / cameras[i].f for i in cameras]))
+
+
+def _match_on_grid(
     grid: Grid,
-    points: np.ndarray,
+    prior: np.ndarray,
     cameras: dict[int, Camera],
     poses: dict[int, Pose],
     image_paths: dict[int, Path],
+    cfg: DenseConfig,
     *,
-    cfg: DenseConfig | None = None,
     log=None,
     workers: int | None = None,
-) -> HeightField:
-    """对整个格网做密集匹配。分块处理，块间留窗口重叠，默认可多进程。"""
+    label: str = "密集匹配",
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    """在给定格网与先验面上扫一遍，返回 (z, conf, views, image_gsd)。"""
     from functools import partial
 
     from ms_mosaic.parallel import map_tiles
 
-    cfg = cfg or DenseConfig()
-    prior = prior_surface(points, grid)
-
-    # 影像 GSD ≈ 航高 / 焦距。物方格网粗于它时必须先抗锯齿再采样。
-    ground = float(np.nanmedian(prior))
-    agl = np.array([poses[i].center[2] - ground for i in poses])
-    img_gsd = float(np.median([np.median(agl) / cameras[i].f for i in cameras]))
+    img_gsd = _image_gsd(cameras, poses, prior)
     sigma = antialias_sigma(grid.gsd, img_gsd)
     if log is not None:
         log(
-            f"影像 GSD ≈ {img_gsd:.4f} m，格网 {grid.gsd:.4f} m，"
-            f"抗锯齿高斯尺度 {sigma:.2f} px"
+            f"{label}：格网 {grid.width}x{grid.height} @ {grid.gsd:.4f} m，"
+            f"±{cfg.z_margin_m:.1f} m × {cfg.n_layers} 层，抗锯齿 {sigma:.2f} px"
         )
 
     z = np.full(grid.shape, np.nan, np.float32)
     conf = np.full(grid.shape, np.nan, np.float32)
     views = np.zeros(grid.shape, np.uint8)
-
     overlap = cfg.window
     windows = list(grid.tiles(cfg.tile, overlap=overlap))
     payload = {
@@ -555,14 +587,78 @@ def compute_height_field(
         _dense_fn,
         workers=n_workers,
         log=log,
-        label="密集匹配",
+        label=label,
     ):
         paste_tile(z, tile_z, window, overlap, grid)
         paste_tile(conf, tile_conf, window, overlap, grid)
         paste_tile(views, tile_views, window, overlap, grid)
         done += 1
         if log is not None and n_workers == 1 and (done % 10 == 0 or done == len(windows)):
-            log(f"密集匹配 {done}/{len(windows)} 块，已解出 {np.isfinite(z).mean():.1%}")
+            log(f"{label} {done}/{len(windows)} 块，已解出 {np.isfinite(z).mean():.1%}")
+    return z, conf, views, img_gsd
+
+
+def compute_height_field(
+    grid: Grid,
+    points: np.ndarray,
+    cameras: dict[int, Camera],
+    poses: dict[int, Pose],
+    image_paths: dict[int, Path],
+    *,
+    cfg: DenseConfig | None = None,
+    log=None,
+    workers: int | None = None,
+) -> HeightField:
+    """对整个格网做密集匹配。分块处理，块间留窗口重叠，默认可多进程。
+
+    成品格网细于 0.2 m 时先在 4 倍 GSD 上用宽窗口定位，再回到成品格网精化，
+    避免 ±1 m 细层把粗层的错误表面锁死。
+    """
+    from dataclasses import replace
+
+    cfg = cfg or DenseConfig()
+    prior = prior_surface(points, grid)
+    n_workers = workers if workers is not None else cfg.workers
+    factor = int(cfg.coarse_gsd_factor)
+    coarse_used = False
+    if factor >= 2 and min(grid.width, grid.height) >= 64:
+        coarse_grid = grid.refine(float(factor))
+        if coarse_grid.gsd > grid.gsd * 1.5 and min(coarse_grid.width, coarse_grid.height) >= 16:
+            coarse_used = True
+            coarse_prior = prior_surface(points, coarse_grid)
+            z_c, _, _, _ = _match_on_grid(
+                coarse_grid,
+                coarse_prior,
+                cameras,
+                poses,
+                image_paths,
+                cfg,
+                log=log,
+                workers=n_workers,
+                label="粗格网密集匹配",
+            )
+            from ms_mosaic.dsm import resample_height
+
+            up = resample_height(z_c, coarse_grid, grid)
+            prior = np.where(np.isfinite(up), up, prior).astype(np.float32)
+            cfg = replace(cfg, z_margin_m=max(MIN_REFINE_Z_MARGIN_M * 2.0, 8.0), pyramid_levels=2)
+            if log is not None:
+                log(
+                    f"粗格网解出 {np.isfinite(z_c).mean():.1%}，"
+                    f"细格网搜索 ±{cfg.z_margin_m:.1f} m"
+                )
+
+    z, conf, views, img_gsd = _match_on_grid(
+        grid,
+        prior,
+        cameras,
+        poses,
+        image_paths,
+        cfg,
+        log=log,
+        workers=n_workers,
+        label="密集匹配",
+    )
 
     valid = np.isfinite(z)
     stats = {
@@ -575,7 +671,9 @@ def compute_height_field(
         "mean_views": float(views[valid].mean()) if valid.any() else 0.0,
         "gsd": grid.gsd,
         "image_gsd": img_gsd,
-        "antialias_sigma_px": sigma,
+        "antialias_sigma_px": antialias_sigma(grid.gsd, img_gsd),
+        "coarse_gsd": bool(coarse_used),
+        "z_margin_m": float(cfg.z_margin_m),
     }
     return HeightField(grid, z, conf, views, stats)
 

@@ -13,6 +13,7 @@ from ms_mosaic.blend import (
     apply_gains,
     collapse_pyramid,
     laplacian_pyramid,
+    merge_overlap,
     multiband_blend,
     seam_step,
     solve_gains,
@@ -41,6 +42,15 @@ def test_overlap_stats_accumulates_across_tiles():
     acc.add(0, 1, 100.0, 50.0, 10)
     assert acc.counts[(0, 1)] == 20
     assert acc.means((0, 1)) == (pytest.approx(10.0), pytest.approx(5.0))
+
+
+def test_merge_overlap_sums_two_tiles():
+    a, b = OverlapStats(), OverlapStats()
+    a.add(0, 1, 100.0, 50.0, 10)
+    b.add(0, 1, 200.0, 80.0, 10)
+    merge_overlap(a, b)
+    assert a.counts[(0, 1)] == 20
+    assert a.means((0, 1)) == (pytest.approx(15.0), pytest.approx(6.5))
 
 
 def test_overlap_stats_ignores_empty():
@@ -73,6 +83,7 @@ def test_solve_gains_stays_near_one():
     acc.add(0, 1, 100.0 * n, 150.0 * n, n)
     g = solve_gains(acc)
     assert 0.8 < np.mean(list(g.values())) < 1.25
+    assert np.median(list(g.values())) == pytest.approx(1.0, abs=0.08)
 
 
 def test_solve_gains_chain_of_three():
@@ -109,6 +120,17 @@ def test_apply_gains_defaults_missing_views_to_one():
     px = np.full((2, 1, 4, 4), 100.0, np.float32)
     out = apply_gains(make_stack(px, np.ones((2, 4, 4))), {0: 2.0})
     assert out.pixels[1].max() == pytest.approx(100.0)
+
+
+def test_apply_gains_per_channel_fixes_color_cast():
+    px = np.full((2, 3, 4, 4), 100.0, np.float32)
+    px[1, 0] = 150.0  # 第二张偏红
+    out = apply_gains(
+        make_stack(px, np.ones((2, 4, 4))),
+        [{0: 1.0, 1: 100 / 150}, {0: 1.0, 1: 1.0}, {0: 1.0, 1: 1.0}],
+    )
+    assert out.pixels[1, 0].max() == pytest.approx(100.0, rel=1e-5)
+    assert out.pixels[1, 1].max() == pytest.approx(100.0)
 
 
 def test_laplacian_pyramid_round_trips():

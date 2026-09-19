@@ -14,6 +14,7 @@ from ms_mosaic.products import (
     band_count,
     band_dtype,
     group_name,
+    match_lowfreq_to_reference,
     pseudocolor_dsm,
     quantize,
     rgb_with_alpha,
@@ -252,6 +253,51 @@ def test_inpaint_nearest_copies_neighbor():
     take[2, 3] = True
     out = inpaint_nearest(data, known, take)
     assert out[0, 2, 3] == 80
+
+
+def test_match_lowfreq_replaces_base_keeps_detail(tmp_path):
+    """大尺度色差跟参考走，高频纹理留下。"""
+    from rasterio.transform import Affine
+
+    gsd = 1.0
+    grid = Grid(Affine(gsd, 0.0, 0.0, 0.0, -gsd, 32.0), 32, 32, CRS)
+    ours = np.full((3, 32, 32), 40.0, np.float32)
+    ours[:, 8:12, 8:12] += 80.0  # 局部纹理
+    ours[:, :, :16] += 30.0  # 左半边整块偏亮（色斑）
+    ref = np.full((3, 32, 32), 80.0, np.float32)
+    path = tmp_path / "ref.tif"
+    with rasterio.open(
+        path, "w", driver="GTiff", width=32, height=32, count=4, dtype="uint8",
+        crs=CRS, transform=grid.transform,
+    ) as ds:
+        rgb = np.clip(ref, 0, 255).astype(np.uint8)
+        ds.write(rgb[0], 1)
+        ds.write(rgb[1], 2)
+        ds.write(rgb[2], 3)
+        ds.write(np.full((32, 32), 255, np.uint8), 4)
+    out = match_lowfreq_to_reference(ours, grid, path, sigma_m=4.0)
+    # 左半边不应再比右半边亮几十档
+    assert abs(float(out[1, 20, 8]) - float(out[1, 20, 24])) < 15
+    # 小块纹理相对邻域仍然在
+    assert float(out[1, 10, 10]) - float(out[1, 4, 4]) > 30
+    # 10 格色带：σ=40 m 当细节留下，默认 σ=2.5 m 进低频被换成参考色
+    big = Grid(Affine(gsd, 0.0, 0.0, 0.0, -gsd, 64.0), 64, 64, CRS)
+    strip = np.full((3, 64, 64), 50.0, np.float32)
+    strip[:, :, 20:30] += 40.0
+    ref2 = np.full((3, 64, 64), 80.0, np.float32)
+    path2 = tmp_path / "ref2.tif"
+    with rasterio.open(
+        path2, "w", driver="GTiff", width=64, height=64, count=4, dtype="uint8",
+        crs=CRS, transform=big.transform,
+    ) as ds:
+        ds.write(np.clip(ref2, 0, 255).astype(np.uint8)[0], 1)
+        ds.write(np.clip(ref2, 0, 255).astype(np.uint8)[1], 2)
+        ds.write(np.clip(ref2, 0, 255).astype(np.uint8)[2], 3)
+        ds.write(np.full((64, 64), 255, np.uint8), 4)
+    out_hi = match_lowfreq_to_reference(strip, big, path2, sigma_m=40.0)
+    out_lo = match_lowfreq_to_reference(strip, big, path2)
+    assert abs(float(out_hi[1, 32, 25]) - float(out_hi[1, 32, 48])) > 15
+    assert abs(float(out_lo[1, 32, 25]) - float(out_lo[1, 32, 48])) < 12
 
 
 def test_write_band_product_uses_reference_alpha_silhouette(tmp_path):

@@ -11,7 +11,14 @@ from pathlib import Path
 
 import numpy as np
 
-from ms_mosaic.blend import multiband_blend
+from ms_mosaic.blend import (
+    OverlapStats,
+    accumulate_overlap,
+    apply_gains,
+    merge_overlap,
+    multiband_blend,
+    solve_gains,
+)
 from ms_mosaic.camera import Camera, Pose
 from ms_mosaic.dsm import resample_height
 from ms_mosaic.grid import Grid, inpaint_nearest
@@ -66,15 +73,29 @@ def _feather_weight(
     return np.clip(dist / float(2 * overlap), 0.0, 1.0).astype(np.float32)
 
 
-def _ortho_fn(ctx: dict, window: tuple[int, int, int, int]):
+def _stack_for_window(ctx: dict, window: tuple[int, int, int, int]):
     z = resample_height(ctx["dsm_z"], ctx["dsm_grid"], ctx["grid"], window)
-    stack = orthorectify_tile(
+    return orthorectify_tile(
         ctx["grid"], window, z, ctx["cameras"], ctx["poses"], ctx["images"], ctx["ortho_cfg"]
     )
+
+
+def _overlap_fn(ctx: dict, window: tuple[int, int, int, int]):
+    """第一遍：只统计重叠亮度，不融合。增益必须等全图汇总后再解。"""
+    stack = _stack_for_window(ctx, window)
+    if stack.pixels.shape[0] == 0:
+        return OverlapStats()
+    acc = OverlapStats()
+    accumulate_overlap(stack, acc, channel=None)
+    return acc
+
+
+def _ortho_fn(ctx: dict, window: tuple[int, int, int, int]):
+    stack = _stack_for_window(ctx, window)
+    gains = ctx.get("gains") or {}
+    if gains:
+        stack = apply_gains(stack, gains)
     labels = optimal_labels(stack, ctx["seam_cfg"])
-    # 增益必须全局解。这里若按块 solve_gains(OverlapStats())，邻块会对同一张
-    # 影像求出不同乘数，384 格对齐的亮度台阶就是这么来的。商业本测区也禁用
-    # 颜色校正，拼接线处只靠多频段融合过渡。
     mosaic = multiband_blend(stack, labels)
     return mosaic, labels, list(stack.views)
 
@@ -91,11 +112,15 @@ def render_band(
     tile: int = ORTHO_TILE,
     overlap: int = ORTHO_OVERLAP,
     workers: int | None = None,
-    gain: bool = False,
+    gain: bool | None = None,
     log=None,
 ) -> tuple[np.ndarray, np.ndarray, list[int]]:
-    """整幅正射（浮点）+ 拼接线标号。标号是块内视角下标，views 是全局影像 id。"""
-    del gain  # 保留参数以免旧调用报错；按块增益已废弃，见 _ortho_fn
+    """整幅正射（浮点）+ 拼接线标号。标号是块内视角下标，views 是全局影像 id。
+
+    RGB 默认先全图统计重叠再解 Brown & Lowe 全局增益（禁止按块），然后融合。
+    多光谱不加增益，与「颜色校正：禁用」一致。
+    """
+    use_gain = (band == RGB_BAND) if gain is None else bool(gain)
     windows = list(grid.tiles(tile, overlap=overlap))
     payload = {
         "grid": grid,
@@ -106,7 +131,31 @@ def render_band(
         "paths": paths,
         "ortho_cfg": OrthoConfig(),
         "seam_cfg": SeamConfig(),
+        "gains": {},
     }
+    if use_gain:
+        acc = OverlapStats()
+        for _, _window, tile_acc in map_tiles(
+            windows,
+            partial(_ortho_setup, payload),
+            _overlap_fn,
+            workers=workers,
+            log=log,
+            label=f"曝光统计 {band}",
+        ):
+            if tile_acc:
+                merge_overlap(acc, tile_acc)
+        payload["gains"] = solve_gains(acc)
+        if log is not None:
+            vals = list(payload["gains"].values())
+            if vals:
+                p = np.percentile(vals, [10, 50, 90])
+                log(
+                    f"全局增益 {len(vals)} 张，"
+                    f"p10/p50/p90={p[0]:.3f}/{p[1]:.3f}/{p[2]:.3f}"
+                )
+            else:
+                log("全局增益：重叠不足，保持 1.0")
     sample_bands = 3 if band == RGB_BAND else 1
     acc = np.zeros((sample_bands, grid.height, grid.width), np.float32)
     wsum = np.zeros(grid.shape, np.float32)
