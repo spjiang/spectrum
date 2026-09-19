@@ -14,6 +14,8 @@ from ms_mosaic.grid import (
     Grid,
     coverage_from_footprints,
     coverage_from_product,
+    estimate_dsm_gsd,
+    estimate_z_margin_m,
     grid_from_footprints,
     smooth_coverage_mask,
 )
@@ -37,8 +39,6 @@ from ms_mosaic.progress import NullReporter, ProgressReporter, global_percent_fo
 from ms_mosaic.runner import run_sparse
 from ms_mosaic.scene import BAND_ORDER, PRIMARY_BAND, transfer_band
 
-# 与商业 DSM.tif / group0.tif 实测值一致（不是四舍五入后的 0.107747293）
-COMMERCIAL_DSM_GSD = 0.10774729333596
 COMMERCIAL_PRODUCTS = "拼图结果"
 
 
@@ -79,12 +79,22 @@ def _assert_out_outside_input(input_dir: Path, out_dir: Path) -> tuple[Path, Pat
 
 
 def commercial_product_dir(input_dir: Path) -> Path | None:
-    """输入 MAX_* 的上一级若有商业「拼图结果」，用作格网与辐射基准。"""
+    """查找输入目录上一级的「拼图结果」。主路径不自动调用，仅供显式对标。"""
     cand = Path(input_dir).expanduser().resolve().parent / COMMERCIAL_PRODUCTS
+    return resolve_benchmark_dir(cand, required=False)
+
+
+def resolve_benchmark_dir(path: Path | str | None, *, required: bool = True) -> Path | None:
+    """验收目录必须同时有 DSM.tif 和 RGB 正射。不传则走通用足迹格网。"""
+    if path is None:
+        return None
+    cand = Path(path).expanduser().resolve()
     dsm = cand / "DSM.tif"
     rgb = cand / "Orthomosaic_pix_surf_group0.tif"
     if dsm.is_file() and rgb.is_file():
         return cand
+    if required:
+        raise ValueError(f"--benchmark-dir 缺少 DSM.tif 或 Orthomosaic_pix_surf_group0.tif：{cand}")
     return None
 
 
@@ -94,17 +104,23 @@ def run_mosaic(
     *,
     max_frames: int | None = None,
     max_index: int | None = None,
-    dsm_gsd: float = COMMERCIAL_DSM_GSD,
+    dsm_gsd: float | None = None,
     workers: int | None = None,
     bands: Sequence[str] | None = None,
     cache_dir: Path | None = None,
     reuse_dsm: Path | None = None,
+    benchmark_dir: Path | None = None,
+    match_reference_color: bool = False,
     reporter: ProgressReporter | None = None,
     control: ControlState | None = None,
     start_stage: str | None = None,
     stop_after_stage: str | None = None,
 ) -> dict[str, Any]:
-    """完整交付：空三 → DSM → 真正射 → 拼接线/融合 → 商业文件名成果 + PDF 报告。"""
+    """完整交付：空三 → DSM → 真正射 → 拼接线/融合 → 正射成果 + PDF 报告。
+
+    默认通用：GSD 由航高/焦距估计，覆盖取相片足迹。只有传入 benchmark_dir
+    才锁参考格网/覆盖并写比对报告；match_reference_color 才做低频套色。
+    """
     t0 = time.time()
     reporter = reporter or NullReporter()
     control = control or ControlState()
@@ -168,20 +184,23 @@ def run_mosaic(
     pts = sparse.points
     ground_z = float(np.median(pts[:, 2])) if len(pts) else block.ground_z
     cams = {i: sparse.camera for i in sparse.poses}
-    ref_dir = None
-    if max_frames is None and max_index is None:
-        ref_dir = commercial_product_dir(input_dir)
+    ref_dir = resolve_benchmark_dir(benchmark_dir, required=benchmark_dir is not None)
+    if match_reference_color and ref_dir is None:
+        raise ValueError("--match-reference-color 需要同时指定 --benchmark-dir")
+    if dsm_gsd is None:
+        dsm_gsd = estimate_dsm_gsd(sparse.camera, sparse.poses, ground_z)
+        log(f"DSM GSD 由航高/焦距估计为 {dsm_gsd:.6f} m（正射为其一半）")
     ortho_grid = None
     if ref_dir is not None:
         grid = Grid.from_raster(ref_dir / "DSM.tif")
         ortho_grid = Grid.from_raster(ref_dir / "Orthomosaic_pix_surf_group0.tif")
-        log(f"格网锁定商业成品 {grid.width}x{grid.height} DSM / {ortho_grid.width}x{ortho_grid.height} 正射")
+        log(f"格网锁定验收参考 {grid.width}x{grid.height} DSM / {ortho_grid.width}x{ortho_grid.height} 正射")
     else:
         grid = grid_from_footprints(cams, sparse.poses, ground_z, dsm_gsd, block.crs)
     lock_coverage = ref_dir is not None
     if lock_coverage:
         coverage = coverage_from_product(ref_dir / "DSM.tif", grid)
-        log(f"覆盖域锁定商业 DSM，有效 {float(coverage.mean()):.3f}")
+        log(f"覆盖域锁定验收参考，有效 {float(coverage.mean()):.3f}")
     else:
         coverage = smooth_coverage_mask(
             coverage_from_footprints(grid, cams, sparse.poses, ground_z), grid.gsd
@@ -227,13 +246,15 @@ def run_mosaic(
         reporter.stage_done("S3_dense", 0.0)
     else:
         reporter.stage_start("S3_dense", "密集匹配")
+        z_margin = estimate_z_margin_m(pts)
+        log(f"高程搜索半宽 {z_margin:.1f} m（由稀疏点起伏估计）")
         field = compute_height_field(
             grid,
             pts,
             {i: sparse.camera for i in sparse.poses},
             sparse.poses,
             sparse.image_paths,
-            cfg=DenseConfig(workers=workers),
+            cfg=DenseConfig(workers=workers, z_margin_m=z_margin),
             log=log,
             workers=workers,
         )
@@ -297,7 +318,7 @@ def run_mosaic(
             workers=workers,
             log=log,
         )
-        if band == RGB_BAND and ref_dir is not None:
+        if band == RGB_BAND and match_reference_color and ref_dir is not None:
             ref_rgb = ref_dir / "Orthomosaic_pix_surf_group0.tif"
             mosaic = scale_mosaic_to_reference(mosaic, ortho_grid, ref_rgb)
             mosaic = match_lowfreq_to_reference(mosaic, ortho_grid, ref_rgb)
@@ -379,7 +400,7 @@ def run_mosaic(
     if ref_dir is not None:
         from ms_mosaic.compare import write_delivery_report
 
-        log("=== 与商业成品逐像元比对 ===")
+        log("=== 与验收参考逐像元比对 ===")
 
         cmp_path = out_dir / "比对报告.txt"
         try:

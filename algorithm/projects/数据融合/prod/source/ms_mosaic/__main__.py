@@ -7,12 +7,17 @@ from ms_mosaic.stage_runner import run_stages
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="MAX 多光谱目录 → 正射大图 + 质量报告")
-    parser.add_argument("--input", required=True, type=Path, help="拍完后的 MAX_* 目录")
+    parser = argparse.ArgumentParser(description="多光谱/RGB 航摄目录 → 正射大图 + 质量报告")
+    parser.add_argument("--input", required=True, type=Path, help="拍完后的任务目录（如 MAX_*）")
     parser.add_argument("--out", required=True, type=Path, help="输出目录")
     parser.add_argument("--max-frames", type=int, default=None, help="只用前 N 个可用曝光，便于调试")
     parser.add_argument("--max-index", type=int, default=None, help="只扫描编号不超过该值的文件")
-    parser.add_argument("--dsm-gsd", type=float, default=None, help="DSM 地面分辨率（米），默认对齐商业 0.1077")
+    parser.add_argument(
+        "--dsm-gsd",
+        type=float,
+        default=None,
+        help="DSM 地面分辨率（米）。默认按中位航高/焦距估计，正射为其一半",
+    )
     parser.add_argument("--workers", type=int, default=None, help="密集匹配/正射进程数，默认 CPU-1")
     parser.add_argument(
         "--cache-dir",
@@ -29,7 +34,18 @@ def main(argv: list[str] | None = None) -> int:
         "--reuse-dsm",
         type=Path,
         default=None,
-        help="跳过密集匹配，复用已有 DSM.tif 并按足迹补北缘缺口",
+        help="跳过密集匹配，复用已有 DSM.tif 并按足迹补覆盖缺口",
+    )
+    parser.add_argument(
+        "--benchmark-dir",
+        type=Path,
+        default=None,
+        help="可选验收目录（含 DSM.tif 与 Orthomosaic_pix_surf_group0.tif）。不传则不锁格网、不写比对报告",
+    )
+    parser.add_argument(
+        "--match-reference-color",
+        action="store_true",
+        help="用验收正射做低频套色。必须同时给 --benchmark-dir，默认关闭",
     )
     parser.add_argument(
         "--run-mode",
@@ -60,6 +76,10 @@ def main(argv: list[str] | None = None) -> int:
     }
     if args.dsm_gsd is not None:
         params["dsm_gsd"] = args.dsm_gsd
+    if args.benchmark_dir is not None:
+        params["benchmark_dir"] = str(args.benchmark_dir)
+    if args.match_reference_color:
+        params["match_reference_color"] = True
     result = run_stages(args.input, args.out, params=params)
     status = result.get("status", "succeeded")
     print(f"status={status}")

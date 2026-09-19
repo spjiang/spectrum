@@ -20,7 +20,14 @@ from ms_mosaic.dense import (
     search_bound_hits,
     sweep_tile,
 )
-from ms_mosaic.grid import Grid, grid_from_footprints, grid_from_points
+from ms_mosaic.grid import (
+    Grid,
+    estimate_dsm_gsd,
+    estimate_native_gsd,
+    estimate_z_margin_m,
+    grid_from_footprints,
+    grid_from_points,
+)
 
 CRS = "EPSG:32647"
 FLIGHT_Z = 1871.5
@@ -50,8 +57,8 @@ def test_grid_from_raster_keeps_commercial_origin(tmp_path):
     assert snapped.transform.c != pytest.approx(origin[0], abs=1e-6)
 
 
-def test_commercial_product_dir_finds_sibling(tmp_path):
-    from ms_mosaic.pipeline import commercial_product_dir
+def test_commercial_product_dir_finds_sibling_but_is_opt_in(tmp_path):
+    from ms_mosaic.pipeline import commercial_product_dir, resolve_benchmark_dir
 
     inp = tmp_path / "MAX_20251017_001"
     inp.mkdir()
@@ -60,6 +67,29 @@ def test_commercial_product_dir_finds_sibling(tmp_path):
     (prod / "DSM.tif").write_bytes(b"x")
     (prod / "Orthomosaic_pix_surf_group0.tif").write_bytes(b"x")
     assert commercial_product_dir(inp) == prod.resolve()
+    assert resolve_benchmark_dir(None) is None
+    with pytest.raises(ValueError, match="benchmark-dir"):
+        resolve_benchmark_dir(tmp_path / "nope")
+
+
+def test_estimate_dsm_gsd_from_height_and_focal():
+    cam = Camera(key="Color", width=2048, height=1536, f=2100.0, cx=1024.0, cy=768.0)
+    poses = {
+        0: Pose.from_ypr(np.array([0.0, 0.0, 1871.5]), 0.0, -90.0, 0.0),
+        1: Pose.from_ypr(np.array([10.0, 0.0, 1871.5]), 0.0, -90.0, 0.0),
+    }
+    ground_z = 1871.5 - 111.8
+    native = estimate_native_gsd(cam, poses, ground_z)
+    assert native == pytest.approx(111.8 / 2100.0, rel=1e-6)
+    assert estimate_dsm_gsd(cam, poses, ground_z) == pytest.approx(2.0 * native, rel=1e-9)
+
+
+def test_estimate_z_margin_scales_with_relief():
+    flat = np.column_stack([np.zeros(40), np.zeros(40), np.full(40, 100.0)])
+    assert estimate_z_margin_m(flat) == 8.0
+    hilly = np.column_stack([np.zeros(80), np.zeros(80), np.linspace(0.0, 160.0, 80)])
+    m = estimate_z_margin_m(hilly)
+    assert 15.0 <= m <= 48.0
 
 
 def test_compare_ortho_same_grid_counts_extra_and_missing(tmp_path):

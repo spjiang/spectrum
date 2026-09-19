@@ -1,7 +1,8 @@
 """地面格网。DSM、正射、拼接线、重叠度视图都在这套格网上对齐。
 
-商业成品的两级分辨率是绑定的：DSM 0.107747293 m，正射 0.053873647 m，正好 1:2。
-LiMapper 报告里也写明「正射分辨率 = DSM 分辨率 ÷ 2」，本模块沿用这个关系。
+GSD 不写死某个测区。正射跟主相机原生像元（航高 / 焦距像素），DSM 为其 2 倍。
+「正射 = DSM/2」是行业常规（Kraus；LiMapper 报告也写这一条），不是本测区常数。
+对标已有成果时用 Grid.from_raster 锁参考 GeoTIFF，由调用方显式传入。
 """
 
 from __future__ import annotations
@@ -93,6 +94,36 @@ class Grid:
                 r1 = min(self.height, row0 + tile + overlap)
                 c1 = min(self.width, col0 + tile + overlap)
                 yield (r0, c0, r1 - r0, c1 - c0)
+
+
+def estimate_native_gsd(camera, poses: dict, ground_z: float) -> float:
+    """主相机一个像元对应的地面尺寸：GSD = H / f_px（Kraus《Photogrammetry》）。"""
+    agls = [float(pose.center[2] - ground_z) for pose in poses.values()]
+    agls = [h for h in agls if h > 1.0]
+    height = float(np.median(agls)) if agls else 100.0
+    focal = max(float(camera.f), 1.0)
+    return height / focal
+
+
+def estimate_dsm_gsd(camera, poses: dict, ground_z: float) -> float:
+    """DSM 取原生 GSD 的 2 倍，正射再 refine 回一半。"""
+    return 2.0 * estimate_native_gsd(camera, poses, ground_z)
+
+
+def estimate_z_margin_m(points: np.ndarray) -> float:
+    """高程搜索半宽跟稀疏点起伏走，不写死 12/24 m。
+
+    先验面平滑后相对树冠/陡坎仍可能偏「起伏的一小截」。取 p90−p10 的 1/4，
+    夹在 8–48 m，兼顾平地与本测区那种百米级起伏。
+    """
+    if points is None or len(points) < 16:
+        return 16.0
+    z = np.asarray(points[:, 2], float)
+    z = z[np.isfinite(z)]
+    if z.size < 16:
+        return 16.0
+    span = float(np.percentile(z, 90) - np.percentile(z, 10))
+    return float(np.clip(max(8.0, 0.25 * span), 8.0, 48.0))
 
 
 def grid_from_points(

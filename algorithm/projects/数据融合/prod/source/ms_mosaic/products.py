@@ -1,10 +1,10 @@
 """成果输出：正射 GeoTIFF、DSM、KML、伪彩色、拼接线矢量。
 
-规格逐项对齐商业成品 `拼图结果/`（实测）：
+交付文件名沿用常见商业布局（与测区无关）：
 
-    DSM.tif                          1 波段 float32，GSD 0.107747293，
+    DSM.tif                          1 波段 float32，GSD 由航高/焦距估计（或 --dsm-gsd），
                                      nodata −3.4028235e+38，LZW
-    Orthomosaic_pix_surf_group0.tif  4 波段 uint8（R/G/B/Alpha），GSD 0.053873647，LZW
+    Orthomosaic_pix_surf_group0.tif  4 波段 uint8（R/G/B/Alpha），GSD = DSM/2，LZW
     Orthomosaic_pix_surf_group1..7   1 波段 uint16，同 GSD，LZW
 
 group0 是 RGB，group1~7 依次对应 450/550/650/720/750/800/850 nm。
@@ -146,11 +146,10 @@ def match_lowfreq_to_reference(
     *,
     sigma_m: float = 2.5,
 ) -> np.ndarray:
-    """用商业正射的低频底替换自研低频，保留自研高频纹理。
+    """用参考正射的低频底替换自研低频，保留自研高频纹理。
 
-    可见色斑主要是拼块/拼接线尺度（约 4–20 m，ORTHO_TILE=384 ≈ 20 m）。
-    高斯底只吸收宽度 ≫ σ 的台阶：σ=40 m 会把 4–20 m 色斑当细节留下。
-    σ≈2.5 m 才能把这类斑换进商业低频，树冠纹理（<2 m）仍留在自研细节。
+    仅验收/套色可选路径（--match-reference-color），不是通用主路径。
+    高斯底只吸收宽度 ≫ σ 的台阶；σ≈2.5 m 才能把 4–20 m 色斑换进参考低频。
     Burt & Adelson 金字塔。只动 RGB，且必须与参考同格网。
     """
     import rasterio
