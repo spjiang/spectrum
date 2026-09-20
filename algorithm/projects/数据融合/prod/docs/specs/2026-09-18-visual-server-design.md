@@ -174,6 +174,8 @@ algorithm/projects/数据融合/prod/
 | `start_stage` | enum | `S0_io` | 从哪一阶段开始（须有检查点或从 S0）。 |
 | `stop_after_stage` | enum\|null | null | `until_stage` 时必填：跑完该阶段后等待人工继续；`full` 时忽略。 |
 | `preset` | enum\|null | null | 快捷预设：`rgb_preview`（仅 Color）等；保存模板时可展开为具体键值。 |
+| `benchmark_dir` | path\|null | null | 调试对照 `拼图结果`：只写比对报告，不改格网/覆盖/颜色。 |
+| `match_reference_color` | bool | false | 调试套色。合格主路径关闭。 |
 
 #### S1_catalog — 扫描与过滤
 
@@ -210,11 +212,10 @@ algorithm/projects/数据融合/prod/
 
 | key | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `dsm_gsd` | float | 0.107747293 | DSM 地面分辨率（米）；默认对齐商业成品。 |
+| `dsm_gsd` | float\|null | null | DSM 地面分辨率（米）。空则按航高/焦距估计，正射为其一半。 |
 | `reuse_dsm` | path\|null | null | 若指定，跳过密集匹配，复用已有 `DSM.tif`（可补覆盖）。 |
-| `lock_commercial_grid` | bool | true | 当输入旁存在商业`拼图结果`时锁定其 DSM/正射格网与覆盖。 |
 | `n_layers` | int | 48 | 沿高程扫描层数；越大越慢越细。 |
-| `z_margin_m` | float | 12.0 | 在稀疏先验面上下搜索半宽（米）。 |
+| `z_margin_m` | float\|null | null | 高程搜索半宽。空则按稀疏点起伏估计。 |
 | `ncc_window` | int | 7 | NCC 窗口（像素）。 |
 | `min_ncc` | float | 0.25 | 接受匹配的最小 NCC。 |
 | `sgm_p1` / `sgm_p2` | float | 0.06 / 0.35 | SGM 平滑惩罚。 |
@@ -425,9 +426,9 @@ Backend 挂载 `DATA_ROOT`：用于存在性校验、日志尾部读取、PDF �
 
 | 期 | 内容 |
 | --- | --- |
-| P0 | compose + PG 迁移 + 参数字典种子 + 用户角色 + profiles CRUD UI |
-| P1 | jobs 入队 + worker + 进度 WS + 执行台进度条 |
-| P2 | pause/resume/cancel + 检查点 + 执行记录溯源 + 报告/日志下载 |
+| P0 | compose + PG 迁移 + 参数字典种子 + 用户角色 + profiles CRUD UI + **仅 RGB 预设** |
+| P1 | jobs 入队 + worker + 进度 WS + 执行台进度条 + **run_mode/起止阶段** |
+| P2 | pause/resume/cancel/**continue** + 检查点 + 执行记录溯源 + 报告/日志下载 + **命令行教学页** |
 | P3 | ETA 历史估计、审计完善、运维脚本与 README 硬化 |
 
 P0–P2 为生产可用最小集；P3 为增强。
@@ -436,11 +437,12 @@ P0–P2 为生产可用最小集；P3 为增强。
 
 ## 14. 成功标准
 
-1. 配置员可按阶段理解并保存模板；每参数有中文详细说明。  
-2. 执行员页面一键跑通；同时仅一任务运行；可取消；可在阶段边界暂停并续跑。  
-3. 任意历史任务可查看当时完整参数快照与目录、下载质量报告、查看日志。  
-4. 无 visual_server 时，原 CLI 拼图命令仍可用。  
-5. `docker compose up` 拉起 PG/RabbitMQ/前后端；worker 用文档中的宿主机命令启动。  
+1. 配置员可按阶段理解并保存模板；每参数有中文详细说明；可一键「仅 RGB」。  
+2. 执行员可 `until_stage` / `step` 阶段性运行；阶段成功后需点「继续」才进入后续；失败不自动往下跑。  
+3. 执行员页面可全流程跑通；同时仅一任务 `running`；可取消/暂停。  
+4. 任意历史任务可查看参数快照与目录、下载质量报告、查看日志。  
+5. 无 visual_server 时 CLI 可用；前端「命令行教学」页与 CLI 文档一致。  
+6. `docker compose up` 拉起 PG/RabbitMQ/前后端；worker 用宿主机命令启动。  
 
 ---
 
