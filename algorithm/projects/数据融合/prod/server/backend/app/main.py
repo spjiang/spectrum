@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.bootstrap import bootstrap, health_payload
 from app.config import get_settings
 from app.db import SessionLocal
-from app.routers import auth, docs, jobs, profiles, rbac, system, tools, users
+from app.routers import auth, docs, jobs, profiles, rbac, system, users
 from app.schemas import HealthOut
 from app.services.progress_ws import start_consumers, websocket_job
 
@@ -52,7 +52,6 @@ app.include_router(docs.router)
 app.include_router(system.router)
 app.include_router(users.router)
 app.include_router(rbac.router)
-app.include_router(tools.router)
 
 
 @app.get("/api/health", response_model=HealthOut)

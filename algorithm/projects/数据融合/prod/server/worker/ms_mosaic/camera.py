@@ -157,6 +157,19 @@ class Camera:
             yn += yd - yp
         return xn, yn
 
+    def format_normalized_radius(self) -> float:
+        """像幅四角的无畸变半径，再留 15% 给桶形畸变。
+
+        Brown–Conrady 只在像幅内单调（Brown, PE&RS 1966）。本测区标定
+        k1/k2/k3 在归一化半径约 1.88 处回折，而像幅四角只有 0.54。回折会把
+        几百米外的地面折回像幅中央，``in_bounds`` 仍判在幅内，真正射就把
+        树冠拉成油彩条。四角半径的 1.15 倍仍远在回折之前，角点本身留得下。
+        """
+        focal = max(abs(float(self.f)), 1e-6)
+        du = max(float(self.cx), float(self.width - 1) - float(self.cx)) / focal
+        dv = max(float(self.cy), float(self.height - 1) - float(self.cy)) / focal
+        return float(np.hypot(du, dv) * 1.15)
+
     def in_bounds(self, u: np.ndarray, v: np.ndarray, *, margin: float = 0.0) -> np.ndarray:
         return (
             (u >= margin)
@@ -200,6 +213,9 @@ def project(camera: Camera, pose: Pose, pts_world: np.ndarray) -> tuple[np.ndarr
     safe_z = np.where(valid, z, 1.0)
     xn = pc[:, 0] / safe_z
     yn = pc[:, 1] / safe_z
+    # 像幅外的射线即使被畸变折回像素坐标，也不是这张相片上的观测
+    limit = camera.format_normalized_radius()
+    valid = valid & ((xn * xn + yn * yn) <= limit * limit)
     u, v = camera.project_normalized(xn, yn)
     return u, v, valid
 

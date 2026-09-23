@@ -103,6 +103,29 @@ def test_projection_inverts_ray_intersection():
     np.testing.assert_allclose(v2, v, atol=1e-5)
 
 
+def test_distortion_fold_outside_format_is_invalid():
+    """像幅外的 Brown 回折不能当成有效像素。
+
+    本测区 k1/k2/k3 在归一化半径约 1.88 处回折。正下视相机正下方的地面
+    应有效；水平距 300 m 的地面会折回像幅中央，必须判无效，否则边缘真正射
+    被拉成油彩。
+    """
+    cam = Camera.initial("Color", 2048, 1536, kind="rgb").with_vector(
+        np.array(
+            [2408.9, 1009.0, 787.87, -0.156122, 0.226884, -0.043664, -2.2e-4, 4.1e-4, -0.31, 0.034]
+        )
+    )
+    center = np.array([674386.0, 2620426.0, 1872.0])
+    pose = Pose.from_ypr(center, 0.0, -90.0, 0.0)
+    # 相机系 (-233, 184, 128)：水平距约 300 m，本测区畸变把它折回像幅中央
+    far = center + np.array([-233.0, -184.0, -128.0])
+    ground = np.array([center + np.array([0.0, 0.0, -129.0]), far])
+    u, v, valid = project(cam, pose, ground)
+    assert valid[0]
+    assert not valid[1]
+    assert cam.in_bounds(np.array([u[1]]), np.array([v[1]]))[0]
+
+
 def test_footprint_size_matches_agl_and_focal():
     cam = Camera.initial("Color", 2048, 1536, kind="rgb")
     agl = 111.8

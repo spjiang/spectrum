@@ -18,8 +18,6 @@ import {
   SafetyOutlined,
   TeamOutlined,
   AppstoreOutlined,
-  FileImageOutlined,
-  ToolOutlined,
 } from "@ant-design/icons";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
@@ -35,8 +33,6 @@ import SettingsPage from "../pages/Settings";
 import UsersPage from "../pages/Users";
 import RolesPage from "../pages/Roles";
 import PermissionsPage from "../pages/Permissions";
-import InspectPage from "../pages/Inspect";
-import ErrorBoundary from "./ErrorBoundary";
 import { PRODUCT, PRODUCT_TITLE } from "../product";
 import {
   canConfigure,
@@ -64,7 +60,6 @@ const TITLE: Record<string, string> = {
   roles: "角色管理",
   permissions: "权限管理",
   cli: "使用文档",
-  inspect: "影像查看",
 };
 
 const MENU_ICON: Record<MenuKey, ReactNode> = {
@@ -78,14 +73,12 @@ const MENU_ICON: Record<MenuKey, ReactNode> = {
   roles: <TeamOutlined />,
   permissions: <SafetyOutlined />,
   cli: <BookOutlined />,
-  inspect: <FileImageOutlined />,
 };
 
 const GROUP_ICON: Record<MenuGroup, ReactNode> = {
   作业管理: <AppstoreOutlined />,
   系统管理: <SettingOutlined />,
   组织管理: <TeamOutlined />,
-  开发工具: <ToolOutlined />,
 };
 
 export default function AppShell() {
@@ -249,7 +242,6 @@ function AppShellBody({
           </div>
         </Header>
         <Content className="mosaic-content">
-          <ErrorBoundary title="页面渲染出错">
           <Routes>
             <Route path="/execute" element={<ExecutePage />} />
             <Route path="/profiles" element={<ProfilesListPage />} />
@@ -320,17 +312,8 @@ function AppShellBody({
                 </Guard>
               }
             />
-            <Route
-              path="/inspect"
-              element={
-                <Guard allow={canMenu("inspect")}>
-                  <InspectPage />
-                </Guard>
-              }
-            />
             <Route path="*" element={<Navigate to={homePath(roles)} replace />} />
           </Routes>
-          </ErrorBoundary>
         </Content>
       </Layout>
       <Modal

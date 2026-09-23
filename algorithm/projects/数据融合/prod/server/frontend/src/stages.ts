@@ -15,13 +15,13 @@ export const STAGE_META: Record<
   StageId,
   { label: string; short: string; hint: string }
 > = {
-  S0_io: { label: "输入输出", short: "IO", hint: "路径、运行模式、验收参考" },
-  S1_catalog: { label: "影像编目", short: "编目", hint: "曝光筛选与 POS 过滤" },
-  S2_at: { label: "空三解算", short: "空三", hint: "特征匹配与姿态平差" },
-  S3_dense: { label: "密集匹配", short: "密集", hint: "多视立体生成高程" },
-  S4_dsm: { label: "DSM 生成", short: "DSM", hint: "尖刺剔除与空洞填充" },
-  S5_ortho: { label: "正射镶嵌", short: "正射", hint: "波段正射与接缝" },
-  S6_report: { label: "质量报告", short: "报告", hint: "PDF / JSON 报告" },
+  S0_io: { label: "输入输出", short: "IO", hint: "白话：核对从哪读、写到哪，建好输出目录，还不改影像" },
+  S1_catalog: { label: "影像编目", short: "编目", hint: "白话：航片点名入册，扔掉白板/贴地/大歪废片" },
+  S2_at: { label: "空三解算", short: "空三", hint: "白话：算出每张照片在天上的位置朝向和稀疏地面点" },
+  S3_dense: { label: "密集匹配", short: "密集", hint: "白话：多张重叠片对立体，给地面网格逐点估高" },
+  S4_dsm: { label: "DSM 生成", short: "DSM", hint: "白话：去尖刺补小洞，写成可交付的 DSM 地形文件" },
+  S5_ortho: { label: "正射镶嵌", short: "正射", hint: "白话：按地形把照片压平到地图上再拼成正射大图" },
+  S6_report: { label: "质量报告", short: "报告", hint: "白话：汇总精度与覆盖，写出 PDF/JSON（可选比对报告）" },
 };
 
 export type StageTone = "wait" | "process" | "finish" | "error" | "pause";

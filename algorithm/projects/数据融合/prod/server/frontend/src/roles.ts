@@ -24,10 +24,9 @@ export type MenuKey =
   | "users"
   | "roles"
   | "permissions"
-  | "cli"
-  | "inspect";
+  | "cli";
 
-export type MenuGroup = "作业管理" | "系统管理" | "组织管理" | "开发工具";
+export type MenuGroup = "作业管理" | "系统管理" | "组织管理";
 
 export type MenuDef = {
   key: MenuKey;
@@ -42,7 +41,6 @@ export const MENU_GROUPS: { id: MenuGroup; siderKey: string }[] = [
   { id: "作业管理", siderKey: "proc" },
   { id: "系统管理", siderKey: "sys" },
   { id: "组织管理", siderKey: "rbac" },
-  { id: "开发工具", siderKey: "tools" },
 ];
 
 export const MENU_CATALOG: MenuDef[] = [
@@ -56,7 +54,6 @@ export const MENU_CATALOG: MenuDef[] = [
   { key: "users", label: "用户管理", path: "/users", group: "组织管理", roles: ["admin"], hint: "维护账号、状态与角色分配" },
   { key: "roles", label: "角色管理", path: "/roles", group: "组织管理", roles: ["admin"], hint: "维护系统角色与授权用户" },
   { key: "permissions", label: "权限管理", path: "/permissions", group: "组织管理", roles: ["admin"], hint: "维护功能权限及授权角色" },
-  { key: "inspect", label: "影像查看", path: "/inspect", group: "开发工具", roles: ["admin", "configurator", "executor", "viewer"], hint: "查看 TIF/JPG 的 XMP、波段与像元值" },
 ];
 
 export function menuVisible(item: MenuDef, roles: string[]): boolean {

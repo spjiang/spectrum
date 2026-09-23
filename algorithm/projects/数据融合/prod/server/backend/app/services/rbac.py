@@ -14,7 +14,6 @@ MENU_KEYS = (
     "health",
     "settings",
     "cli",
-    "inspect",
     "users",
     "roles",
     "permissions",
@@ -23,9 +22,9 @@ ADMIN_LOCK = ("users", "roles", "permissions")
 
 DEFAULT_MENUS: dict[str, list[str]] = {
     "admin": list(MENU_KEYS),
-    "configurator": ["profiles", "jobs", "settings", "inspect"],
-    "executor": ["execute", "profiles", "jobs", "inspect"],
-    "viewer": ["profiles", "jobs", "inspect"],
+    "configurator": ["profiles", "jobs", "settings"],
+    "executor": ["execute", "profiles", "jobs"],
+    "viewer": ["profiles", "jobs"],
 }
 
 
@@ -46,20 +45,11 @@ def load_mapping(db: Session) -> dict[str, list[str]]:
     mapping = default_mapping()
     row = db.get(SystemSetting, RBAC_KEY)
     raw = row.value if row is not None and isinstance(row.value, dict) else {}
-    seen: set[str] = set()
     for role in ROLES:
         saved = raw.get(role)
         if isinstance(saved, list):
-            seen.update(str(x) for x in saved)
             mapping[role] = _clean_menus([str(x) for x in saved])
     mapping["admin"] = list(MENU_KEYS)
-    for role in ROLES:
-        if role == "admin":
-            continue
-        for key in DEFAULT_MENUS[role]:
-            if key not in seen and key not in mapping[role]:
-                mapping[role].append(key)
-        mapping[role] = _clean_menus(mapping[role])
     return mapping
 
 

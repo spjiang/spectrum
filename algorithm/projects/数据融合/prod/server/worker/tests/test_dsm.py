@@ -172,6 +172,11 @@ def test_resample_height_keeps_nodata():
     got = resample_height(z, src, dst)
     assert np.isnan(got[:, :3]).all()
     assert np.isfinite(got[:, 6:]).all()
+    # 贴边权重不满 1 时也不能把高程往 0 拉，否则边缘真正射会起竖条
+    vals = got[:, 3:]
+    vals = vals[np.isfinite(vals)]
+    assert vals.size
+    assert float(np.max(np.abs(vals - 10.0))) < 0.05
 
 
 def _field(grid, z, conf=None):

@@ -9,36 +9,6 @@ export function setToken(t: string | null) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
-function redirectToLogin() {
-  setToken(null);
-  localStorage.removeItem("mosaic_user");
-  localStorage.removeItem("mosaic_roles");
-  if (!window.location.pathname.startsWith("/login")) {
-    window.location.replace("/login");
-  }
-}
-
-function httpErrorMessage(text: string, fallback: string) {
-  let msg = text || fallback;
-  try {
-    const j = JSON.parse(text);
-    if (typeof j.detail === "string") msg = j.detail;
-  } catch {
-    /* keep raw */
-  }
-  return msg;
-}
-
-function rejectUnlessOk(status: number, text: string, fallback: string): never {
-  if (status === 401) {
-    redirectToLogin();
-    const err = new Error("登录已失效，请重新登录");
-    err.name = "AuthExpiredError";
-    throw err;
-  }
-  throw new Error(httpErrorMessage(text, fallback));
-}
-
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers || {});
   const token = getToken();
@@ -48,7 +18,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   const res = await fetch(path, { ...init, headers });
   if (!res.ok) {
-    rejectUnlessOk(res.status, await res.text(), res.statusText);
+    const text = await res.text();
+    let msg = text || res.statusText;
+    try {
+      const j = JSON.parse(text);
+      if (typeof j.detail === "string") msg = j.detail;
+    } catch {
+      /* keep raw */
+    }
+    throw new Error(msg);
   }
   if (res.status === 204) return undefined as T;
   const ct = res.headers.get("content-type") || "";
@@ -62,7 +40,15 @@ async function openAuthedFile(path: string, fallbackName: string) {
   if (token) headers.set("Authorization", `Bearer ${token}`);
   const res = await fetch(path, { headers });
   if (!res.ok) {
-    rejectUnlessOk(res.status, await res.text(), res.statusText);
+    const text = await res.text();
+    let msg = text || res.statusText;
+    try {
+      const j = JSON.parse(text);
+      if (typeof j.detail === "string") msg = j.detail;
+    } catch {
+      /* keep raw */
+    }
+    throw new Error(msg);
   }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -162,104 +148,4 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ roles }),
     }),
-  inspectUpload: (
-    file: File,
-    onProgress?: (pct: number, phase: "upload" | "parse") => void,
-  ) => {
-    const body = new FormData();
-    body.append("file", file);
-    return new Promise<InspectMeta>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/tools/inspect");
-      const token = getToken();
-      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-      xhr.upload.onprogress = (ev) => {
-        if (!ev.lengthComputable) return;
-        onProgress?.(Math.min(99, Math.round((ev.loaded / ev.total) * 100)), "upload");
-      };
-      xhr.onerror = () => reject(new Error("上传失败"));
-      xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"));
-      xhr.onload = () => {
-        onProgress?.(100, "parse");
-        const text = xhr.responseText || "";
-        if (xhr.status < 200 || xhr.status >= 300) {
-          try {
-            rejectUnlessOk(xhr.status, text, xhr.statusText || "解析失败");
-          } catch (e) {
-            reject(e);
-          }
-          return;
-        }
-        try {
-          resolve(JSON.parse(text) as InspectMeta);
-        } catch {
-          reject(new Error("解析响应失败"));
-        }
-      };
-      xhr.send(body);
-    });
-  },
-  inspectPreview: async (id: string) => {
-    const headers = new Headers();
-    const token = getToken();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-    const res = await fetch(`/api/tools/inspect/${id}/preview`, { headers });
-    if (!res.ok) rejectUnlessOk(res.status, await res.text(), res.statusText);
-    return res.blob();
-  },
-  inspectPixel: (id: string, col: number, row: number, signal?: AbortSignal) =>
-    request<InspectPixel>(`/api/tools/inspect/${id}/pixel?col=${col}&row=${row}`, { signal }),
-};
-
-export type InspectBand = {
-  index: number;
-  name: string;
-  wavelength_nm: number | null;
-  fwhm_nm: number | null;
-  dtype: string;
-  valid: number;
-  min: number | null;
-  max: number | null;
-  mean: number | null;
-  std: number | null;
-  p2: number | null;
-  p50: number | null;
-  p98: number | null;
-};
-
-export type InspectMeta = {
-  id: string;
-  filename: string;
-  format: string;
-  size_bytes: number;
-  width: number;
-  height: number;
-  count: number;
-  dtype: string;
-  nodata: number | null;
-  bands: InspectBand[];
-  xmp: { raw: string; tags: { ns: string; name: string; value: string }[] };
-  exif: Record<string, unknown>;
-  tiff: {
-    pages?: number;
-    compression?: string | null;
-    photometric?: string | null;
-    tiled?: boolean;
-    tags?: { id: number; name: string; value: unknown }[];
-    geotiff?: Record<string, unknown> | null;
-  } | null;
-  geotransform: { origin_x: number; origin_y: number; pixel_w: number; pixel_h: number } | null;
-  preview: { width: number; height: number; scale: number };
-  stats_sampled?: boolean;
-};
-
-export type InspectPixel = {
-  col: number;
-  row: number;
-  values: Array<number | string | null>;
-  bands?: Array<{ name: string; value: number | string | null; wavelength_nm: number | null }>;
-  rgb: number[] | null;
-  hex: string | null;
-  x: number | null;
-  y: number | null;
 };

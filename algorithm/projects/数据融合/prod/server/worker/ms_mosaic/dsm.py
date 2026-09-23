@@ -590,7 +590,10 @@ def resample_height(
     proxy = np.where(np.isfinite(z), z, 0.0).astype(np.float64)
     sampled = map_coordinates(proxy, [rows, cols], order=1, mode="nearest", prefilter=False)
     weight = map_coordinates(valid, [rows, cols], order=1, mode="nearest", prefilter=False)
-    out = np.where(weight > 0.5, sampled, np.nan)
+    # 空洞填了 0，必须除掉权重。否则贴着 nodata、权重刚过 0.5 的格子
+    # 高程会被拉向 0（本测区北缘从 1790 m 掉到 899 m），真正射就拉出竖条。
+    corrected = sampled / np.maximum(weight, 1e-6)
+    out = np.where(weight > 0.5, corrected, np.nan)
     return out.astype(np.float32)
 
 
