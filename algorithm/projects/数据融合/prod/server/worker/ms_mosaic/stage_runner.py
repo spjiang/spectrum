@@ -164,6 +164,14 @@ def _run_stages_body(
             write_json_report=_as_bool(params.get("write_json_report"), True),
             products_dir_name=params.get("products_dir_name") or None,
             process_dir=_as_path(params.get("process_dir")),
+            grid_reference=_as_path(params.get("grid_reference")),
+            terrain_margin_lo_m=_as_float(params.get("terrain_margin_lo_m")),
+            terrain_margin_hi_m=_as_float(params.get("terrain_margin_hi_m")),
+            terrain_min_half_span_m=_as_float(params.get("terrain_min_half_span_m")),
+            radiometric_normalize=_as_bool(params.get("radiometric_normalize"), False),
+            edge_trim_m=_as_float(params.get("edge_trim_m")),
+            flatten_edge_win_m=_as_float(params.get("flatten_edge_win_m")),
+            flatten_edge_band_m=_as_float(params.get("flatten_edge_band_m")),
         )
     except Exception as exc:  # noqa: BLE001
         reporter.event("failed", error=str(exc))

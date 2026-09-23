@@ -14,8 +14,11 @@ from ms_mosaic.dense import HeightField
 from ms_mosaic.dsm import (
     NODATA,
     build_dsm,
+    clip_z_to_plausible,
+    complete_dsm_coverage,
     fill_holes,
     median_smooth,
+    plausible_z_limits,
     remove_spikes,
     resample_height,
     to_dtm,
@@ -177,11 +180,91 @@ def _field(grid, z, conf=None):
                        np.full(grid.shape, 4, np.uint8))
 
 
+def test_remove_spikes_keeps_clustered_pit_interior():
+    """成片低坑的局部中值也是错的，邻域去尖放不过 —— 这是旧 DSM 发白的根因。"""
+    z = np.full((80, 80), 1760.0)
+    z[8:40, 8:40] = 700.0
+    out = remove_spikes(z)
+    assert np.isfinite(out[20, 20])
+    assert out[20, 20] == pytest.approx(700.0)
+
+
+def test_clip_z_kills_clustered_pits():
+    z = np.full((80, 80), 1760.0)
+    z[8:40, 8:40] = 700.0
+    out = clip_z_to_plausible(z)
+    assert np.isnan(out[20, 20])
+    assert np.isfinite(out[60, 60])
+    assert out[60, 60] == pytest.approx(1760.0)
+
+
+def test_clip_z_respects_margin_params():
+    """余量必须可配：窄余量会裁掉 12 m 凸起，宽余量（本测区 50 m）保留。"""
+    z = np.full((20, 20), 1760.0)
+    z[5, 5] = 1772.0
+    ref = np.full(200, 1760.0)
+    wide = clip_z_to_plausible(z, ref_z=ref, margin_lo_m=30.0, margin_hi_m=50.0)
+    assert np.isfinite(wide[5, 5])
+    tight = clip_z_to_plausible(z, ref_z=ref, margin_lo_m=5.0, margin_hi_m=5.0)
+    assert np.isnan(tight[5, 5])
+
+
+def test_clip_z_keeps_commercial_relief():
+    rng = np.random.default_rng(0)
+    z = np.clip(1721.0 + rng.normal(0, 42, (120, 120)), 1635.5, 1830.2)
+    out = clip_z_to_plausible(z)
+    assert np.isfinite(out).mean() > 0.99
+    assert float(np.nanmin(out)) >= 1630.0
+    assert float(np.nanmax(out)) <= 1840.0
+
+
+def test_plausible_limits_ignore_sparse_flyers():
+    ref = np.concatenate([np.full(2000, 1708.0), np.array([-101402.0, 1872.0])])
+    rng = np.random.default_rng(2)
+    ref[:2000] += rng.normal(0, 25, 2000)
+    lo, hi = plausible_z_limits(ref)
+    assert 1600.0 < lo < 1680.0
+    assert 1780.0 < hi < 1900.0
+
+
+def test_clip_z_sparse_envelope_drops_inband_pit():
+    rng = np.random.default_rng(1)
+    z = 1720.0 + rng.normal(0, 40, (120, 120))
+    z[10:40, 10:40] = 1600.0
+    sparse = np.clip(1720.0 + rng.normal(0, 25, 8000), 1656.0, 1798.0)
+    out = clip_z_to_plausible(z, ref_z=sparse)
+    assert np.isnan(out[20, 20])
+    assert np.isfinite(out[80, 80])
+
+
+def test_build_dsm_drops_range_outliers_and_fills_from_terrain():
+    grid = _grid(60, gsd=1.0)
+    z = np.full(grid.shape, 1760.0, np.float32)
+    z[18:38, 18:38] = 700.0
+    dsm = build_dsm(_field(grid, z), fill=True, ref_z=np.full(200, 1760.0))
+    assert dsm.stats["dropped_range"] >= 100
+    assert np.isfinite(dsm.z[28, 28])
+    assert abs(float(dsm.z[28, 28]) - 1760.0) < 5.0
+
+
+def test_complete_dsm_coverage_clips_pits_before_fill():
+    grid = _grid(80, gsd=1.0)
+    z = np.full(grid.shape, np.nan)
+    z[20:70, 15:65] = 1760.0
+    z[25:45, 20:40] = 700.0
+    coverage = np.zeros(grid.shape, bool)
+    coverage[20:70, 15:65] = True
+    out = complete_dsm_coverage(z, grid, coverage, ref_z=np.full(200, 1760.0))
+    assert np.isnan(out[0, 0])
+    assert np.isfinite(out[30, 30])
+    assert abs(float(out[30, 30]) - 1760.0) < 5.0
+
+
 def test_build_dsm_drops_low_confidence_and_spikes():
     grid = _grid(40)
     z = np.full(grid.shape, 1760.0, np.float32)
     conf = np.full(grid.shape, 0.5, np.float32)
-    z[5, 5] = 1900.0          # 粗差
+    z[5, 5] = 1785.0          # 局部粗差，仍在地形带内，交给去尖
     conf[20, 20] = 0.001      # 低置信
     dsm = build_dsm(_field(grid, z, conf), fill=False)
     assert np.isnan(dsm.z[5, 5])
@@ -304,6 +387,42 @@ def _write(tmp_path, name, z, grid):
     return write_geotiff(build_dsm(_field(grid, z.astype(np.float32)), fill=False), tmp_path / name)
 
 
+def test_flatten_edge_z_only_changes_border_band():
+    """贴边低通只改距 nodata 80 m 内的格子，内部真正射高程保持不动。"""
+    from ms_mosaic.dsm import flatten_edge_z
+
+    z = np.full((200, 200), 1760.0)
+    # 短波长起皱：真正射边缘油彩的来源。20 m 块平均必须把它压掉。
+    z += 8.0 * np.sin(np.linspace(0, 80, 200))[None, :]
+    z[:, :10] = np.nan
+    out = flatten_edge_z(z, gsd=1.0, win_m=20.0, band_m=40.0)
+    assert np.allclose(out[20:180, 80:180], z[20:180, 80:180], equal_nan=True)
+    edge = np.isfinite(out) & (np.arange(200)[None, :] < 45)
+    assert np.nanstd(out[edge]) < 0.35 * np.nanstd(z[np.isfinite(z) & (np.arange(200)[None, :] < 45)])
+
+
+def test_large_gap_fill_follows_slope_instead_of_plateau():
+    """超过 Laplace 上限的大缺口必须在粗格网上解调和面，不能被最近邻铺成平台。
+
+    最近邻把整片缺口铺成最近有效格的常值。实测交付 DSM 里这类平台占 11.1%，
+    高程偏差 −36.1 m、中误差 40.8 m，而真匹配格网只有 −1.3 m / 10.5 m。
+    """
+    from scipy.ndimage import maximum_filter, minimum_filter
+
+    n = 400
+    ramp = 1700.0 + 0.05 * np.arange(n)[None, :] * np.ones((n, 1))
+    z = ramp.copy()
+    z[:, 120:330] = np.nan  # 84000 格，远超下面给的 Laplace 上限
+    domain = np.ones_like(z, bool)
+    out = fill_holes(z, max_component_cells=4000, domain=domain)
+
+    assert np.isfinite(out).all()
+    filled = out[:, 150:300]
+    flat = maximum_filter(out, 3) == minimum_filter(out, 3)
+    assert flat[:, 150:300].mean() < 0.05, "缺口被铺成了常值平台"
+    assert np.abs(filled - ramp[:, 150:300]).max() < 1.0, "填出的面没跟着坡度走"
+
+
 def test_compare_dsm_identical_rasters_pass(tmp_path):
     grid = _grid(60, gsd=0.2)
     xs = np.arange(grid.width)[None, :] * np.ones((grid.height, 1))
@@ -334,13 +453,25 @@ def test_compare_dsm_detects_vertical_bias(tmp_path):
 
 
 def test_compare_dsm_detects_uncorrelated_surface(tmp_path):
+    """两套面形无关时相关系数必须掉下来。
+
+    「我们的」面必须是空间相关的随机地形而不是白噪声：白噪声逐格偏离局部中值
+    好几米，会被 remove_spikes 当粗差正确剔掉 99%，重叠格网不足就根本算不出
+    相关系数 —— 那是合成输入不像地形，不是比对逻辑的问题。
+    """
+    from scipy.ndimage import gaussian_filter
+
     grid = _grid(60, gsd=0.2)
     rng = np.random.default_rng(0)
     xs = np.arange(grid.width)[None, :] * np.ones((grid.height, 1))
-    a = _write(tmp_path, "ours.tif", 1760.0 + rng.normal(0, 5, grid.shape), grid)
+    # 幅度与相关长度要让局部高差远小于去尖容差（2 m），否则真地形也会被剔掉
+    rough = gaussian_filter(rng.normal(0, 1, grid.shape), 10.0)
+    rough *= 1.5 / rough.std()
+    a = _write(tmp_path, "ours.tif", 1760.0 + rough, grid)
     b = _write(tmp_path, "theirs.tif", 1760.0 + 0.3 * xs, grid)
     rep = compare_dsm(a, b)
     by_name = {i.name: i for i in rep.items}
+    assert by_name["DSM 重叠区覆盖率"].ours > 0.9, rep.to_text()
     assert abs(by_name["DSM 相关系数"].ours) < 0.5
     assert not rep.ok
 

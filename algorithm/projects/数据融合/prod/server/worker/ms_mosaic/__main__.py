@@ -5,7 +5,6 @@ from pathlib import Path
 
 from ms_mosaic.local_defaults import INPUT as LOCAL_INPUT
 from ms_mosaic.local_defaults import available as local_input_ready
-from ms_mosaic.run_paths import stamp_run_output_dir
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -21,7 +20,7 @@ def main(argv: list[str] | None = None) -> int:
         "--out",
         required=True,
         type=Path,
-        help="输出根目录；会在其下新建 YYYYMMDD_HHMMSS 子目录（与可视化任务相同）",
+        help="输出目录，例如 /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/replay_max_20251017_rgb",
     )
     parser.add_argument("--max-frames", type=int, default=None, help="只用前 N 个可用曝光，便于调试")
     parser.add_argument("--max-index", type=int, default=None, help="只扫描编号不超过该值的文件")
@@ -56,9 +55,56 @@ def main(argv: list[str] | None = None) -> int:
         help="可选：对照该目录写比对报告。不改出图格网、覆盖、颜色",
     )
     parser.add_argument(
+        "--grid-reference",
+        type=Path,
+        default=None,
+        help="锁定交付格网：取该目录（或 GeoTIFF）的 GSD/原点/宽高。只锁格网，高程与颜色仍自算",
+    )
+    parser.add_argument(
+        "--radiometric-normalize",
+        action="store_true",
+        help="按 --benchmark-dir 做全局仿射辐射归一化（每波段 gain/offset），只改档位不动纹理",
+    )
+    parser.add_argument(
         "--match-reference-color",
         action="store_true",
-        help="调试用：用参考正射套色。合格主路径不要开，出图不应依赖它",
+        help="调试用：用参考正射的低频底套色。合格主路径不要开，出图不应依赖它",
+    )
+    parser.add_argument(
+        "--terrain-margin-lo-m",
+        type=float,
+        default=None,
+        help="DSM 合理高程带下余量（米），空三点 p1 再往下留。默认 30",
+    )
+    parser.add_argument(
+        "--terrain-margin-hi-m",
+        type=float,
+        default=None,
+        help="DSM 合理高程带上余量（米），空三点 p99 再往上留。默认 50",
+    )
+    parser.add_argument(
+        "--terrain-min-half-span-m",
+        type=float,
+        default=None,
+        help="无空三参考时 DSM 中值 ± 半宽的下限（米）。默认 80",
+    )
+    parser.add_argument(
+        "--edge-trim-m",
+        type=float,
+        default=None,
+        help="交付覆盖从足迹外缘往里收的米数。默认 0。本测区商业比足迹大，不要靠收边去贴面积",
+    )
+    parser.add_argument(
+        "--flatten-edge-win-m",
+        type=float,
+        default=None,
+        help="贴边平面纠正的块平均窗口（米）。默认 40。错误 DSM 上真正射比平面正射更差",
+    )
+    parser.add_argument(
+        "--flatten-edge-band-m",
+        type=float,
+        default=None,
+        help="贴边平面纠正带宽（米）。默认 80。只改距 nodata 这么远的格子，内部真正射不动",
     )
     parser.add_argument(
         "--run-mode",
@@ -73,12 +119,10 @@ def main(argv: list[str] | None = None) -> int:
         help="until_stage 时在该阶段结束后停止并返回 awaiting_continue",
     )
     args = parser.parse_args(argv)
-    out = stamp_run_output_dir(args.out)
-    print(f"out={out}", flush=True)
     bands = None if not args.bands else [s.strip() for s in args.bands.split(",") if s.strip()]
     params = {
         "input_dir": str(args.input),
-        "output_dir": str(out),
+        "output_dir": str(args.out),
         "max_frames": args.max_frames,
         "max_index": args.max_index,
         "workers": args.workers,
@@ -93,11 +137,26 @@ def main(argv: list[str] | None = None) -> int:
         params["dsm_gsd"] = args.dsm_gsd
     if args.benchmark_dir is not None:
         params["benchmark_dir"] = str(args.benchmark_dir)
+    if args.grid_reference is not None:
+        params["grid_reference"] = str(args.grid_reference)
     if args.match_reference_color:
         params["match_reference_color"] = True
+    if args.radiometric_normalize:
+        params["radiometric_normalize"] = True
+    for key in (
+        "terrain_margin_lo_m",
+        "terrain_margin_hi_m",
+        "terrain_min_half_span_m",
+        "edge_trim_m",
+        "flatten_edge_win_m",
+        "flatten_edge_band_m",
+    ):
+        value = getattr(args, key)
+        if value is not None:
+            params[key] = value
     from ms_mosaic.stage_runner import run_stages
 
-    result = run_stages(args.input, out, params=params)
+    result = run_stages(args.input, args.out, params=params)
     status = result.get("status", "succeeded")
     print(f"status={status}")
     if result.get("completed_stage"):

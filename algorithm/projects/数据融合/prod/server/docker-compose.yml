@@ -51,6 +51,7 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./backend/app:/app/app
+      - ./db/migrations:/db/migrations:ro
       - ./data:/data
       - ${DATASET_MAX_20251017:-./data/input/MAX_20251017/MAX_20251017_001}:/data/input/MAX_20251017/MAX_20251017_001:ro
       - ./worker/docs:/cli_docs:ro

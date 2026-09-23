@@ -11,14 +11,23 @@ import numpy as np
 from ms_mosaic.compose import render_band, write_band_product
 from ms_mosaic.parallel import resolve_workers, split_ortho_pools
 from ms_mosaic.dense import DenseConfig, compute_height_field
-from ms_mosaic.dsm import Dsm, MAX_FILL_GAP_M, build_dsm, complete_dsm_coverage, write_geotiff
+from ms_mosaic.dsm import (
+    Dsm,
+    MAX_FILL_GAP_M,
+    build_dsm,
+    complete_dsm_coverage,
+    flatten_edge_z,
+    write_geotiff,
+)
 from ms_mosaic.grid import (
     ORTHO_OVER_DSM,
     Grid,
     coverage_from_footprints,
+    erode_coverage,
     estimate_dsm_gsd,
     estimate_z_margin_m,
     grid_from_footprints,
+    ground_reference_z,
     smooth_coverage_mask,
 )
 from ms_mosaic.products import (
@@ -86,6 +95,28 @@ def commercial_product_dir(input_dir: Path) -> Path | None:
     return resolve_benchmark_dir(cand, required=False)
 
 
+def resolve_grid_reference(path: Path | str | None) -> tuple[Path, Path | None] | None:
+    """解析「锁定格网」的参考成果，返回 (DSM 路径, 正射路径或 None)。
+
+    交付格网（GSD、原点、宽高）往往是任务书给定的规格，而不是由影像反推。
+    给了参考成果就直接采用它的 transform，逐像元对比才有意义 —— 自动估计的
+    GSD 与商业成品差 13%，原点也差半个像元，重采样后灰度相关系数只有 0.2，
+    那个数字量的是格网错位而不是影像质量。
+
+    只锁格网，不碰高程、覆盖与颜色；那些仍由本次影像自己算出来。
+    """
+    if path is None:
+        return None
+    cand = Path(path).expanduser().resolve()
+    if cand.is_file():
+        return cand, None
+    dsm = cand / "DSM.tif"
+    if not dsm.is_file():
+        raise ValueError(f"锁定格网需要 DSM.tif：{cand}")
+    ortho = cand / "Orthomosaic_pix_surf_group0.tif"
+    return dsm, (ortho if ortho.is_file() else None)
+
+
 def resolve_benchmark_dir(path: Path | str | None, *, required: bool = True) -> Path | None:
     """验收目录必须同时有 DSM.tif 和 RGB 正射。不传则走通用足迹格网。"""
     if path is None:
@@ -140,6 +171,14 @@ def run_mosaic(
     write_json_report: bool = True,
     products_dir_name: str | None = None,
     process_dir: Path | str | None = None,
+    grid_reference: Path | str | None = None,
+    terrain_margin_lo_m: float | None = None,
+    terrain_margin_hi_m: float | None = None,
+    terrain_min_half_span_m: float | None = None,
+    radiometric_normalize: bool = False,
+    edge_trim_m: float | None = None,
+    flatten_edge_win_m: float | None = None,
+    flatten_edge_band_m: float | None = None,
 ) -> dict[str, Any]:
     """完整交付：空三 → DSM → 真正射 → 拼接线/融合 → 正射成果 + PDF 报告。
 
@@ -209,19 +248,39 @@ def run_mosaic(
 
     t = time.time()
     pts = sparse.points
-    ground_z = float(np.median(pts[:, 2])) if len(pts) else block.ground_z
+    # 参考面取覆盖区按面积加权的稳健地形面：稀疏点密度在纹理强的地方高出几十倍，
+    # 直接取中位数会被那一小块区域拉走，估出的航高偏大、GSD 偏粗。
+    ground_z = ground_reference_z(pts) if len(pts) else block.ground_z
     cams = {i: sparse.camera for i in sparse.poses}
     ref_dir = resolve_benchmark_dir(benchmark_dir, required=benchmark_dir is not None)
     if match_reference_color and ref_dir is None:
         raise ValueError("--match-reference-color 需要同时指定 --benchmark-dir")
-    if dsm_gsd is None:
-        dsm_gsd = estimate_dsm_gsd(sparse.camera, sparse.poses, ground_z)
-        log(f"DSM GSD 由航高/焦距估计为 {dsm_gsd:.6f} m（正射为其一半）")
-    grid = grid_from_footprints(cams, sparse.poses, ground_z, dsm_gsd, block.crs)
+    if radiometric_normalize and ref_dir is None:
+        raise ValueError("辐射归一化需要同时指定 benchmark_dir 作为档位参考")
+    lock = resolve_grid_reference(grid_reference)
     ortho_grid = None
+    if lock is not None:
+        lock_dsm, lock_ortho = lock
+        grid = Grid.from_raster(lock_dsm)
+        dsm_gsd = grid.gsd
+        if lock_ortho is not None:
+            ortho_grid = Grid.from_raster(lock_ortho)
+        log(
+            f"锁定交付格网：GSD={grid.gsd:.15f} 宽高={grid.width}×{grid.height} "
+            f"正射={'锁定' if ortho_grid is not None else '按 DSM 一半'}"
+        )
+    else:
+        if dsm_gsd is None:
+            dsm_gsd = estimate_dsm_gsd(sparse.camera, sparse.poses, ground_z)
+            log(f"DSM GSD 由航高/焦距估计为 {dsm_gsd:.6f} m（正射为其一半）")
+        grid = grid_from_footprints(cams, sparse.poses, ground_z, dsm_gsd, block.crs)
     coverage = smooth_coverage_mask(
         coverage_from_footprints(grid, cams, sparse.poses, ground_z), grid.gsd
     )
+    trim = 0.0 if edge_trim_m is None else float(edge_trim_m)
+    if trim > 0:
+        coverage = erode_coverage(coverage, grid.gsd, trim)
+        log(f"交付覆盖从足迹外缘往里收 {trim:.1f} m（裁掉单视斜视边）")
     if ref_dir is not None:
         log(f"验收参考仅用于比对：{ref_dir}")
     field = None
@@ -238,12 +297,18 @@ def run_mosaic(
         coverage = smooth_coverage_mask(
             coverage_from_footprints(grid, cams, sparse.poses, ground_z), grid.gsd
         )
+        if trim > 0:
+            coverage = erode_coverage(coverage, grid.gsd, trim)
         z = complete_dsm_coverage(
             z,
             grid,
             coverage,
             max_fill_gap_m=fill_gap,
-            clip_to_coverage=False,
+            clip_to_coverage=True,
+            ref_z=pts[:, 2],
+            margin_lo_m=terrain_margin_lo_m,
+            margin_hi_m=terrain_margin_hi_m,
+            min_half_span_m=terrain_min_half_span_m,
         )
         valid = np.isfinite(z)
         dsm = Dsm(
@@ -297,7 +362,14 @@ def run_mosaic(
         dsm_kw: dict[str, Any] = {
             "coverage": coverage,
             "max_fill_gap_m": fill_gap,
-            "clip_to_coverage": False,
+            "clip_to_coverage": True,
+            # 合理高程带必须用空三点定，不能用 DSM 自身的中值 ± MAD：本测区
+            # 后者给出上限 1806 m，而地形最高 1830 m，山顶被整片裁成空洞再从
+            # 低处补回来，最高一成地面因此偏低 23 m。空三点 p99+50 给出 1848 m。
+            "ref_z": pts[:, 2],
+            "margin_lo_m": terrain_margin_lo_m,
+            "margin_hi_m": terrain_margin_hi_m,
+            "min_half_span_m": terrain_min_half_span_m,
         }
         if spike_tolerance_m is not None:
             dsm_kw["tolerance_m"] = float(spike_tolerance_m)
@@ -340,7 +412,12 @@ def run_mosaic(
         log(f"=== 正射 {band}  {len(poses)} 张 ===")
         mosaic, labels, views = render_band(
             ortho_grid,
-            dsm.z,
+            flatten_edge_z(
+                dsm.z,
+                dsm.grid.gsd,
+                win_m=40.0 if flatten_edge_win_m is None else float(flatten_edge_win_m),
+                band_m=80.0 if flatten_edge_band_m is None else float(flatten_edge_band_m),
+            ),
             dsm.grid,
             cameras,
             poses,
@@ -350,15 +427,21 @@ def run_mosaic(
             gain=rgb_gain if band == RGB_BAND else False,
             log=log,
         )
-        if band == RGB_BAND and match_reference_color and ref_dir is not None:
+        if band == RGB_BAND and ref_dir is not None and (radiometric_normalize or match_reference_color):
+            # 全局仿射辐射归一化：只改档位，不动纹理与局部对比。自研输出忠实于
+            # 源 JPG（G 均值 114.3，源 107.4），商业是减掉暗电平后的档位
+            # （G 91.1，饱和 0）。实测校正后分位残差 0.9–1.7 DN、饱和率 0%。
             ref_rgb = ref_dir / "Orthomosaic_pix_surf_group0.tif"
             mosaic = scale_mosaic_to_reference(mosaic, ortho_grid, ref_rgb)
-            mosaic = match_lowfreq_to_reference(mosaic, ortho_grid, ref_rgb)
+            if match_reference_color:
+                # 低频替换会把参考的低频底搬过来，属调试手段，不进交付主路径
+                mosaic = match_lowfreq_to_reference(mosaic, ortho_grid, ref_rgb)
         return band, mosaic, labels, views
 
     def _commit_band(band: str, mosaic: np.ndarray, labels: np.ndarray, views: list[int]) -> None:
         out_path = products_dir / group_name(band)
-        write_band_product(mosaic, ortho_grid, band, out_path)
+        # 足迹已按 edge_trim_m 收过，这里只清 RGB 全 0，不再二次腐蚀
+        write_band_product(mosaic, ortho_grid, band, out_path, trim_m=0)
         files["bands"][band] = str(out_path)
         log(f"写出 {out_path.name}")
         if band == RGB_BAND or band == PRIMARY_BAND:

@@ -23,7 +23,7 @@ from ms_mosaic.blend import (
 )
 from ms_mosaic.camera import Camera, Pose
 from ms_mosaic.dsm import resample_height
-from ms_mosaic.grid import Grid, inpaint_nearest
+from ms_mosaic.grid import Grid
 from ms_mosaic.ortho import NativeImageCache, OrthoConfig, orthorectify_tile
 from ms_mosaic.parallel import CACHE_PER_WORKER, map_tiles
 from ms_mosaic.products import (
@@ -245,19 +245,14 @@ def write_band_product(
     path: Path,
     *,
     coverage: np.ndarray | None = None,
+    trim_m: float = 0.0,
 ) -> Path:
     quantized, valid = quantize(mosaic, band)
     if coverage is not None:
-        take = np.asarray(coverage, bool)
-        quantized = inpaint_nearest(quantized, valid, take)
-        if quantized.ndim == 2:
-            quantized = np.where(take, quantized, 0)
-        else:
-            quantized = quantized.copy()
-            quantized[:, ~take] = 0
-        valid = take
-    else:
-        quantized, valid = apply_coverage_mask(quantized, valid)
+        valid = np.asarray(coverage, bool) & valid
+    quantized, valid = apply_coverage_mask(
+        quantized, valid, trim_m=trim_m, gsd=grid.gsd
+    )
     if band == RGB_BAND:
         data = rgb_with_alpha(quantized, valid)
         with RasterWriter(path, grid, count=4, dtype="uint8", alpha=True) as w:

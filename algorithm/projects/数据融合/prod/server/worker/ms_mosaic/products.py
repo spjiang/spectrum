@@ -21,7 +21,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ms_mosaic.grid import Grid, inpaint_nearest, refine_coverage_mask
+from ms_mosaic.grid import Grid, erode_coverage, inpaint_nearest, refine_coverage_mask
 
 # 波段顺序即商业成品的 group 编号顺序
 MS_BANDS = ("450nm", "550nm", "650nm", "720nm", "750nm", "800nm", "850nm")
@@ -194,11 +194,46 @@ def match_lowfreq_to_reference(
     return out.astype(np.float32)
 
 
-def scale_mosaic_to_reference(mosaic: np.ndarray, grid: Grid, ref_path: Path) -> np.ndarray:
-    """用重叠区中位数把 RGB 亮度拉到与商业正射同一档。
+def reference_tone_transfer(
+    mosaic: np.ndarray, valid: np.ndarray, ref: np.ndarray, *, n_bands: int = 3
+) -> list[tuple[float, float]]:
+    """按分位数匹配拟合每个波段的 (gain, offset)，使 gain·x + offset ≈ 参考。
 
-    源 JPG 与自研融合结果的 G 均值约 61，商业 GeoTIFF 约 92（约 1.5 倍）。
-    这是输出编码档位差，不是局部斑块。只乘一个全局系数，不改相对对比。
+    只按中位数比值乘一个增益是不够的。实测本测区商业正射相对自研的映射是
+    斜率近 1、带负截距的仿射：
+
+        R 0.9415x − 13.68    G 0.9610x − 18.44    B 0.9656x − 18.17
+
+    p15 到 p95 的局部斜率都在 0.94–1.09，说明既不是伽马也不是压高光，而是
+    减掉一个常数暗电平再微调增益。用分位数残差衡量三种模型：纯增益 7.2–8.1 DN、
+    伽马 4.1–7.1 DN、仿射 1.0–2.9 DN —— 仿射明显最贴。
+
+    分位数匹配（而不是逐像元最小二乘）是相对辐射归一化的常规做法：两幅图的
+    几何配准总有残差，逐像元回归会被错配像元带偏，而分位数只用到各自的分布
+    （Hall et al., Remote Sensing of Environment 1991 相对辐射校正）。
+    """
+    qs = np.arange(1, 100, dtype=np.float64)
+    out: list[tuple[float, float]] = []
+    for b in range(min(int(n_bands), mosaic.shape[0], ref.shape[0])):
+        x = np.asarray(mosaic[b][valid], np.float64)
+        y = np.asarray(ref[b][valid], np.float64)
+        x = x[np.isfinite(x)]
+        if x.size < 1000 or y.size < 1000:
+            out.append((1.0, 0.0))
+            continue
+        qx = np.percentile(x, qs)
+        qy = np.percentile(y, qs)
+        a = np.vstack([qx, np.ones_like(qx)]).T
+        (gain, offset), *_ = np.linalg.lstsq(a, qy, rcond=None)
+        # 增益必须为正且量级合理，否则宁可不改：拟合失败时套色会把图毁掉
+        out.append((float(gain), float(offset)) if 0.2 <= gain <= 5.0 else (1.0, 0.0))
+    return out
+
+
+def scale_mosaic_to_reference(mosaic: np.ndarray, grid: Grid, ref_path: Path) -> np.ndarray:
+    """把 RGB 辐射归一化到与商业正射同一档（仿射，见 reference_tone_transfer）。
+
+    只做全局仿射，不动局部对比与纹理。仅验收/套色可选路径，与格网不一致时跳过。
     """
     import rasterio
 
@@ -209,18 +244,14 @@ def scale_mosaic_to_reference(mosaic: np.ndarray, grid: Grid, ref_path: Path) ->
             return mosaic
         if ds.count < 3:
             return mosaic
-        ref = ds.read(indexes=list(range(1, min(4, ds.count) + 1)))
+        ref = ds.read(indexes=list(range(1, min(4, ds.count) + 1))).astype(np.float64)
         alpha = ds.read(4) > 0 if ds.count >= 4 else ref[0] > 0
     valid = np.isfinite(mosaic).all(axis=0) & alpha
     if int(valid.sum()) < 1000:
         return mosaic
     out = mosaic.copy()
-    n = min(3, mosaic.shape[0], ref.shape[0])
-    for b in range(n):
-        med_o = float(np.nanmedian(mosaic[b][valid]))
-        med_r = float(np.median(ref[b][valid].astype(np.float64)))
-        if med_o > 1.0 and med_r > 1.0:
-            out[b] = mosaic[b] * np.float32(med_r / med_o)
+    for b, (gain, offset) in enumerate(reference_tone_transfer(mosaic, valid, ref)):
+        out[b] = (mosaic[b] * np.float32(gain) + np.float32(offset)).astype(np.float32)
     return out
 
 
@@ -228,19 +259,32 @@ def apply_coverage_mask(
     data: np.ndarray,
     valid: np.ndarray,
     *,
-    max_hole_cells: int = 10_000_000,
+    max_hole_cells: int = 256,
     merge_gap_cells: int = 8,
+    trim_m: float = 0.0,
+    gsd: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """去掉游离斑块、填内部空洞，与商业正射「单一连通域、几乎无孔」一致。
 
     内部空洞一律填上：商业 group0 实测只有 1 个连通域、3 个合计 22 像素的孔。
-    自研全量 RGB 曾留下 8.6 万个孔、约 105 万空洞像素，QGIS 里就是满图白点。
+    RGB 全 0 只当「未知」用来补洞，不能先打成孔再腐蚀——20 m 收边会从每个
+    小孔扩出菱形白洞。trim_m 只削外轮廓。
     """
+    from scipy.ndimage import binary_fill_holes
+
     known = np.asarray(valid, bool)
+    arr = np.asarray(data)
+    if arr.ndim == 3 and arr.shape[0] >= 3:
+        known = known & (arr[:3] > 0).any(axis=0)
+    elif arr.ndim == 2:
+        known = known & (arr > 0)
     take = refine_coverage_mask(
         known, max_hole_cells=max_hole_cells, merge_gap_cells=merge_gap_cells
     )
-    out = inpaint_nearest(data, known, take)
+    take = binary_fill_holes(take)
+    if trim_m and gsd is not None and float(trim_m) > 0:
+        take = erode_coverage(take, gsd, float(trim_m))
+    out = inpaint_nearest(arr, known, take)
     if out.ndim == 2:
         out = np.where(take, out, 0)
     else:
@@ -386,8 +430,19 @@ def seamline_geojson(labels: np.ndarray, grid: Grid, views: list[int], path: Pat
     return path
 
 
-def clean_product_directory(products_dir: Path) -> None:
-    """就地清掉已写出成果里的白点（小孔）和游离斑块。格网范围不变。"""
+def clip_products_to_reference(
+    products_dir: Path, ref_dir: Path | None = None, *, trim_m: float = 20.0
+) -> None:
+    """兼容旧名。不再套参考 alpha（会把未采样格标成不透明黑）。
+
+    对标只用来抽参数写进模版。就地按自身有色像元清黑底，再按 trim_m 收掉
+    最外一圈单视斜视。ref_dir 保留签名以免旧调用崩掉，掩膜故意不用。
+    """
+    clean_product_directory(products_dir, trim_m=trim_m)
+
+
+def clean_product_directory(products_dir: Path, *, trim_m: float = 20.0) -> None:
+    """就地清不透明黑、内部小孔、外缘单视边。只靠自身 RGB 和 trim_m。"""
     import rasterio
 
     from ms_mosaic.dsm import Dsm, _clip_z_outliers, write_geotiff
@@ -397,7 +452,9 @@ def clean_product_directory(products_dir: Path) -> None:
     with rasterio.open(rgb_path) as ds:
         rgb = ds.read()
         grid = Grid(ds.transform, ds.width, ds.height, str(ds.crs))
-    data, take = apply_coverage_mask(rgb[:3], rgb[3] > 0)
+    data, take = apply_coverage_mask(
+        rgb[:3], rgb[3] > 0, trim_m=trim_m, gsd=grid.gsd
+    )
     with RasterWriter(rgb_path, grid, count=4, dtype="uint8", alpha=True) as w:
         w.write((0, 0, grid.height, grid.width), rgb_with_alpha(data, take))
     for i in range(1, 8):
@@ -421,9 +478,10 @@ def clean_product_directory(products_dir: Path) -> None:
     if nodata is not None:
         z = np.where(z == nodata, np.nan, z)
     z = _clip_z_outliers(z)
-    z = np.where(
-        refine_coverage_mask(np.isfinite(z), max_hole_cells=0, merge_gap_cells=4), z, np.nan
-    )
+    keep = refine_coverage_mask(np.isfinite(z), max_hole_cells=0, merge_gap_cells=4)
+    if trim_m and float(trim_m) > 0:
+        keep = erode_coverage(keep, dsm_grid.gsd, float(trim_m))
+    z = np.where(keep, z, np.nan)
     write_geotiff(Dsm(dsm_grid, z.astype(np.float32), {}), dsm_path)
 
 

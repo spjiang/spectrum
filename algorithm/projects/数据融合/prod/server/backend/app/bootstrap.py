@@ -55,6 +55,13 @@ def _run_sql_file(db: Session, path: Path) -> None:
     _run_sql_script(db, path.read_text(encoding="utf-8"))
 
 
+def _ensure_sql_named(db: Session, name: str) -> None:
+    """按文件名跑一次迁移。文件不在镜像里就跳过，不挡启动。"""
+    path = _migration_dir() / name
+    if path.is_file():
+        _run_sql_file(db, path)
+
+
 def _ensure_param_schema(db: Session) -> None:
     """补 required / required_when 列，并同步必填标记。"""
     sql_path = _migration_dir() / "003_param_required.sql"
@@ -243,7 +250,7 @@ def _to_container_data_path(key: str, value: object) -> object:
                 return f"/data/output/runs/{name}" if name else "/data/output/runs"
         if value.startswith("/") and "runs" in value:
             return "/data/output/runs"
-    if key in {"cache_dir", "reuse_dsm", "benchmark_dir"} and not value.startswith("/data/"):
+    if key in {"cache_dir", "reuse_dsm", "benchmark_dir", "grid_reference"} and not value.startswith("/data/"):
         return None
     if key in {"data_roots"} and not value.startswith("/data"):
         return "/data"
@@ -300,6 +307,11 @@ def bootstrap(db: Session, settings: Settings) -> None:
     _ensure_job_seq(db)
     _ensure_param_labels(db)
     _ensure_job_run_logs(db)
+    _ensure_sql_named(db, "011_terrain_band.sql")
+    _ensure_sql_named(db, "012_grid_lock_and_radiometry.sql")
+    _ensure_sql_named(db, "013_edge_trim.sql")
+    _ensure_sql_named(db, "014_flatten_edge_and_profile.sql")
+    _ensure_sql_named(db, "015_edge_trim_zero.sql")
     _migrate_legacy_source_paths(db)
     user = db.scalar(select(User).where(User.username == settings.bootstrap_admin_user))
     if user is None:

@@ -33,6 +33,9 @@ def test_run_stages_forwards_template_params(tmp_path: Path, monkeypatch):
             "color_correction": "off",
             "write_pdf_report": False,
             "seamline_enabled": True,
+            "edge_trim_m": 20,
+            "flatten_edge_win_m": 40,
+            "flatten_edge_band_m": 80,
             "run_mode": "full",
         },
     )
@@ -46,3 +49,6 @@ def test_run_stages_forwards_template_params(tmp_path: Path, monkeypatch):
     assert captured["color_correction"] == "off"
     assert captured["write_pdf_report"] is False
     assert captured["seamline_enabled"] is True
+    assert captured["edge_trim_m"] == 20.0
+    assert captured["flatten_edge_win_m"] == 40.0
+    assert captured["flatten_edge_band_m"] == 80.0

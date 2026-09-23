@@ -41,4 +41,12 @@ PARAM_LABELS: dict[str, str] = {
     "workers_ortho": "正射并行度",
     "write_pdf_report": "生成 PDF 报告",
     "write_json_report": "生成 JSON 报告",
+    "grid_reference": "锁定交付格网",
+    "radiometric_normalize": "辐射归一化到参考",
+    "terrain_margin_lo_m": "地形带下余量（米）",
+    "terrain_margin_hi_m": "地形带上余量（米）",
+    "terrain_min_half_span_m": "无空三半宽下限（米）",
+    "edge_trim_m": "边缘收边（米）",
+    "flatten_edge_win_m": "贴边纠正窗口（米）",
+    "flatten_edge_band_m": "贴边纠正带宽（米）",
 }

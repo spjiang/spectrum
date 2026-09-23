@@ -96,6 +96,50 @@ class Grid:
                 yield (r0, c0, r1 - r0, c1 - c0)
 
 
+def ground_reference_z(points: np.ndarray, *, cell_m: float = 10.0) -> float:
+    """定 GSD 与足迹用的参考地面高程：按面积加权的稳健地形面。
+
+    直接取 median(稀疏点 z) 不行，有两个毛病：
+    - 点的空间密度不均。纹理好的缓坡出点多、林冠与陡坡出点少，分位数是按
+      「点数」而不是按「面积」算的，本测区实测比商业等价参考面低 34 m，
+      GSD 因此偏大 27%、足迹也跟着涨大。
+    - 空三点里出现过 −101 km 的飞点。
+
+    这里先把点落到 cell_m 的粗格网取中值（一格一票，消掉密度权重，也压掉
+    飞点），再对占用格网取均值 —— 即「块平均地面高程」，这正是航空摄影测量
+    里算平均 GSD 用的参考面（Kraus《Photogrammetry》）。
+
+    cell_m=10 m 实测：参考面 1725.1 m，与商业 DSM 足迹内的面均高 1730.9 m
+    只差 5.8 m（稀疏点普遍落在冠层之下，偏低是应该的）；cell=20 m 给出同样的
+    结果，说明这个尺度已经稳定。相比之下点数中位数给 1691.3 m，差 39.6 m。
+    """
+    pts = np.asarray(points, float)
+    if pts.ndim != 2 or pts.shape[0] == 0:
+        raise ValueError("没有稀疏点，无法定参考地面高程")
+    z = pts[:, 2]
+    ok = np.isfinite(pts).all(axis=1)
+    if not ok.any():
+        raise ValueError("稀疏点全部非有限值")
+    pts, z = pts[ok], z[ok]
+    # 先按 MAD 去飞点，避免 −101 km 那类点把粗格网中值带跑
+    med = float(np.median(z))
+    mad = 1.4826 * float(np.median(np.abs(z - med)))
+    keep = np.abs(z - med) <= 8.0 * max(mad, 1.0)
+    pts, z = pts[keep], z[keep]
+    if z.size == 0:
+        return med
+    cell = max(float(cell_m), 1e-3)
+    ci = np.floor(pts[:, 0] / cell).astype(np.int64)
+    ri = np.floor(pts[:, 1] / cell).astype(np.int64)
+    key = (ri - ri.min()).astype(np.int64) * (int(ci.max() - ci.min()) + 1) + (ci - ci.min())
+    order = np.argsort(key, kind="stable")
+    key_s, z_s = key[order], z[order]
+    _, start = np.unique(key_s, return_index=True)
+    bounds = list(start) + [z_s.size]
+    cell_med = np.array([np.median(z_s[a:b]) for a, b in zip(bounds[:-1], bounds[1:])])
+    return float(np.mean(cell_med))
+
+
 def estimate_native_gsd(camera, poses: dict, ground_z: float) -> float:
     """主相机一个像元对应的地面尺寸：GSD = H / f_px（Kraus《Photogrammetry》）。"""
     agls = [float(pose.center[2] - ground_z) for pose in poses.values()]
@@ -183,7 +227,7 @@ def coverage_from_footprints(
 
 
 def coverage_from_product(path, grid: Grid) -> np.ndarray:
-    """把商业 DSM / 正射的有效掩膜重采样到给定格网。全量交付时覆盖域以此为准。"""
+    """把参考成果有效掩膜重采样到给定格网。只给比对报告用，不进交付覆盖。"""
     import rasterio
     from rasterio.warp import Resampling, reproject
 
@@ -216,6 +260,22 @@ def coverage_from_product(path, grid: Grid) -> np.ndarray:
             resampling=Resampling.nearest,
         )
         return out.astype(bool)
+
+
+def erode_coverage(mask: np.ndarray, gsd: float, trim_m: float) -> np.ndarray:
+    """从外轮廓往里收 trim_m 米。先填内部孔，禁止从孔往外扩。
+
+    4 连通腐蚀若带着内部孔一起做，每个小孔都会扩成菱形。本测区曾因此在
+    林内打出满图白洞。商业正射是单一连通域、几乎无孔，收边只削最外一圈
+    单视斜视。换测区只改模版里的 edge_trim_m。
+    """
+    from scipy.ndimage import binary_erosion, binary_fill_holes, generate_binary_structure
+
+    take = binary_fill_holes(np.asarray(mask, bool))
+    n = int(round(float(trim_m) / max(float(gsd), 1e-9)))
+    if n <= 0:
+        return take
+    return binary_erosion(take, structure=generate_binary_structure(2, 1), iterations=n)
 
 
 def smooth_coverage_mask(mask: np.ndarray, gsd: float, *, closing_m: float = 2.0) -> np.ndarray:

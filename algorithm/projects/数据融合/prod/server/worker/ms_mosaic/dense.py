@@ -39,6 +39,8 @@ N_LAYERS = 48
 Z_MARGIN_M = 24.0
 MIN_REFINE_Z_MARGIN_M = 4.0
 COARSE_GSD_FACTOR = 4
+REFINE_LEVELS = 2
+REFINE_Z_MARGIN_M = 8.0
 MAX_VIEWS = 10
 MIN_VIEWS = 2
 MAX_TILT_DEG = 60.0  # 与报告「最大倾斜角 60 度」一致
@@ -48,6 +50,8 @@ MIN_NCC = 0.25
 TOP_K_VIEWS = 4
 TILE = 384
 MAX_ANTIALIAS_SIGMA = 1.5
+# 金字塔最深级：2048 px 的相片降 4 级还有 128 px，再深连航带重叠都对不上
+MAX_PYRAMID_LEVEL = 4
 
 
 @dataclass
@@ -64,6 +68,11 @@ class DenseConfig:
     tile: int = TILE
     pyramid_levels: int = 2
     coarse_gsd_factor: int = COARSE_GSD_FACTOR
+    # 粗格网定位之后，成品格网上的「剔粗差 → 重定先验 → 窄窗重扫」轮数与首轮半宽
+    refine_levels: int = REFINE_LEVELS
+    refine_z_margin_m: float = REFINE_Z_MARGIN_M
+    # 粗层搜索半宽。None 表示与细层一致（实测加宽有害，见 _coarse_config）。
+    coarse_z_margin_m: float | None = None
     workers: int | None = None
 
 
@@ -104,57 +113,89 @@ def search_bound_hits(best: np.ndarray, n_layers: int) -> np.ndarray:
     return (best <= 0) | (best >= n_layers - 1)
 
 
-def antialias_sigma(grid_gsd: float, image_gsd: float) -> float:
-    """物方格网比影像 GSD 粗时，采样前需要的高斯预平滑尺度（影像像素）。
+def pyramid_level_for(grid_gsd: float, image_gsd: float, *, max_level: int = MAX_PYRAMID_LEVEL) -> int:
+    """格网比影像粗 scale 倍时，该在第几级金字塔上采样。
 
-    格网 0.4 m、影像 0.054 m 时相当于每隔 7 个像素取一个采样点。不做预平滑
-    就是欠采样：高频纹理在不同视角下折叠成不同的假频，NCC 被这些假频淹没，
-    实测解出率只有 46%。按采样定理，重采样到 scale 倍间距需要先把截止频率
-    压到 1/scale，等效高斯尺度即 0.5·sqrt(scale²-1)。
+    物方扫描是「按格网间距在影像上取采样点」。格网 0.55 m、影像 0.068 m 时
+    相当于每隔 8 个像素取一个点，直接在原图上取就是 8 倍欠采样：高频纹理在
+    不同视角折叠成不同假频，NCC 比的是假频不是地物，实测粗格网解出率只有
+    12.8%。正解是先把影像降采样到与格网同一尺度（每级都是「先高斯再抽点」，
+    见 ImageCache.at），再 1:1 取样 —— 这就是分层立体的标准做法
+    （Scharstein & Szeliski, IJCV 2002；Gallup et al., CVPR 2007）。
+
+    取 floor(log2(scale))：宁可留一点残余欠采样交给 antialias_sigma 补，
+    也不要多降一级把真实纹理丢掉。
     """
-    scale = grid_gsd / max(image_gsd, 1e-9)
+    scale = float(grid_gsd) / max(float(image_gsd), 1e-9)
+    if scale <= 1.0:
+        return 0
+    return int(np.clip(int(np.floor(np.log2(scale))), 0, int(max_level)))
+
+
+def antialias_sigma(grid_gsd: float, image_gsd: float, *, level: int = 0) -> float:
+    """在第 level 级金字塔上取样时，仍需补的高斯预平滑尺度（该级像素）。
+
+    按采样定理，重采样到 scale 倍间距需要先把截止频率压到 1/scale，等效高斯
+    尺度即 0.5·sqrt(scale²−1)。选对金字塔层后残余 scale < 2，sigma < 0.87，
+    不会再碰到上限 —— 以前把 8 倍欠采样硬压在 1.5 px 上限里才是解不出的原因。
+    """
+    scale = float(grid_gsd) / max(float(image_gsd) * float(1 << int(level)), 1e-9)
     if scale <= 1.0:
         return 0.0
-    # 上限 1.5 px：再往上平滑，NCC 能用的真实纹理也一起被磨掉。实测 0.4 m 格网
-    # （scale 8 倍、理论 sigma 4.1）不设限时与商业 DSM 的相关系数从 0.92 掉到 0.87。
-    # 欠采样超过 3 倍应当直接在更粗的格网上算完再加密，而不是靠加大平滑硬撑。
     return min(MAX_ANTIALIAS_SIGMA, 0.5 * float(np.sqrt(scale * scale - 1.0)))
 
 
 class ImageCache:
     """按需读取灰度影像并缓存。全量 668 张 2048x1536 灰度约 2.1 GB。
 
-    sigma > 0 时在缓存前做一次高斯预平滑，用于物方格网粗于影像 GSD 的情形。
+    level 指定匹配用的金字塔层（由 pyramid_level_for 按格网/影像 GSD 定），
+    sigma 是选定层之后仍需补的残余预平滑。两者都作用在 __getitem__ 返回的图上。
     """
 
     def __init__(
-        self, paths: dict[int, Path], *, limit: int | None = None, sigma: float = 0.0
+        self,
+        paths: dict[int, Path],
+        *,
+        limit: int | None = None,
+        sigma: float = 0.0,
+        level: int = 0,
     ) -> None:
         self._paths = paths
         self._cache: dict[tuple[int, int], np.ndarray] = {}
         self._order: list[tuple[int, int]] = []
         self._limit = limit
-        self._sigma = sigma
+        self._sigma = float(sigma)
+        self._level = int(level)
+
+    @property
+    def level(self) -> int:
+        return self._level
 
     def __getitem__(self, index: int) -> np.ndarray:
-        return self.at(index, 0)
+        """匹配用影像：降到 self.level 后再补残余平滑。"""
+        return self.at(index, self._level, sigma=self._sigma)
 
-    def at(self, index: int, level: int = 0) -> np.ndarray:
-        """第 level 级金字塔影像（每级边长减半）。
+    def _read(self, index: int) -> np.ndarray:
+        """读第 0 级影像。抽出成钩子，便于替换影像来源而不重写金字塔逻辑。"""
+        return read_gray8(self._paths[index]).astype(np.float32)
+
+    def at(self, index: int, level: int = 0, *, sigma: float = 0.0) -> np.ndarray:
+        """第 level 级金字塔影像（每级边长减半），可再叠一次 sigma 平滑。
 
         金字塔层不能靠直接抽点得到：抽点前必须把截止频率压到新采样率的一半，
         否则高频折叠成假频，粗层 NCC 就在比较两幅不同的假频图案。
+        残余平滑在该级上做，不能在 level 0 上做 —— 抽点会把它一起缩小 2^level 倍。
         """
-        key = (index, level)
+        key = (index, level if sigma <= 0.05 else -level - 1)
         hit = self._cache.get(key)
         if hit is not None:
             return hit
-        if level == 0:
-            arr = read_gray8(self._paths[index]).astype(np.float32)
-            if self._sigma > 0.05:
-                from scipy.ndimage import gaussian_filter
+        if sigma > 0.05:
+            from scipy.ndimage import gaussian_filter
 
-                arr = gaussian_filter(arr, self._sigma, mode="nearest")
+            arr = gaussian_filter(self.at(index, level), sigma, mode="nearest")
+        elif level == 0:
+            arr = self._read(index)
         else:
             from scipy.ndimage import gaussian_filter
 
@@ -165,15 +206,16 @@ class ImageCache:
             self._cache.pop(self._order.pop(0), None)
         return self._cache[key]
 
-    def pixel_coords(self, u: np.ndarray, v: np.ndarray, level: int):
-        """全分辨率像素坐标 → 第 level 级坐标。
+    def pixel_coords(self, u: np.ndarray, v: np.ndarray, level: int | None = None):
+        """全分辨率像素坐标 → 第 level 级坐标（默认本缓存的匹配层）。
 
         用 (u+0.5)/2^l − 0.5 而不是 u/2^l：前者保持像元中心对齐，后者会引入
         半个粗层像素的系统性偏移，在 NCC 里表现为一个固定的错配。
         """
-        if level == 0:
+        lv = self._level if level is None else int(level)
+        if lv == 0:
             return u, v
-        s = 1.0 / float(1 << level)
+        s = 1.0 / float(1 << lv)
         return (u + 0.5) * s - 0.5, (v + 0.5) * s - 0.5
 
 
@@ -409,13 +451,16 @@ def _sweep_once(
         zz = (prior_z + dz).ravel()
         pts = np.stack([flat_x, flat_y, zz], axis=1)
 
+        # 采样点坐标要换到匹配所用的金字塔层，否则会在原图上按格网间距抽点欠采样
         u, v, valid = project(cameras[ref_idx], poses[ref_idx], pts)
-        ref = np.where(valid, _sample_bilinear(images[ref_idx], u, v), np.nan).reshape(rows, cols)
+        ul, vl = images.pixel_coords(u, v)
+        ref = np.where(valid, _sample_bilinear(images[ref_idx], ul, vl), np.nan).reshape(rows, cols)
 
         nccs = []
         for other in others:
             u2, v2, valid2 = project(cameras[other], poses[other], pts)
-            arr = np.where(valid2, _sample_bilinear(images[other], u2, v2), np.nan).reshape(
+            u2l, v2l = images.pixel_coords(u2, v2)
+            arr = np.where(valid2, _sample_bilinear(images[other], u2l, v2l), np.nan).reshape(
                 rows, cols
             )
             nccs.append(_windowed_ncc(ref, arr, cfg.window))
@@ -480,12 +525,19 @@ def _sweep_once(
 
 
 def _next_prior(z: np.ndarray, fallback: np.ndarray, smooth_cells: float = 2.0) -> np.ndarray:
-    """把上一层的结果整理成下一层的先验面：补洞 + 轻度平滑。
+    """把上一层的结果整理成下一层的先验面：剔粗差 + 补洞 + 轻度平滑。
 
     未解出的格网退回上一层的先验，避免下一层在错误的位置窄范围搜索。
+
+    必须先剔粗差再做先验。粗层锁错的格网若直接进先验，下一层就在错误高程
+    附近开窄窗搜索，错误被固化下来；剔掉之后由邻域的正确高程补出先验，
+    细层才有机会跳回真表面（分层立体的常规做法）。
     """
     from scipy.ndimage import gaussian_filter
 
+    from ms_mosaic.dsm import remove_spikes
+
+    z = remove_spikes(np.asarray(z, np.float64))
     ok = np.isfinite(z).astype(np.float32)
     if ok.sum() < 4:
         return fallback
@@ -558,11 +610,14 @@ def _match_on_grid(
     from ms_mosaic.parallel import map_tiles
 
     img_gsd = _image_gsd(cameras, poses, prior)
-    sigma = antialias_sigma(grid.gsd, img_gsd)
+    level = pyramid_level_for(grid.gsd, img_gsd)
+    sigma = antialias_sigma(grid.gsd, img_gsd, level=level)
     if log is not None:
         log(
             f"{label}：格网 {grid.width}x{grid.height} @ {grid.gsd:.4f} m，"
-            f"±{cfg.z_margin_m:.1f} m × {cfg.n_layers} 层，抗锯齿 {sigma:.2f} px"
+            f"±{cfg.z_margin_m:.1f} m × {cfg.n_layers} 层，"
+            f"影像 {img_gsd:.4f} m/px → 金字塔第 {level} 级（{img_gsd * (1 << level):.4f} m/px）"
+            f"，残余抗锯齿 {sigma:.2f} px"
         )
 
     z = np.full(grid.shape, np.nan, np.float32)
@@ -578,6 +633,7 @@ def _match_on_grid(
         "paths": image_paths,
         "cfg": cfg,
         "sigma": sigma,
+        "level": level,
     }
     n_workers = workers if workers is not None else cfg.workers
     done = 0
@@ -596,6 +652,22 @@ def _match_on_grid(
         if log is not None and n_workers == 1 and (done % 10 == 0 or done == len(windows)):
             log(f"{label} {done}/{len(windows)} 块，已解出 {np.isfinite(z).mean():.1%}")
     return z, conf, views, img_gsd
+
+
+def _coarse_config(cfg: DenseConfig, points: np.ndarray) -> DenseConfig:
+    """粗层配置。
+
+    曾试过把粗层搜索带按地形起伏加宽到 ±50 m（Collins 空间扫描的做法），想让
+    先验偏低的山脊也能够到真表面。实测反而变差：山顶窗口粗差率 15.4% → 21.9%，
+    成品解出率 56.0% → 39.3% —— 宽带里多出来的层给了假匹配更多机会，得不偿失。
+    山顶偏低的真正原因不在搜索带，而在解不出的格网被从低处填了上来（见 dsm.py
+    的 fill 相关说明）。这里保持与细层同一配置，改动记录留在这里避免再走回头路。
+    """
+    from dataclasses import replace
+
+    if cfg.coarse_z_margin_m is None:
+        return replace(cfg)
+    return replace(cfg, z_margin_m=float(cfg.coarse_z_margin_m))
 
 
 def compute_height_field(
@@ -621,18 +693,28 @@ def compute_height_field(
     n_workers = workers if workers is not None else cfg.workers
     factor = int(cfg.coarse_gsd_factor)
     coarse_used = False
+    coarse_margin = 0.0
+    coarse_layers = 0
     if factor >= 2 and min(grid.width, grid.height) >= 64:
         coarse_grid = grid.refine(float(factor))
         if coarse_grid.gsd > grid.gsd * 1.5 and min(coarse_grid.width, coarse_grid.height) >= 16:
             coarse_used = True
             coarse_prior = prior_surface(points, coarse_grid)
+            coarse_cfg = _coarse_config(cfg, points)
+            coarse_margin = float(coarse_cfg.z_margin_m)
+            coarse_layers = int(coarse_cfg.n_layers)
+            if log is not None:
+                log(
+                    f"粗格网搜索 ±{coarse_cfg.z_margin_m:.1f} m × {coarse_cfg.n_layers} 层"
+                    f"（层间距 {2 * coarse_cfg.z_margin_m / max(coarse_cfg.n_layers - 1, 1):.2f} m）"
+                )
             z_c, _, _, _ = _match_on_grid(
                 coarse_grid,
                 coarse_prior,
                 cameras,
                 poses,
                 image_paths,
-                cfg,
+                coarse_cfg,
                 log=log,
                 workers=n_workers,
                 label="粗格网密集匹配",
@@ -641,11 +723,15 @@ def compute_height_field(
 
             up = resample_height(z_c, coarse_grid, grid)
             prior = np.where(np.isfinite(up), up, prior).astype(np.float32)
-            cfg = replace(cfg, z_margin_m=max(MIN_REFINE_Z_MARGIN_M * 2.0, 8.0), pyramid_levels=2)
+            cfg = replace(
+                cfg,
+                z_margin_m=max(MIN_REFINE_Z_MARGIN_M * 2.0, float(cfg.refine_z_margin_m)),
+                pyramid_levels=max(1, int(cfg.refine_levels)),
+            )
             if log is not None:
                 log(
                     f"粗格网解出 {np.isfinite(z_c).mean():.1%}，"
-                    f"细格网搜索 ±{cfg.z_margin_m:.1f} m"
+                    f"细格网搜索 ±{cfg.z_margin_m:.1f} m × {cfg.pyramid_levels} 轮"
                 )
 
     z, conf, views, img_gsd = _match_on_grid(
@@ -671,9 +757,14 @@ def compute_height_field(
         "mean_views": float(views[valid].mean()) if valid.any() else 0.0,
         "gsd": grid.gsd,
         "image_gsd": img_gsd,
-        "antialias_sigma_px": antialias_sigma(grid.gsd, img_gsd),
+        "pyramid_level": int(pyramid_level_for(grid.gsd, img_gsd)),
+        "antialias_sigma_px": antialias_sigma(
+            grid.gsd, img_gsd, level=pyramid_level_for(grid.gsd, img_gsd)
+        ),
         "coarse_gsd": bool(coarse_used),
         "z_margin_m": float(cfg.z_margin_m),
+        "coarse_z_margin_m": coarse_margin,
+        "coarse_n_layers": coarse_layers,
     }
     return HeightField(grid, z, conf, views, stats)
 
@@ -707,7 +798,12 @@ def _dense_setup(payload: dict):
         "cameras": payload["cameras"],
         "poses": payload["poses"],
         "cfg": payload["cfg"],
-        "images": ImageCache(payload["paths"], sigma=payload["sigma"], limit=CACHE_PER_WORKER),
+        "images": ImageCache(
+            payload["paths"],
+            sigma=payload["sigma"],
+            level=payload.get("level", 0),
+            limit=CACHE_PER_WORKER,
+        ),
     }
 
 

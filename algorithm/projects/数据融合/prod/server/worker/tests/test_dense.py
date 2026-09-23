@@ -320,13 +320,14 @@ def test_prior_surface_rejects_points_outside_grid():
 
 
 class _MemoryCache(ImageCache):
-    """直接喂内存里的影像，测试不落盘。"""
+    """直接喂内存里的影像，测试不落盘。金字塔与预平滑仍走真实实现。"""
 
-    def __init__(self, arrays):
+    def __init__(self, arrays, **kwargs):
+        super().__init__({i: None for i in arrays}, **kwargs)
         self._arrays = arrays
 
-    def __getitem__(self, index):
-        return self._arrays[index]
+    def _read(self, index):
+        return np.asarray(self._arrays[index], np.float32)
 
 
 def _synthetic_survey(relief: float = 18.0, texture_seed: int = 7):

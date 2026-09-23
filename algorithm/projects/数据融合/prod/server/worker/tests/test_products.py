@@ -6,13 +6,16 @@ import numpy as np
 import pytest
 import rasterio
 
-from ms_mosaic.grid import Grid, inpaint_nearest, refine_coverage_mask
+from ms_mosaic.grid import Grid, erode_coverage, inpaint_nearest, refine_coverage_mask
 from ms_mosaic.products import (
+    GROUP_PREFIX,
     MS_BANDS,
     RGB_BAND,
     RasterWriter,
+    apply_coverage_mask,
     band_count,
     band_dtype,
+    clip_products_to_reference,
     group_name,
     match_lowfreq_to_reference,
     pseudocolor_dsm,
@@ -300,21 +303,79 @@ def test_match_lowfreq_replaces_base_keeps_detail(tmp_path):
     assert abs(float(out_lo[1, 32, 25]) - float(out_lo[1, 32, 48])) < 12
 
 
-def test_write_band_product_uses_reference_alpha_silhouette(tmp_path):
-    """正射 alpha 必须跟商业 group0 一样：缺的用最近邻补上，多的裁掉。"""
+def test_apply_coverage_mask_fills_interior_rgb_zero():
+    """内部 RGB 全 0 是阴影或未采样小孔，必须补上。打成透明再腐蚀会扩成菱形白洞。"""
+    rgb = np.full((3, 24, 24), 80, np.uint8)
+    rgb[:, 8:16, 8:16] = 0
+    valid = np.ones((24, 24), bool)
+    out, take = apply_coverage_mask(rgb, valid, max_hole_cells=8)
+    assert take[12, 12]
+    assert take[4, 4] and out[0, 4, 4] == 80
+    assert out[0, 12, 12] == 80
+
+
+def test_apply_coverage_mask_trims_outer_edge_only():
+    """收边只削外轮廓。内部 1 格孔不得被 trim 扩成大洞。"""
+    rgb = np.full((3, 40, 40), 70, np.uint8)
+    rgb[:, 20, 20] = 0
+    valid = np.ones((40, 40), bool)
+    out, take = apply_coverage_mask(rgb, valid, trim_m=3.0, gsd=1.0, max_hole_cells=0)
+    assert take[20, 20]
+    assert take[15, 15]
+    assert not take[0, 20] and not take[20, 0]
+    assert (out[:, 0, 20] == 0).all()
+
+
+def test_erode_coverage_does_not_grow_interior_holes():
+    """4 连通腐蚀若从内部孔往外扩，20 m 收边会在林里打出菱形白洞。"""
+    mask = np.ones((40, 40), bool)
+    mask[20, 20] = False
+    out = erode_coverage(mask, gsd=1.0, trim_m=3.0)
+    assert out[20, 20]
+    assert out[18, 20] and out[20, 18]
+    assert not out[0, 20] and not out[20, 0]
+
+
+def test_write_band_product_does_not_paint_empty_cells_opaque(tmp_path):
+    """外轮廓用自身有色像元，缺的格子保持透明，禁止按参考剪影像再涂黑。"""
     from ms_mosaic.compose import write_band_product
 
     grid = _grid(32)
     mosaic = np.full((3, 32, 32), 40.0, np.float32)
-    mosaic[:, :8, :] = np.nan  # 自研北缘空一截
-    mosaic[:, 28:, 28:] = 90.0  # 商业没有的角
-    coverage = np.zeros((32, 32), bool)
-    coverage[4:28, 4:28] = True
+    mosaic[:, :8, :] = np.nan
+    mosaic[:, 28:, 28:] = 90.0
     path = tmp_path / group_name(RGB_BAND)
-    write_band_product(mosaic, grid, RGB_BAND, path, coverage=coverage)
+    write_band_product(mosaic, grid, RGB_BAND, path, trim_m=0.0)
     with rasterio.open(path) as ds:
         rgb = ds.read()
-    assert (rgb[3] > 0).sum() == int(coverage.sum())
-    assert rgb[3, 6, 16] == 255  # 补上的北缘
-    assert rgb[3, 30, 30] == 0  # 裁掉的角
-    assert rgb[0, 6, 16] == rgb[0, 10, 16]  # 最近邻来自南侧有效像元
+    assert rgb[3, 6, 16] == 0
+    assert rgb[3, 16, 16] == 255
+    assert rgb[0, 16, 16] == 40
+    assert rgb[3, 30, 30] == 255
+
+
+def test_clip_products_does_not_copy_reference_alpha(tmp_path):
+    """对标只抽参数。把参考 alpha 套到未采样格上会留下不透明黑底。"""
+    ours = tmp_path / "ours"
+    ref = tmp_path / "ref"
+    ours.mkdir()
+    ref.mkdir()
+    grid = _grid(32, gsd=1.0)
+    rgb = np.zeros((4, 32, 32), np.uint8)
+    rgb[:3, 8:24, 8:24] = 90
+    rgb[3] = 255
+    rgb_path = ours / f"{GROUP_PREFIX}0.tif"
+    with RasterWriter(rgb_path, grid, count=4, dtype="uint8", alpha=True) as w:
+        w.write((0, 0, 32, 32), rgb)
+    ref_rgb = np.zeros((4, 32, 32), np.uint8)
+    ref_rgb[:3, 4:28, 4:28] = 40
+    ref_rgb[3, 4:28, 4:28] = 255
+    with RasterWriter(ref / f"{GROUP_PREFIX}0.tif", grid, count=4, dtype="uint8", alpha=True) as w:
+        w.write((0, 0, 32, 32), ref_rgb)
+    clip_products_to_reference(ours, ref, trim_m=0.0)
+    with rasterio.open(rgb_path) as ds:
+        got = ds.read()
+    assert got[3, 16, 16] == 255
+    assert got[0, 16, 16] == 90
+    assert got[3, 6, 16] == 0
+    assert (got[:3, 6, 16] == 0).all()
