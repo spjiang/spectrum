@@ -1,9 +1,12 @@
-import { useMemo, type ReactNode } from "react";
-import { Affix, Anchor, Col, Row, Spin, Typography } from "antd";
+import { useMemo, type HTMLAttributes, type ReactNode } from "react";
+import { Anchor, Col, Row, Spin, Typography } from "antd";
 import type { AnchorLinkItemProps } from "antd/es/anchor/Anchor";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MermaidBlock from "./MermaidBlock";
+
+/** 页头 64 + 与其它页一致的标题条 56。 */
+const TOC_OFFSET = 120;
 
 function slugify(text: string) {
   return text
@@ -24,7 +27,8 @@ function headingText(children: ReactNode): string {
 }
 
 function stripMd(title: string) {
-  return title.replace(/[`*_]/g, "").trim();
+  // 只去掉强调记号。下划线属于参数名（input_dir），不能删，否则和右侧标题 id 对不上。
+  return title.replace(/[`*]/g, "").trim();
 }
 
 /** 左侧目录：二级=章/阶段，三级=阶段或参数，四级=参数名。 */
@@ -64,6 +68,19 @@ export function markdownToc(md: string): AnchorLinkItemProps[] {
   return items;
 }
 
+function Heading({
+  level,
+  children,
+  ...props
+}: HTMLAttributes<HTMLHeadingElement> & { level: 2 | 3 | 4; node?: unknown }) {
+  const Tag = `h${level}` as "h2" | "h3" | "h4";
+  return (
+    <Tag {...props} id={slugify(headingText(children))}>
+      {children}
+    </Tag>
+  );
+}
+
 export default function MarkdownDoc({
   md,
   loading,
@@ -89,35 +106,45 @@ export default function MarkdownDoc({
       {intro}
       <Row gutter={24} className="mosaic-cli-doc-row">
         <Col xs={0} md={7}>
-          {/* Affix 用 fixed 钉住，不受 ant-layout overflow 影响；纯 sticky 在本壳层会失效 */}
-          <Affix offsetTop={64}>
-            <div className="mosaic-cli-toc">
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
-                目录
-              </Typography.Text>
-              <Anchor affix={false} items={toc} />
-            </div>
-          </Affix>
+          {/* 在列内 sticky。不要用 Affix：它会按整列高度 fixed，白底会盖住上方 Tab。 */}
+          <div className="mosaic-cli-toc">
+            <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+              目录
+            </Typography.Text>
+            <Anchor
+              affix={false}
+              targetOffset={TOC_OFFSET}
+              items={toc}
+              onClick={(event, link) => {
+                const id = decodeURIComponent(link.href.replace(/^#/, ""));
+                const target = document.getElementById(id);
+                if (!target) return;
+                event.preventDefault();
+                const top = target.getBoundingClientRect().top + window.scrollY - TOC_OFFSET;
+                window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+              }}
+            />
+          </div>
         </Col>
         <Col xs={24} md={17}>
           <div className="mosaic-markdown">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                h2: ({ children, ...props }) => (
-                  <h2 id={slugify(headingText(children))} {...props}>
+                h2: ({ children, node: _node, ...props }) => (
+                  <Heading level={2} {...props}>
                     {children}
-                  </h2>
+                  </Heading>
                 ),
-                h3: ({ children, ...props }) => (
-                  <h3 id={slugify(headingText(children))} {...props}>
+                h3: ({ children, node: _node, ...props }) => (
+                  <Heading level={3} {...props}>
                     {children}
-                  </h3>
+                  </Heading>
                 ),
-                h4: ({ children, ...props }) => (
-                  <h4 id={slugify(headingText(children))} {...props}>
+                h4: ({ children, node: _node, ...props }) => (
+                  <Heading level={4} {...props}>
                     {children}
-                  </h4>
+                  </Heading>
                 ),
                 a: ({ href, children, ...props }) => (
                   <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer" {...props}>

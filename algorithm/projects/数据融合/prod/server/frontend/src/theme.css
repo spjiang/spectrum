@@ -644,6 +644,12 @@ body,
   display: none;
 }
 
+.mosaic-markdown h2,
+.mosaic-markdown h3,
+.mosaic-markdown h4 {
+  scroll-margin-top: 120px;
+}
+
 .mosaic-markdown h2 {
   margin: 28px 0 12px;
   font-size: 18px;
@@ -743,22 +749,35 @@ body,
   white-space: nowrap;
 }
 
-/* 目录由 Affix 钉住；此处只负责可视区域滚动 */
+/* 目录贴在页头和文档 Tab 下面，只占左列，不盖住标题条 */
 .mosaic-cli-toc {
+  position: sticky;
+  top: 120px;
+  z-index: 4;
   padding: 12px 12px 12px 0;
   border-right: 1px solid var(--mosaic-border);
-  max-height: calc(100vh - 80px);
+  max-height: calc(100vh - 120px - 16px);
   overflow: auto;
   background: var(--mosaic-panel);
 }
 
-/* 顶部「命令行手册 / 参数说明」Tab 随页滚动置顶 */
+/* 与其它页卡片标题同高（56px）。卡片 Tab 自带负外边距，会把标题条压到 40px。 */
 .mosaic-cli-guide > .ant-card-head {
   position: sticky;
-  top: 0;
-  z-index: 6;
+  top: 64px;
+  z-index: 8;
+  min-height: 56px !important;
   background: var(--mosaic-panel);
   box-shadow: 0 1px 0 var(--mosaic-border);
+}
+
+.mosaic-cli-guide > .ant-card-head .ant-tabs,
+.mosaic-cli-guide > .ant-card-head .ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.mosaic-cli-guide > .ant-card-head .ant-tabs-content-holder {
+  display: none;
 }
 
 .mosaic-cli-toc .ant-anchor-link {
