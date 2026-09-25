@@ -6,6 +6,7 @@ import MarkdownDoc from "../components/MarkdownDoc";
 const TABS = [
   { key: "cli", tab: "命令行手册" },
   { key: "params", tab: "参数说明" },
+  { key: "quality", tab: "质量报告手册" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -14,8 +15,10 @@ export default function CliGuidePage() {
   const [tab, setTab] = useState<TabKey>("params");
   const [cliMd, setCliMd] = useState("");
   const [paramMd, setParamMd] = useState("");
+  const [qualityMd, setQualityMd] = useState("");
   const [cliLoading, setCliLoading] = useState(true);
   const [paramLoading, setParamLoading] = useState(true);
+  const [qualityLoading, setQualityLoading] = useState(true);
 
   useEffect(() => {
     api
@@ -28,6 +31,11 @@ export default function CliGuidePage() {
       .then(setParamMd)
       .catch((e) => message.error(String(e)))
       .finally(() => setParamLoading(false));
+    api
+      .qualityGuide()
+      .then(setQualityMd)
+      .catch((e) => message.error(String(e)))
+      .finally(() => setQualityLoading(false));
   }, []);
 
   return (
@@ -44,6 +52,16 @@ export default function CliGuidePage() {
           intro={
             <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
               ① 部署安装 → ② 命令行参数 → ③ 本机测区示例。相对路径均相对主程序安装目录。
+            </Typography.Paragraph>
+          }
+        />
+      ) : tab === "quality" ? (
+        <MarkdownDoc
+          md={qualityMd}
+          loading={qualityLoading}
+          intro={
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
+              按 <strong>质量报告.pdf</strong> 的栏名逐项说明。左侧目录与报告里的字段一一对应。
             </Typography.Paragraph>
           }
         />

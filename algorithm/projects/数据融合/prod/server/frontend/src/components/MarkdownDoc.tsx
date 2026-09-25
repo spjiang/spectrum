@@ -1,5 +1,5 @@
 import { useMemo, type HTMLAttributes, type ReactNode } from "react";
-import { Anchor, Col, Row, Spin, Typography } from "antd";
+import { Anchor, Spin, Typography } from "antd";
 import type { AnchorLinkItemProps } from "antd/es/anchor/Anchor";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -104,29 +104,27 @@ export default function MarkdownDoc({
   return (
     <>
       {intro}
-      <Row gutter={24} className="mosaic-cli-doc-row">
-        <Col xs={0} md={7}>
-          {/* 在列内 sticky。不要用 Affix：它会按整列高度 fixed，白底会盖住上方 Tab。 */}
-          <div className="mosaic-cli-toc">
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
-              目录
-            </Typography.Text>
-            <Anchor
-              affix={false}
-              targetOffset={TOC_OFFSET}
-              items={toc}
-              onClick={(event, link) => {
-                const id = decodeURIComponent(link.href.replace(/^#/, ""));
-                const target = document.getElementById(id);
-                if (!target) return;
-                event.preventDefault();
-                const top = target.getBoundingClientRect().top + window.scrollY - TOC_OFFSET;
-                window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-              }}
-            />
-          </div>
-        </Col>
-        <Col xs={24} md={17}>
+      <div className="mosaic-cli-doc-row">
+        {/* 在列内 sticky。不要用 Affix：它会按整列高度 fixed，白底会盖住上方 Tab。 */}
+        <div className="mosaic-cli-toc">
+          <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+            目录
+          </Typography.Text>
+          <Anchor
+            affix={false}
+            targetOffset={TOC_OFFSET}
+            items={toc}
+            onClick={(event, link) => {
+              const id = decodeURIComponent(link.href.replace(/^#/, ""));
+              const target = document.getElementById(id);
+              if (!target) return;
+              event.preventDefault();
+              const top = target.getBoundingClientRect().top + window.scrollY - TOC_OFFSET;
+              window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+            }}
+          />
+        </div>
+        <div className="mosaic-cli-doc-main">
           <div className="mosaic-markdown">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -176,8 +174,8 @@ export default function MarkdownDoc({
               {body}
             </ReactMarkdown>
           </div>
-        </Col>
-      </Row>
+        </div>
+      </div>
     </>
   );
 }

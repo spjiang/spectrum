@@ -21,12 +21,13 @@ export type MenuKey =
   | "worker"
   | "health"
   | "settings"
+  | "inspect"
   | "users"
   | "roles"
   | "permissions"
   | "cli";
 
-export type MenuGroup = "作业管理" | "系统管理" | "组织管理";
+export type MenuGroup = "作业管理" | "辅助工具" | "系统管理" | "组织管理";
 
 export type MenuDef = {
   key: MenuKey;
@@ -39,6 +40,7 @@ export type MenuDef = {
 
 export const MENU_GROUPS: { id: MenuGroup; siderKey: string }[] = [
   { id: "作业管理", siderKey: "proc" },
+  { id: "辅助工具", siderKey: "tools" },
   { id: "系统管理", siderKey: "sys" },
   { id: "组织管理", siderKey: "rbac" },
 ];
@@ -50,7 +52,8 @@ export const MENU_CATALOG: MenuDef[] = [
   { key: "worker", label: "计算节点", path: "/worker", group: "系统管理", roles: ["admin"], hint: "监控计算进程与任务队列" },
   { key: "health", label: "系统监控", path: "/health", group: "系统管理", roles: ["admin"], hint: "查看数据库、消息队列与计算服务状态" },
   { key: "settings", label: "系统配置", path: "/settings", group: "系统管理", roles: ["admin", "configurator"], hint: "配置数据路径等运行参数" },
-  { key: "cli", label: "使用文档", path: "/cli", group: "系统管理", roles: ["admin"], hint: "流程、算法与参数说明" },
+  { key: "inspect", label: "影像查看", path: "/inspect", group: "辅助工具", roles: ["admin", "configurator", "executor", "viewer"], hint: "上传 TIF / JPG，查看元数据与像元" },
+  { key: "cli", label: "使用文档", path: "/cli", group: "辅助工具", roles: ["admin"], hint: "流程、算法与参数说明" },
   { key: "users", label: "用户管理", path: "/users", group: "组织管理", roles: ["admin"], hint: "维护账号、状态与角色分配" },
   { key: "roles", label: "角色管理", path: "/roles", group: "组织管理", roles: ["admin"], hint: "维护系统角色与授权用户" },
   { key: "permissions", label: "权限管理", path: "/permissions", group: "组织管理", roles: ["admin"], hint: "维护功能权限及授权角色" },

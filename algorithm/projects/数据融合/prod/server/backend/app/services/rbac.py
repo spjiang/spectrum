@@ -13,6 +13,7 @@ MENU_KEYS = (
     "worker",
     "health",
     "settings",
+    "inspect",
     "cli",
     "users",
     "roles",
@@ -22,9 +23,9 @@ ADMIN_LOCK = ("users", "roles", "permissions")
 
 DEFAULT_MENUS: dict[str, list[str]] = {
     "admin": list(MENU_KEYS),
-    "configurator": ["profiles", "jobs", "settings"],
-    "executor": ["execute", "profiles", "jobs"],
-    "viewer": ["profiles", "jobs"],
+    "configurator": ["profiles", "jobs", "settings", "inspect"],
+    "executor": ["execute", "profiles", "jobs", "inspect"],
+    "viewer": ["profiles", "jobs", "inspect"],
 }
 
 

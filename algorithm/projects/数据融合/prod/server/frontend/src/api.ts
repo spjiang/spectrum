@@ -1,4 +1,16 @@
 const TOKEN_KEY = "mosaic_token";
+const USER_KEY = "mosaic_user";
+const ROLES_KEY = "mosaic_roles";
+
+/** 凭证失效时清掉本地登录态并回到登录页，避免停在空白页上弹错误。 */
+function redirectToLogin() {
+  setToken(null);
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(ROLES_KEY);
+  if (!window.location.pathname.startsWith("/login")) {
+    window.location.replace("/login");
+  }
+}
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -17,6 +29,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
   const res = await fetch(path, { ...init, headers });
+  if (res.status === 401) {
+    redirectToLogin();
+    return new Promise(() => {});
+  }
   if (!res.ok) {
     const text = await res.text();
     let msg = text || res.statusText;
@@ -39,6 +55,10 @@ async function openAuthedFile(path: string, fallbackName: string) {
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   const res = await fetch(path, { headers });
+  if (res.status === 401) {
+    redirectToLogin();
+    return;
+  }
   if (!res.ok) {
     const text = await res.text();
     let msg = text || res.statusText;
@@ -60,6 +80,50 @@ async function openAuthedFile(path: string, fallbackName: string) {
     a.click();
   }
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+export type InspectBand = {
+  name: string;
+  wavelength_nm?: number | null;
+};
+
+export type InspectMeta = {
+  id: string;
+  filename: string;
+  format?: string;
+  width: number;
+  height: number;
+  count: number;
+  dtype?: string;
+  size_bytes?: number;
+  nodata?: unknown;
+  stats_sampled?: boolean;
+  bands: InspectBand[];
+  geotransform?: { origin_x: number; origin_y: number; pixel_w: number; pixel_h: number } | null;
+  xmp?: { raw?: string; tags?: { key: string; name?: string; value: string }[] };
+  exif?: Record<string, string>;
+  tiff?: { compression?: string; tags?: { key: string; name?: string; value: string }[] } | null;
+};
+
+export type InspectPixel = {
+  col: number;
+  row: number;
+  values: Array<number | string | null>;
+  bands?: { name: string; value: number | string | null; wavelength_nm?: number | null }[];
+  hex?: string | null;
+  x?: number | null;
+  y?: number | null;
+};
+
+function readError(text: string, fallback: string) {
+  let msg = text || fallback;
+  try {
+    const j = JSON.parse(text);
+    if (typeof j.detail === "string") msg = j.detail;
+  } catch {
+    /* 保留原文 */
+  }
+  return msg;
 }
 
 export const api = {
@@ -129,9 +193,50 @@ export const api = {
   logs: (id: string) => request<string>(`/api/jobs/${id}/logs?tail=800`),
   openJobReport: (id: string) => openAuthedFile(`/api/jobs/${id}/report.pdf`, "质量报告.pdf"),
   workerInspect: () => request<any>("/api/system/worker"),
+  inspectUpload: (file: File, onProgress?: (pct: number, phase: "upload" | "parse") => void) =>
+    new Promise<InspectMeta>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/tools/inspect");
+      const token = getToken();
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) onProgress?.(Math.round((ev.loaded / ev.total) * 100), "upload");
+      };
+      xhr.upload.onload = () => onProgress?.(100, "parse");
+      xhr.onload = () => {
+        if (xhr.status === 401) {
+          redirectToLogin();
+          return;
+        }
+        if (xhr.status < 200 || xhr.status >= 300) {
+          reject(new Error(readError(xhr.responseText, xhr.statusText || "上传失败")));
+          return;
+        }
+        resolve(JSON.parse(xhr.responseText) as InspectMeta);
+      };
+      xhr.onerror = () => reject(new Error("上传失败"));
+      const body = new FormData();
+      body.append("file", file);
+      xhr.send(body);
+    }),
+  inspectPreview: async (id: string) => {
+    const headers = new Headers();
+    const token = getToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const res = await fetch(`/api/tools/inspect/${id}/preview`, { headers });
+    if (res.status === 401) {
+      redirectToLogin();
+      return new Promise<Blob>(() => {});
+    }
+    if (!res.ok) throw new Error(readError(await res.text(), "预览失败"));
+    return res.blob();
+  },
+  inspectPixel: (id: string, col: number, row: number, signal?: AbortSignal) =>
+    request<InspectPixel>(`/api/tools/inspect/${id}/pixel?col=${col}&row=${row}`, { signal }),
   killAllWorkerJobs: () => request<{ killed: number }>("/api/system/worker/kill-all", { method: "POST" }),
   cliGuide: () => request<string>("/api/docs/cli-guide"),
   paramGuide: () => request<string>("/api/docs/param-guide"),
+  qualityGuide: () => request<string>("/api/docs/quality-guide"),
   users: () => request<any[]>("/api/users"),
   createUser: (body: { username: string; password: string; roles: string[] }) =>
     request("/api/users", { method: "POST", body: JSON.stringify(body) }),

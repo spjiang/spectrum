@@ -14,10 +14,12 @@ import {
   CloudServerOutlined,
   HeartOutlined,
   SettingOutlined,
+  FileSearchOutlined,
   InfoCircleOutlined,
   SafetyOutlined,
   TeamOutlined,
   AppstoreOutlined,
+  ToolOutlined,
 } from "@ant-design/icons";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
@@ -30,6 +32,7 @@ import CliGuidePage from "../pages/CliGuide";
 import HealthPage from "../pages/Health";
 import WorkerPage from "../pages/Worker";
 import SettingsPage from "../pages/Settings";
+import InspectPage from "../pages/Inspect";
 import UsersPage from "../pages/Users";
 import RolesPage from "../pages/Roles";
 import PermissionsPage from "../pages/Permissions";
@@ -56,6 +59,7 @@ const TITLE: Record<string, string> = {
   worker: "计算节点",
   health: "系统监控",
   settings: "系统配置",
+  inspect: "影像查看",
   users: "用户管理",
   roles: "角色管理",
   permissions: "权限管理",
@@ -69,6 +73,7 @@ const MENU_ICON: Record<MenuKey, ReactNode> = {
   worker: <CloudServerOutlined />,
   health: <HeartOutlined />,
   settings: <SettingOutlined />,
+  inspect: <FileSearchOutlined />,
   users: <UserOutlined />,
   roles: <TeamOutlined />,
   permissions: <SafetyOutlined />,
@@ -77,6 +82,7 @@ const MENU_ICON: Record<MenuKey, ReactNode> = {
 
 const GROUP_ICON: Record<MenuGroup, ReactNode> = {
   作业管理: <AppstoreOutlined />,
+  辅助工具: <ToolOutlined />,
   系统管理: <SettingOutlined />,
   组织管理: <TeamOutlined />,
 };
@@ -268,6 +274,14 @@ function AppShellBody({
               element={
                 <Guard allow={canMenu("health")}>
                   <HealthPage />
+                </Guard>
+              }
+            />
+            <Route
+              path="/inspect"
+              element={
+                <Guard allow={canMenu("inspect")}>
+                  <InspectPage />
                 </Guard>
               }
             />

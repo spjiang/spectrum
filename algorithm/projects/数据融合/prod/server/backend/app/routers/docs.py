@@ -41,3 +41,11 @@ def param_guide(
     _: User = Depends(require_roles("executor", "viewer", "admin", "configurator")),
 ) -> str:
     return _read_doc(settings, "参数说明.md")
+
+
+@router.get("/quality-guide", response_class=PlainTextResponse)
+def quality_guide(
+    settings: Settings = Depends(get_settings),
+    _: User = Depends(require_roles("executor", "viewer", "admin", "configurator")),
+) -> str:
+    return _read_doc(settings, "质量报告手册.md")

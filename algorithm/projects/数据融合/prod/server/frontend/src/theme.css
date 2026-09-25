@@ -749,16 +749,37 @@ body,
   white-space: nowrap;
 }
 
+/* 目录按条目宽度收缩，正文占剩余空间。窄屏藏目录。 */
+.mosaic-cli-doc-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.mosaic-cli-doc-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* 目录贴在页头和文档 Tab 下面，只占左列，不盖住标题条 */
 .mosaic-cli-toc {
   position: sticky;
   top: 120px;
   z-index: 4;
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: min(22em, 40%);
   padding: 12px 12px 12px 0;
   border-right: 1px solid var(--mosaic-border);
   max-height: calc(100vh - 120px - 16px);
   overflow: auto;
   background: var(--mosaic-panel);
+}
+
+@media (max-width: 767px) {
+  .mosaic-cli-toc {
+    display: none;
+  }
 }
 
 /* 与其它页卡片标题同高（56px）。卡片 Tab 自带负外边距，会把标题条压到 40px。 */
@@ -784,11 +805,21 @@ body,
   padding-block: 3px;
 }
 
+.mosaic-cli-toc .ant-anchor,
+.mosaic-cli-toc .ant-anchor-wrapper {
+  width: max-content;
+  max-width: 100%;
+}
+
 .mosaic-cli-toc .ant-anchor-link-title {
+  display: inline-block;
+  width: max-content;
+  max-width: 20em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
+  vertical-align: bottom;
 }
 
 .mosaic-cli-toc .ant-anchor-link .ant-anchor-link {
