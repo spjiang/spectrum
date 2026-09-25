@@ -478,6 +478,7 @@ def test_compare_dsm_detects_uncorrelated_surface(tmp_path):
     by_name = {i.name: i for i in rep.items}
     assert by_name["DSM 重叠区覆盖率"].ours > 0.9, rep.to_text()
     assert abs(by_name["DSM 相关系数"].ours) < 0.5
+    assert by_name["DSM 相关系数"].passed is False
     assert not rep.ok
 
 
@@ -537,6 +538,7 @@ def test_comparison_report_text_includes_verdicts():
     rep.add("乙", 5.0, 1.0, delta=4.0, tolerance=0.1)
     rep.add("丙", "x", "x")
     text = rep.to_text()
+    assert "| 项目 | 自研 | 商业 | 差值 | 判定 | 说明 |" in text
     assert "通过" in text and "未达标" in text
     assert rep.ok is False
 

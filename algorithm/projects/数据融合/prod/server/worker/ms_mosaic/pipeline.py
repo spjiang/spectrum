@@ -539,13 +539,13 @@ def run_mosaic(
 
         log("=== 与验收参考逐像元比对 ===")
 
-        cmp_path = out_dir / "比对报告.txt"
+        cmp_path = out_dir / "比对报告.md"
         try:
             crep = write_delivery_report(products_dir, ref_dir, cmp_path)
             files["compare"] = str(cmp_path)
             log(cmp_path.read_text(encoding="utf-8"))
             if not crep.ok:
-                log("比对未达标，见 比对报告.txt")
+                log("比对未达标，见 比对报告.md")
         except Exception as exc:
             log(f"比对失败（成果已写出）：{exc}")
     reporter.stage_done("S6_report", 0.0)

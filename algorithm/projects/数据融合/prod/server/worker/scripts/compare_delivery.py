@@ -22,7 +22,7 @@ def main() -> None:
     ap.add_argument("--theirs", type=Path, default=DEFAULT_COMM)
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
-    out = args.out or (args.ours.parent / "比对报告.txt")
+    out = args.out or (args.ours.parent / "比对报告.md")
     rep = write_delivery_report(args.ours, args.theirs, out)
     print(out.read_text(encoding="utf-8"))
     raise SystemExit(0 if rep.ok else 1)

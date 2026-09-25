@@ -85,22 +85,47 @@ class ComparisonReport:
         return all(i.passed for i in self.items if i.passed is not None)
 
     def to_text(self) -> str:
-        def fmt(v):
-            if v is None:
-                return "-"
-            if isinstance(v, float):
-                return f"{v:.6g}"
-            return str(v)
+        """Markdown 表格。DSM、正射、多光谱分节，方便直接预览。"""
 
-        width = max(len(i.name) for i in self.items) if self.items else 4
-        lines = [f"{'项目'.ljust(width)}  {'自研':>16}  {'商业':>16}  {'差值':>14}  判定"]
-        for i in self.items:
-            mark = "-" if i.passed is None else ("通过" if i.passed else "未达标")
-            lines.append(
-                f"{i.name.ljust(width)}  {fmt(i.ours):>16}  {fmt(i.theirs):>16}  "
-                f"{fmt(i.delta):>14}  {mark}" + (f"  # {i.note}" if i.note else "")
-            )
-        return "\n".join(lines)
+        def cell(v) -> str:
+            if v is None or v == "":
+                return ""
+            if isinstance(v, float):
+                text = f"{v:.6g}"
+            else:
+                text = str(v)
+            return text.replace("|", "\\|")
+
+        groups: dict[str, list[ComparisonItem]] = {"DSM": [], "正射": [], "多光谱": []}
+        for item in self.items:
+            if item.name.startswith("MS"):
+                groups["多光谱"].append(item)
+            elif item.name.startswith("DSM"):
+                groups["DSM"].append(item)
+            else:
+                groups["正射"].append(item)
+
+        lines = ["# 比对报告", ""]
+        header = "| 项目 | 自研 | 商业 | 差值 | 判定 | 说明 |"
+        rule = "| --- | ---: | ---: | ---: | --- | --- |"
+        for title, items in groups.items():
+            if not items:
+                continue
+            lines.append(f"## {title}")
+            lines.append("")
+            lines.append(header)
+            lines.append(rule)
+            for item in items:
+                if item.passed is None:
+                    mark = ""
+                else:
+                    mark = "通过" if item.passed else "未达标"
+                lines.append(
+                    f"| {cell(item.name)} | {cell(item.ours)} | {cell(item.theirs)} | "
+                    f"{cell(item.delta)} | {mark} | {cell(item.note)} |"
+                )
+            lines.append("")
+        return "\n".join(lines).rstrip() + "\n"
 
 
 def _band_as_float(src, band: int = 1) -> np.ndarray:
@@ -135,6 +160,13 @@ def _read_on_grid(path: Path, ref_path: Path, band: int = 1) -> np.ndarray:
                 resampling=Resampling.bilinear,
             )
     return dst
+
+
+def _corr_shortfall(corr: float, floor: float) -> float:
+    """低于相关系数门槛的缺口。达到门槛时为 0，供 abs(差值)≤0 判通过。"""
+    if not np.isfinite(corr):
+        return float(floor)
+    return float(max(0.0, floor - corr))
 
 
 def compare_dsm(ours: Path, theirs: Path, *, report: ComparisonReport | None = None):
@@ -185,7 +217,14 @@ def compare_dsm(ours: Path, theirs: Path, *, report: ComparisonReport | None = N
     )
     rep.add("DSM 高程差 P90 (m)", float(np.percentile(np.abs(diff - bias), 90)), None)
     corr = float(np.corrcoef(ours_on_b[both], theirs_arr[both])[0, 1])
-    rep.add("DSM 相关系数", corr, 1.0, delta=corr - 0.95, tolerance=1.0, note="要求 r > 0.95")
+    rep.add(
+        "DSM 相关系数",
+        corr,
+        1.0,
+        delta=_corr_shortfall(corr, 0.95),
+        tolerance=0.0,
+        note="要求 r≥0.95，差值为低于门槛的缺口",
+    )
 
     # 无控制点时，整体高差与倾斜只反映两套 GNSS 定权策略的差别，不是面形误差。
     # 拟合掉「常数 + 东向/北向倾斜」这 3 个自由度后的残差，才是真正的面形一致性。
@@ -269,10 +308,22 @@ def compare_ortho(ours: Path, theirs: Path, *, report: ComparisonReport | None =
             both = oa & ta
             extra = oa & ~ta
             missing = ta & ~oa
-            rep.add("正射多余像元", int(extra.sum()), 0, delta=int(extra.sum()), tolerance=0.0,
-                    note="自研有、商业无")
-            rep.add("正射缺失像元", int(missing.sum()), 0, delta=int(missing.sum()), tolerance=0.0,
-                    note="商业有、自研无")
+            # 商业有效区可以大于本次相片足迹。掩膜不一致只记面积，不按逐格相同判失败。
+            ha = (a.gsd ** 2) / 10000.0
+            n_extra = int(extra.sum())
+            n_miss = int(missing.sum())
+            rep.add(
+                "正射多余像元",
+                n_extra,
+                0,
+                note=f"自研有、商业无，约 {n_extra * ha:.3f} ha；不按商业掩膜逐格判失败",
+            )
+            rep.add(
+                "正射缺失像元",
+                n_miss,
+                0,
+                note=f"商业有、自研无，约 {n_miss * ha:.3f} ha；不按商业掩膜逐格判失败",
+            )
             if both.sum() >= 1000:
                 for bi, name in enumerate(("R", "G", "B"), start=1):
                     ov = o.read(bi)[both].astype(np.float64)
@@ -283,7 +334,14 @@ def compare_ortho(ours: Path, theirs: Path, *, report: ComparisonReport | None =
                     rep.add(f"正射{name}均值", float(ov.mean()), float(tv.mean()),
                             delta=float(ov.mean() - tv.mean()), tolerance=8.0)
                     rep.add(f"正射{name} MAE", mae, 0.0, delta=mae, tolerance=25.0)
-                    rep.add(f"正射{name} 相关系数", corr, 1.0, delta=corr - 0.85, tolerance=1.0)
+                    rep.add(
+                        f"正射{name} 相关系数",
+                        corr,
+                        1.0,
+                        delta=_corr_shortfall(corr, 0.85),
+                        tolerance=0.0,
+                        note="要求 r≥0.85，差值为低于门槛的缺口",
+                    )
                     rep.add(f"正射{name} 亮度比", ratio, 1.0, note="自研/商业")
         return rep
 
@@ -296,7 +354,14 @@ def compare_ortho(ours: Path, theirs: Path, *, report: ComparisonReport | None =
         rep.add("正射灰度比对", None, None, note="重叠像元不足，无法比对")
         return rep
     corr = float(np.corrcoef(ours_on_b[both], theirs_arr[both])[0, 1])
-    rep.add("正射灰度相关系数", corr, 1.0, delta=corr - 0.85, tolerance=1.0, note="格网未对齐，已重采样")
+    rep.add(
+        "正射灰度相关系数",
+        corr,
+        1.0,
+        delta=_corr_shortfall(corr, 0.85),
+        tolerance=0.0,
+        note="要求 r≥0.85，差值为低于门槛的缺口；格网未对齐，已重采样",
+    )
     return rep
 
 
@@ -363,7 +428,7 @@ def compare_geotiff_profile(ours: Path, theirs: Path, prefix: str, report: Compa
 
 
 def write_delivery_report(ours_dir: Path, theirs_dir: Path, out_path: Path) -> ComparisonReport:
-    """一次交付对照商业「拼图结果」写出明文比对表。未达标项会标「未达标」。"""
+    """一次交付对照商业「拼图结果」写出 Markdown 比对表。未达标项会标「未达标」。"""
     from ms_mosaic.products import GROUP_PREFIX
 
     ours_dir = Path(ours_dir)

@@ -1,7 +1,7 @@
 """自研质量报告 PDF。
 
 章节、表头、附图与需求样例 `0611hsl_Report.pdf` 对齐，便于对照验收。
-署名是本引擎 ms_mosaic，数字来自本次解算，不冒充 LiMapper / Pix4D。
+页面上不署内部包名。数字来自本次解算，不冒充 LiMapper / Pix4D。
 """
 
 from __future__ import annotations
@@ -31,8 +31,6 @@ REPORT_SECTIONS = (
     "平均重叠率信息",
 )
 
-TEAL = (0.10, 0.61, 0.72)
-GREEN = (0.20, 0.55, 0.38)
 RED = (0.75, 0.0, 0.0)
 
 
@@ -160,26 +158,6 @@ def _seconds(seconds) -> str:
         return "-"
 
 
-def _draw_logo(canvas, x, y, scale=1.0):
-    from reportlab.lib.colors import Color
-
-    s = 16 * scale
-    canvas.saveState()
-    canvas.setFillColor(Color(*TEAL, alpha=0.92))
-    p = canvas.beginPath()
-    p.moveTo(x, y)
-    p.curveTo(x - s * 1.1, y + s * 0.25, x - s * 0.55, y + s * 1.35, x + s * 0.05, y + s * 1.55)
-    p.curveTo(x + s * 0.85, y + s * 1.2, x + s * 1.05, y + s * 0.2, x, y)
-    canvas.drawPath(p, fill=1, stroke=0)
-    canvas.setFillColor(Color(*GREEN, alpha=0.88))
-    p = canvas.beginPath()
-    p.moveTo(x + s * 0.55, y - s * 0.05)
-    p.curveTo(x + s * 0.05, y + s * 0.4, x + s * 0.2, y + s * 1.25, x + s * 0.95, y + s * 1.35)
-    p.curveTo(x + s * 1.55, y + s * 0.85, x + s * 1.45, y + s * 0.05, x + s * 0.55, y - s * 0.05)
-    canvas.drawPath(p, fill=1, stroke=0)
-    canvas.restoreState()
-
-
 def _header(canvas, doc, *, first: bool, created_cn: str):
     canvas.saveState()
     w, h = doc.pagesize
@@ -187,12 +165,10 @@ def _header(canvas, doc, *, first: bool, created_cn: str):
         canvas.setFillColorRGB(0, 0, 0)
         canvas.setFont(_font(), 22)
         canvas.drawCentredString(w / 2.0, h - 42, "质量报告")
-        _draw_logo(canvas, w - 78, h - 58, scale=1.15)
         canvas.setFont(_font(), 8)
         canvas.setFillColorRGB(0.25, 0.25, 0.25)
-        canvas.drawRightString(w - 40, h - 72, f"ms_mosaic 于 {created_cn} 创建")
+        canvas.drawRightString(w - 40, h - 72, f"创建于 {created_cn}")
     else:
-        _draw_logo(canvas, w - 68, h - 36, scale=0.7)
         canvas.setFont(_font(), 8)
         canvas.setFillColorRGB(0.3, 0.3, 0.3)
         canvas.drawString(40, h - 28, "质量报告")
@@ -285,7 +261,10 @@ def write_quality_pdf(payload: dict, path: Path) -> Path:
             [_maybe_image(figures.get("ortho"), 230, 200), _maybe_image(figures.get("dsm"), 230, 200)],
             [
                 Paragraph("Orthomosaic_pix_surf_group0", styles["caption"]),
-                Paragraph("DSM", styles["caption"]),
+                Paragraph(
+                    "DSM<br/>色标数字是椭球高（米），由照片定位高度经空三和密集匹配算出，不是海拔。",
+                    styles["caption"],
+                ),
             ],
         ],
         colWidths=[250, 250],
@@ -570,7 +549,7 @@ def write_quality_pdf(payload: dict, path: Path) -> Path:
         str(path),
         pagesize=A4,
         title="质量报告",
-        author="ms_mosaic",
+        author="高光谱拼图",
         leftMargin=18 * mm,
         rightMargin=18 * mm,
         topMargin=28 * mm,
