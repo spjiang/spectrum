@@ -626,6 +626,47 @@ def kill_all_active(db: Session, mq: MQPublisher) -> int:
     return n
 
 
+def estimate_eta_seconds(db: Session, job: JobRun, percent: float) -> int | None:
+    """用最近成功任务的耗时按剩余比例估算。没有历史时，用本任务已用时间外推。"""
+    if percent >= 100:
+        return 0
+    if percent < 1:
+        return None
+    rows = db.scalars(
+        select(JobRun)
+        .where(
+            JobRun.status == "succeeded",
+            JobRun.started_at.is_not(None),
+            JobRun.finished_at.is_not(None),
+        )
+        .order_by(JobRun.finished_at.desc())
+        .limit(20)
+    ).all()
+    durations: list[float] = []
+    for row in rows:
+        if row.id == job.id or row.started_at is None or row.finished_at is None:
+            continue
+        sec = (_aware(row.finished_at) - _aware(row.started_at)).total_seconds()
+        if sec >= 60:
+            durations.append(sec)
+    remain = (100.0 - percent) / 100.0
+    if durations:
+        durations.sort()
+        mid = durations[len(durations) // 2]
+        return max(0, int(mid * remain))
+    if job.started_at is not None and percent >= 5:
+        elapsed = (_utcnow() - _aware(job.started_at)).total_seconds()
+        if elapsed >= 30:
+            return max(0, int(elapsed * (100.0 - percent) / percent))
+    return None
+
+
+def _aware(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
 def apply_progress(db: Session, payload: dict[str, Any]) -> JobRun | None:
     job_id = payload.get("job_id")
     if not job_id:
@@ -649,8 +690,11 @@ def apply_progress(db: Session, payload: dict[str, Any]) -> JobRun | None:
             f"{job.current_stage or ''} {payload['message']}".strip(),
             commit=False,
         )
-    if "eta_seconds" in payload:
-        job.eta_seconds = payload["eta_seconds"]
+    eta = payload.get("eta_seconds")
+    if eta is None:
+        eta = estimate_eta_seconds(db, job, float(job.global_percent or 0))
+    if eta is not None:
+        job.eta_seconds = int(eta)
     job.updated_at = _utcnow()
     db.commit()
     db.refresh(job)

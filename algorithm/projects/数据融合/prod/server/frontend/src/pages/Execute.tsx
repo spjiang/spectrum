@@ -33,6 +33,16 @@ import { jobComputeState } from "../processTree";
 
 const ACTIVE = ["queued", "running", "paused", "awaiting_continue"];
 
+function formatEta(seconds?: number | null) {
+  if (seconds == null) return "—";
+  if (seconds < 60) return "不到 1 分钟";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} 小时 ${rest} 分钟` : `${hours} 小时`;
+}
+
 function applyPaths(setInput: (v: string) => void, setOutput: (v: string) => void, values?: Record<string, any>) {
   if (!values) return;
   if (values.input_dir) setInput(String(values.input_dir));
@@ -492,9 +502,9 @@ export default function ExecutePage() {
                 </Col>
                 <Col span={8}>
                   <div className="mosaic-stat">
-                    <div className="mosaic-stat-label">ETA</div>
+                    <div className="mosaic-stat-label">预计剩余</div>
                     <div className="mosaic-stat-value" style={{ fontSize: 15 }}>
-                      {job.eta_seconds != null ? `${Math.round(job.eta_seconds / 60)} 分钟` : "—"}
+                      {formatEta(job.eta_seconds)}
                     </div>
                   </div>
                 </Col>

@@ -14,6 +14,7 @@ from app.db import get_db
 from app.models import JobRun, User
 from app.schemas import JobContinue, JobCreate, JobListOut, JobOut, JobsClearedOut
 from app.services import jobs as jobsvc
+from app.services.audit import record_audit
 from app.services.deps import get_mq
 from app.services.mq import MQPublisher
 
@@ -28,7 +29,7 @@ def create_job(
     mq: MQPublisher = Depends(get_mq),
     user: User = Depends(require_roles("executor", "admin")),
 ) -> JobRun:
-    return jobsvc.create_job(
+    job = jobsvc.create_job(
         db,
         settings=settings,
         mq=mq,
@@ -38,6 +39,13 @@ def create_job(
         input_dir=body.input_dir,
         output_dir=body.output_dir,
     )
+    record_audit(
+        db,
+        user.id,
+        "job.create",
+        {"job_id": str(job.id), "seq": job.seq, "input_dir": job.input_dir, "output_dir": job.output_dir},
+    )
+    return job
 
 
 _JOB_LIST_COLS = (
@@ -90,9 +98,11 @@ def list_jobs(
 def clear_jobs(
     db: Session = Depends(get_db),
     mq: MQPublisher = Depends(get_mq),
-    _: User = Depends(require_roles("executor", "admin")),
+    user: User = Depends(require_roles("executor", "admin")),
 ) -> JobsClearedOut:
-    return JobsClearedOut(deleted=jobsvc.delete_all_jobs(db, mq))
+    deleted = jobsvc.delete_all_jobs(db, mq)
+    record_audit(db, user.id, "job.clear", {"deleted": deleted})
+    return JobsClearedOut(deleted=deleted)
 
 
 @router.get("/{job_id}", response_model=JobOut)
@@ -104,6 +114,10 @@ def get_job(
     job = db.get(JobRun, job_id)
     if job is None:
         raise HTTPException(404, "任务不存在")
+    if job.status in {"queued", "running", "paused"}:
+        eta = jobsvc.estimate_eta_seconds(db, job, float(job.global_percent or 0))
+        if eta is not None:
+            job.eta_seconds = eta
     return job
 
 
@@ -112,9 +126,10 @@ def delete_job(
     job_id: uuid.UUID,
     db: Session = Depends(get_db),
     mq: MQPublisher = Depends(get_mq),
-    _: User = Depends(require_roles("executor", "admin")),
+    user: User = Depends(require_roles("executor", "admin")),
 ) -> Response:
     jobsvc.delete_job(db, mq, job_id)
+    record_audit(db, user.id, "job.delete", {"job_id": str(job_id)})
     return Response(status_code=204)
 
 
@@ -126,10 +141,12 @@ def job_action(
     db: Session = Depends(get_db),
     mq: MQPublisher = Depends(get_mq),
     settings: Settings = Depends(get_settings),
-    _: User = Depends(require_roles("executor", "admin")),
+    user: User = Depends(require_roles("executor", "admin")),
 ) -> JobRun:
     stop = body.stop_after_stage if body else None
-    return jobsvc.control_job(db, mq, job_id, action, stop_after=stop, settings=settings)
+    job = jobsvc.control_job(db, mq, job_id, action, stop_after=stop, settings=settings)
+    record_audit(db, user.id, f"job.{action}", {"job_id": str(job.id), "seq": job.seq})
+    return job
 
 
 @router.get("/{job_id}/logs")

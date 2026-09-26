@@ -238,6 +238,10 @@ export const api = {
   paramGuide: () => request<string>("/api/docs/param-guide"),
   qualityGuide: () => request<string>("/api/docs/quality-guide"),
   users: () => request<any[]>("/api/users"),
+  audits: () =>
+    request<{ id: number; username: string | null; action: string; detail: Record<string, unknown>; created_at: string | null }[]>(
+      "/api/audit",
+    ),
   createUser: (body: { username: string; password: string; roles: string[] }) =>
     request("/api/users", { method: "POST", body: JSON.stringify(body) }),
   updateUser: (id: number, body: { password?: string; roles?: string[]; is_active?: boolean }) =>

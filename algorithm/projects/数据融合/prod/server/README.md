@@ -66,8 +66,8 @@ Worker 消费 `mosaic.jobs`，调用 `run_stages`，回传进度到 `mosaic.prog
 ```bash
 PY="/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/source/.venv/bin/python"
 cd /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker
-"$PY" -m ms_mosaic --out /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/replay_max_20251017_rgb --bands Color
-"$PY" -m ms_mosaic --out /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/dbg_until_dsm --run-mode until_stage --stop-after-stage S4_dsm
+"$PY" -m ms_mosaic --output-dir /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/replay_max_20251017_rgb --bands Color
+"$PY" -m ms_mosaic --output-dir /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/dbg_until_dsm --run-mode until_stage --stop-after-stage S4_dsm
 ```
 
 ## 开发后端（无 compose）

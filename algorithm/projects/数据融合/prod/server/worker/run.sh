@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# MAX 多光谱拼图。输入目录只读，成果写到 --out。
+# MAX 多光谱拼图。输入目录只读，成果写到 --output-dir。
+# 旗标名与 Web「处理方案」param key 一致（如 --input-dir ↔ input_dir）。
 #
 # 用法（在主程序目录下，或给脚本绝对路径）：
-#   ./run.sh                      # 全目录 8 波段，输出 runs/manual_时间戳/
+#   ./run.sh
 #   ./run.sh --max-frames 12 --bands Color
-#   ./run.sh --workers 8 --bands Color,550nm
-#   ./run.sh --out runs/my_run
-#   ./run.sh --input /path/to/MAX_xxx --out /path/to/out
+#   ./run.sh --workers-dense 8 --bands Color,550nm
+#   ./run.sh --output-dir runs/my_run
+#   ./run.sh --input-dir /path/to/MAX_xxx --output-dir /path/to/out
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -20,14 +21,14 @@ has_out=0
 args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --input)
+    --input-dir)
       has_input=1
-      args+=(--input "$2")
+      args+=(--input-dir "$2")
       shift 2
       ;;
-    --out)
+    --output-dir)
       has_out=1
-      args+=(--out "$2")
+      args+=(--output-dir "$2")
       shift 2
       ;;
     --help|-h)
@@ -42,11 +43,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ $has_input -eq 0 ]]; then
-  args+=(--input "$INPUT_DEFAULT")
+  args+=(--input-dir "$INPUT_DEFAULT")
 fi
 if [[ $has_out -eq 0 ]]; then
   stamp="$(date +%Y%m%d_%H%M%S)"
-  args+=(--out "$MS_MOSAIC_RUNS/manual_$stamp")
+  args+=(--output-dir "$MS_MOSAIC_RUNS/manual_$stamp")
 fi
 
 if [[ ! -x "$PY" ]]; then

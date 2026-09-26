@@ -16,12 +16,13 @@
 ├── tests/
 ├── scripts/
 ├── docs/          # 本手册
-├── runs/          # 运行输出（默认 --out 落在这里）
+├── runs/          # 运行输出（默认 --output-dir 落在这里）
 ├── run.sh
 └── README.md
 ```
 
-`--input` 可以指向本目录以外的航摄数据。`--out` 默认写到本目录的 `runs/`。
+`--input-dir` 可以指向本目录以外的航摄数据。`--output-dir` 默认写到本目录的 `runs/`。  
+**旗标名与 Web「处理方案」param key 一致**：`input_dir` → `--input-dir`，`dsm_gsd` → `--dsm-gsd`。旧名 `--input` / `--out` / `--workers` 已移除。
 
 ### 1.2 准备 Python 环境
 
@@ -57,15 +58,15 @@ cd /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融�
 
 | 项 | 规则 |
 | --- | --- |
-| `--input` | 拍完后的 `MAX_*` 任务目录，**只读** |
-| `--out` | 本次运行输出根；航摄原片不写回 `--input`，成果全部落在此目录 |
-| 禁止 | `--out` 落在 `--input` 目录树内 |
+| `--input-dir`（`input_dir`） | 拍完后的 `MAX_*` 任务目录，**只读** |
+| `--output-dir`（`output_dir`） | 本次运行输出根；航摄原片不写回输入树，成果全部落在此目录 |
+| 禁止 | `--output-dir` 落在 `--input-dir` 目录树内 |
 | 默认行为 | 通用任务：UTM + 航高估 GSD + 足迹格网；**不会**因旁边有参考 `拼图结果/` 就自动锁格或套色 |
 
-`--out` 下各子目录分工如下（交付看 `拼图结果/`，出问题查 `log/`）：
+`--output-dir` 下各子目录分工如下（交付看 `拼图结果/`，出问题查 `log/`）：
 
 ```text
---out/
+--output-dir/
   拼图结果/          正式交付：DSM 与各波段正射 GeoTIFF
   附件/              辅助查看：伪彩、测区 KML、拼接线
   cache/             中间缓存：特征点与空三，续跑可复用
@@ -89,119 +90,100 @@ cd /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融�
 
 ## 二、命令行参数说明
 
-入口：
+入口（**参数名 = Web 处理方案 key**，写法为 `--` + 下划线改短横线）：
 
 ```bash
-"$PY" -m ms_mosaic --input <MAX目录> --out <输出根> [选项...]
+"$PY" -m ms_mosaic --input-dir <MAX目录> --output-dir <输出根> [选项...]
 # 或
-./run.sh [选项...]     # 未写 --out 时落到 runs/manual_时间戳
+./run.sh [选项...]     # 未写 --output-dir 时落到 runs/manual_时间戳
 ```
 
-阶段顺序：`S0_io → S1_catalog → S2_at → S3_dense → S4_dsm → S5_ortho → S6_report`。左侧目录按阶段展开，点参数名跳到说明。
+阶段顺序：`S0_io → S1_catalog → S2_at → S3_dense → S4_dsm → S5_ortho → S6_report`。  
+布尔项支持 `--foo` / `--no-foo`（如 `--drop-white-panel` / `--no-drop-white-panel`）。  
+语义细节见同目录 **参数说明**（`参数说明.md`）；下表只列 CLI ↔ Web 对照。
 
-### 1 输入输出（S0_io）
+### 1 输入输出（S0_io · Input/Output）
 
-校验路径、创建输出目录。成果不得写回航摄原片。
+| CLI | Web key |
+| --- | --- |
+| `--input-dir` | `input_dir` |
+| `--output-dir` | `output_dir` |
+| `--cache-dir` | `cache_dir` |
+| `--log-dir` | `log_dir` |
+| `--process-dir` | `process_dir` |
+| `--products-dir-name` | `products_dir_name` |
+| `--run-mode` | `run_mode` |
+| `--start-stage` | `start_stage` |
+| `--stop-after-stage` | `stop_after_stage` |
+| `--preset` | `preset`（`rgb_preview` 强制 `bands=Color`） |
+| `--benchmark-dir` | `benchmark_dir` |
+| `--match-reference-color` / `--no-match-reference-color` | `match_reference_color` |
+| `--memory-gb` | `memory_gb` |
+| `--cpus` | `cpus` |
 
-#### 1.1 --input
+### 2 影像编目（S1_catalog · Catalog）
 
-拍完后的 `MAX_*` 任务目录，**只读**。本机有默认测区时可省略。
+| CLI | Web key |
+| --- | --- |
+| `--max-index` | `max_index` |
+| `--max-frames` | `max_frames` |
+| `--min-agl-m` | `min_agl_m` |
+| `--max-tilt-deg` | `max_tilt_deg` |
+| `--drop-white-panel` / `--no-drop-white-panel` | `drop_white_panel` |
+| `--require-pos` / `--no-require-pos` | `require_pos` |
 
-#### 1.2 --out
+### 3 空三解算（S2_at · Aerial Triangulation）
 
-本次运行输出根。其下生成 `拼图结果/`、`附件/`、`cache/`、`log/` 等。禁止落在 `--input` 目录树内。目录含义见 **1.4**。
+| CLI | Web key |
+| --- | --- |
+| `--primary-band` | `primary_band`（当前仅 `Color`） |
+| `--workers-at` | `workers_at` |
+| `--sigma-xy-m` | `sigma_xy_m` |
+| `--sigma-z-m` | `sigma_z_m` |
+| `--sigma-attitude-deg` | `sigma_attitude_deg` |
+| `--outlier-threshold-px` | `outlier_threshold_px` |
+| `--calibrate-intrinsics` / `--no-calibrate-intrinsics` | `calibrate_intrinsics` |
 
-#### 1.3 --run-mode
+### 4 密集匹配（S3_dense · Dense Matching）
 
-`full` 全流程（默认）；`until_stage` 跑到停点；`step` 只跑起始阶段。
+| CLI | Web key |
+| --- | --- |
+| `--dsm-gsd` | `dsm_gsd` |
+| `--reuse-dsm` | `reuse_dsm` |
+| `--n-layers` | `n_layers` |
+| `--z-margin-m` | `z_margin_m` |
+| `--workers-dense` | `workers_dense` |
 
-#### 1.4 --start-stage
+### 5 DSM 生成（S4_dsm · Digital Surface Model）
 
-起始阶段，如 `S0_io` / `S2_at` / `S5_ortho`。从密集匹配之后续跑须已有空三缓存。
+| CLI | Web key |
+| --- | --- |
+| `--spike-tolerance-m` | `spike_tolerance_m` |
+| `--max-fill-gap-m` | `max_fill_gap_m` |
+| `--grid-reference` | `grid_reference` |
+| `--terrain-margin-lo-m` | `terrain_margin_lo_m` |
+| `--terrain-margin-hi-m` | `terrain_margin_hi_m` |
+| `--terrain-min-half-span-m` | `terrain_min_half_span_m` |
 
-#### 1.5 --stop-after-stage
+### 6 正射镶嵌（S5_ortho · Orthomosaic）
 
-`until_stage` 时在该阶段结束后停止（返回码 10）。例如先停在 `S4_dsm` 看 DSM，再决定是否正射。
+| CLI | Web key |
+| --- | --- |
+| `--bands` | `bands`（逗号分隔；Web 为字符串数组） |
+| `--color-correction` | `color_correction` |
+| `--seamline-enabled` / `--no-seamline-enabled` | `seamline_enabled` |
+| `--workers-ortho` | `workers_ortho` |
+| `--edge-trim-m` | `edge_trim_m` |
+| `--flatten-edge-win-m` | `flatten_edge_win_m` |
+| `--flatten-edge-band-m` | `flatten_edge_band_m` |
+| `--radiometric-normalize` / `--no-radiometric-normalize` | `radiometric_normalize`（需同时填 `benchmark_dir`） |
 
-#### 1.6 --grid-reference
+### 7 质量报告（S6_report · Quality Report）
 
-锁定交付格网：取该目录或 GeoTIFF 的 GSD/原点/宽高。只锁格网，高程与颜色仍自算。合格主路径可不填。
-
-### 2 影像编目（S1_catalog）
-
-扫描曝光、读 POS，丢掉白板与无效帧。
-
-#### 2.1 --max-frames
-
-过滤后只用前 N 个可用曝光。交付留空；调试可缩小。
-
-#### 2.2 --max-index
-
-只扫描文件名编号 ≤ 该值的曝光。用于局部调试。
-
-### 3 空三解算（S2_at）
-
-主波段提特征、匹配、平差。结果写入 `cache/`。
-
-#### 3.1 --cache-dir
-
-特征与空三缓存目录。指向已有 `features` 可跳过提特征。默认 `{--out}/cache/features`。
-
-#### 3.2 --workers
-
-进程数。空三/密集匹配/正射共用此上限，默认 CPU−1。内存不够时系统会自动下调。
-
-### 4 密集匹配（S3_dense）
-
-在 DSM 格网上求每个点的高程。可跳过本阶段、直接复用已有 DSM。
-
-#### 4.1 --reuse-dsm
-
-已有 `DSM.tif` 路径。填写后跳过密集匹配，按足迹补覆盖缺口，适合只重做正射。
-
-#### 4.2 --dsm-gsd
-
-DSM 地面分辨率（米）。省略则按航高/焦距估计，正射为其一半。不要为对齐某份商业图手写。
-
-#### 4.3 --terrain-margin-lo-m
-
-DSM 合理高程带下余量（米），空三点 p1 再往下留。默认 30。
-
-#### 4.4 --terrain-margin-hi-m
-
-DSM 合理高程带上余量（米），空三点 p99 再往上留。默认 50。
-
-#### 4.5 --terrain-min-half-span-m
-
-无空三参考时，DSM 中值 ± 半宽的下限（米）。默认 80。
-
-### 5 DSM 生成（S4_dsm）
-
-去尖刺、补洞，写出 `拼图结果/DSM.tif`。本阶段命令行无额外开关，受上一阶段 `--dsm-gsd` 与地形余量约束。
-
-### 6 正射镶嵌（S5_ortho）
-
-按 DSM 真正射并镶嵌成大图。
-
-#### 6.1 --bands
-
-逗号分隔。省略 = 8 波段全量 `Color,450nm,…,850nm`。仅 RGB 预览：`Color`。
-
-### 7 质量报告（S6_report）
-
-写出 `质量报告.pdf`。可选对照商业成品。
-
-#### 7.1 --benchmark-dir
-
-对照该目录写 `比对报告.txt`。不改格网、覆盖、颜色。留空则不比对。
-
-#### 7.2 --radiometric-normalize
-
-按 `--benchmark-dir` 做全局仿射辐射归一化（每波段 gain/offset），只改档位不动纹理。调试用。
-
-#### 7.3 --match-reference-color
-
-用参考正射的低频底套色。合格主路径不要开，出图不应依赖它。
+| CLI | Web key |
+| --- | --- |
+| `--write-pdf-report` / `--no-write-pdf-report` | `write_pdf_report` |
+| `--write-json-report` / `--no-write-json-report` | `write_json_report` |
 
 ### 8 退出码
 
@@ -214,7 +196,7 @@ DSM 合理高程带上余量（米），空三点 p99 再往上留。默认 50�
 
 ### 9 成果布局
 
-相对 `--out`。完整说明见 **1.4**。
+相对 `--output-dir`。完整说明见 **1.4**。
 
 | 路径 | 内容 |
 | --- | --- |
@@ -247,17 +229,17 @@ DSM="/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据�
 test -d "$INPUT" && echo "测区数据 OK"
 ```
 
-> 正在跑的任务不要再往同一个 `--out` 写。
+> 正在跑的任务不要再往同一个 `--output-dir` 写。
 
 ### 3.1 本测区出图
 
 ```bash
 "$PY" -u -m ms_mosaic \
-  --input "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
-  --out "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/replay_max_20251017_rgb" \
+  --input-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
+  --output-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/replay_max_20251017_rgb" \
   --bands Color \
   --cache-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/runs/full_MAX_20251017_001/cache/features" \
-  --workers 12
+  --workers-at 12 --workers-dense 12 --workers-ortho 12
 ```
 
 要顺便对照商业尺子、写出 `比对报告.txt`，**多加一行即可**，出图不变：
@@ -272,36 +254,36 @@ test -d "$INPUT" && echo "测区数据 OK"
 
 ```bash
 "$PY" -u -m ms_mosaic \
-  --input "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
-  --out "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/replay_max_20251017_smooth" \
+  --input-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
+  --output-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/replay_max_20251017_smooth" \
   --bands Color \
   --reuse-dsm "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/runs/full_surface_rgb/拼图结果/DSM.tif" \
   --cache-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/runs/full_MAX_20251017_001/cache/features" \
-  --workers 12
+  --workers-ortho 12
 ```
 
 ### 3.3 跑全量（RGB + 7 多光谱）
 
 ```bash
 "$PY" -u -m ms_mosaic \
-  --input "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
-  --out "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/full_surface_all" \
+  --input-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
+  --output-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/full_surface_all" \
   --cache-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/runs/full_MAX_20251017_001/cache/features" \
-  --workers 12
+  --workers-at 12 --workers-dense 12 --workers-ortho 12
 ```
 
 ### 3.4 阶段调试 / 少帧预览
 
 ```bash
 "$PY" -u -m ms_mosaic \
-  --input "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
-  --out "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/dbg_until_dsm" \
+  --input-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/docs/需求/测试正式数据/MAX_20251017/MAX_20251017_001" \
+  --output-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/dbg_until_dsm" \
   --bands Color \
   --run-mode until_stage \
   --stop-after-stage S4_dsm
 
 ./run.sh --max-frames 12 --bands Color \
-  --out "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/preview_rgb"
+  --output-dir "/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/preview_rgb"
 ```
 
 ### 3.5 如何确认跑完

@@ -20,6 +20,7 @@ import {
   TeamOutlined,
   AppstoreOutlined,
   ToolOutlined,
+  AuditOutlined,
 } from "@ant-design/icons";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
@@ -36,6 +37,7 @@ import InspectPage from "../pages/Inspect";
 import UsersPage from "../pages/Users";
 import RolesPage from "../pages/Roles";
 import PermissionsPage from "../pages/Permissions";
+import AuditPage from "../pages/Audit";
 import { PRODUCT, PRODUCT_TITLE } from "../product";
 import {
   canConfigure,
@@ -64,6 +66,7 @@ const TITLE: Record<string, string> = {
   roles: "角色管理",
   permissions: "权限管理",
   cli: "使用文档",
+  audit: "操作审计",
 };
 
 const MENU_ICON: Record<MenuKey, ReactNode> = {
@@ -78,6 +81,7 @@ const MENU_ICON: Record<MenuKey, ReactNode> = {
   roles: <TeamOutlined />,
   permissions: <SafetyOutlined />,
   cli: <BookOutlined />,
+  audit: <AuditOutlined />,
 };
 
 const GROUP_ICON: Record<MenuGroup, ReactNode> = {
@@ -314,6 +318,14 @@ function AppShellBody({
               element={
                 <Guard allow={canMenu("permissions")}>
                   <PermissionsPage />
+                </Guard>
+              }
+            />
+            <Route
+              path="/audit"
+              element={
+                <Guard allow={canMenu("audit")}>
+                  <AuditPage />
                 </Guard>
               }
             />

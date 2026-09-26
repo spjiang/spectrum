@@ -85,7 +85,7 @@ def _assert_out_outside_input(input_dir: Path, out_dir: Path) -> tuple[Path, Pat
     inp = input_dir.expanduser().resolve()
     out = out_dir.expanduser().resolve()
     if out == inp or inp in out.parents:
-        raise ValueError(f"禁止写入输入目录 {inp}，请把 --out 指到别处（例如 runs/）")
+        raise ValueError(f"禁止写入输入目录 {inp}，请把 --output-dir 指到别处（例如 runs/）")
     return inp, out
 
 

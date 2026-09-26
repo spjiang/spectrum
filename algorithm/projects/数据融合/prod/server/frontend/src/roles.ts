@@ -25,6 +25,7 @@ export type MenuKey =
   | "users"
   | "roles"
   | "permissions"
+  | "audit"
   | "cli";
 
 export type MenuGroup = "作业管理" | "辅助工具" | "系统管理" | "组织管理";
@@ -53,10 +54,11 @@ export const MENU_CATALOG: MenuDef[] = [
   { key: "health", label: "系统监控", path: "/health", group: "系统管理", roles: ["admin"], hint: "查看数据库、消息队列与计算服务状态" },
   { key: "settings", label: "系统配置", path: "/settings", group: "系统管理", roles: ["admin", "configurator"], hint: "配置数据路径等运行参数" },
   { key: "inspect", label: "影像查看", path: "/inspect", group: "辅助工具", roles: ["admin", "configurator", "executor", "viewer"], hint: "上传 TIF / JPG，查看元数据与像元" },
-  { key: "cli", label: "使用文档", path: "/cli", group: "辅助工具", roles: ["admin"], hint: "流程、算法与参数说明" },
+  { key: "cli", label: "使用文档", path: "/cli", group: "辅助工具", roles: ["admin", "configurator", "executor", "viewer"], hint: "流程、算法与参数说明" },
   { key: "users", label: "用户管理", path: "/users", group: "组织管理", roles: ["admin"], hint: "维护账号、状态与角色分配" },
   { key: "roles", label: "角色管理", path: "/roles", group: "组织管理", roles: ["admin"], hint: "维护系统角色与授权用户" },
   { key: "permissions", label: "权限管理", path: "/permissions", group: "组织管理", roles: ["admin"], hint: "维护功能权限及授权角色" },
+  { key: "audit", label: "操作审计", path: "/audit", group: "组织管理", roles: ["admin"], hint: "查看谁改了方案、谁提交或删除了任务" },
 ];
 
 export function menuVisible(item: MenuDef, roles: string[]): boolean {

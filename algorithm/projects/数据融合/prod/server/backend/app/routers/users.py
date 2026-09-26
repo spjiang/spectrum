@@ -8,6 +8,7 @@ from app.auth import ensure_role, hash_password, require_roles
 from app.db import get_db
 from app.models import User
 from app.schemas import UserCreate, UserOut, UserUpdate
+from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -44,7 +45,7 @@ def list_users(
 def create_user(
     body: UserCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles("admin")),
+    actor: User = Depends(require_roles("admin")),
 ) -> UserOut:
     name = body.username.strip()
     if not name or not body.password:
@@ -58,6 +59,7 @@ def create_user(
     db.commit()
     db.refresh(user)
     user = db.scalar(select(User).options(selectinload(User.roles)).where(User.id == user.id))
+    record_audit(db, actor.id, "user.create", {"id": user.id, "username": user.username, "roles": [r.name for r in user.roles]})
     return _out(user)
 
 
@@ -83,4 +85,16 @@ def update_user(
         _set_roles(db, user, body.roles)
     db.commit()
     user = db.scalar(select(User).options(selectinload(User.roles)).where(User.id == user_id))
+    record_audit(
+        db,
+        actor.id,
+        "user.update",
+        {
+            "id": user.id,
+            "username": user.username,
+            "roles": [r.name for r in user.roles],
+            "is_active": user.is_active,
+            "password_changed": bool(body.password),
+        },
+    )
     return _out(user)

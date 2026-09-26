@@ -18,14 +18,17 @@ MENU_KEYS = (
     "users",
     "roles",
     "permissions",
+    "audit",
 )
-ADMIN_LOCK = ("users", "roles", "permissions")
+ADMIN_LOCK = ("users", "roles", "permissions", "audit")
+# 命令行说明对所有登录角色开放，已保存的菜单里缺了也要补回
+PUBLIC_MENUS = ("cli",)
 
 DEFAULT_MENUS: dict[str, list[str]] = {
     "admin": list(MENU_KEYS),
-    "configurator": ["profiles", "jobs", "settings", "inspect"],
-    "executor": ["execute", "profiles", "jobs", "inspect"],
-    "viewer": ["profiles", "jobs", "inspect"],
+    "configurator": ["profiles", "jobs", "settings", "inspect", "cli"],
+    "executor": ["execute", "profiles", "jobs", "inspect", "cli"],
+    "viewer": ["profiles", "jobs", "inspect", "cli"],
 }
 
 
@@ -34,6 +37,14 @@ def _clean_menus(keys: list[str]) -> list[str]:
     out: list[str] = []
     for key in keys:
         if key in allowed and key not in out:
+            out.append(key)
+    return out
+
+
+def _ensure_public(keys: list[str]) -> list[str]:
+    out = list(keys)
+    for key in PUBLIC_MENUS:
+        if key not in out:
             out.append(key)
     return out
 
@@ -49,7 +60,9 @@ def load_mapping(db: Session) -> dict[str, list[str]]:
     for role in ROLES:
         saved = raw.get(role)
         if isinstance(saved, list):
-            mapping[role] = _clean_menus([str(x) for x in saved])
+            mapping[role] = _ensure_public(_clean_menus([str(x) for x in saved]))
+        else:
+            mapping[role] = _ensure_public(mapping[role])
     mapping["admin"] = list(MENU_KEYS)
     return mapping
 
@@ -57,7 +70,7 @@ def load_mapping(db: Session) -> dict[str, list[str]]:
 def save_mapping(db: Session, mapping: dict[str, list[str]]) -> dict[str, list[str]]:
     cleaned = default_mapping()
     for role in ROLES:
-        cleaned[role] = _clean_menus(mapping.get(role) or cleaned[role])
+        cleaned[role] = _ensure_public(_clean_menus(mapping.get(role) or cleaned[role]))
     cleaned["admin"] = list(MENU_KEYS)
     for key in ADMIN_LOCK:
         if key not in cleaned["admin"]:

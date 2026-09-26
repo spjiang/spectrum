@@ -11,6 +11,7 @@ from app.db import get_db
 from app.models import ParamDefinition, ParamProfile, ParamProfileValue, User
 from app.schemas import ParamDefOut, ProfileCreate, ProfileOut, ProfileUpdate
 from app.presets import RGB_PREVIEW_VALUES
+from app.services.audit import record_audit
 from app.services.params import assert_param_values
 
 router = APIRouter(prefix="/api", tags=["profiles"])
@@ -75,6 +76,7 @@ def create_profile(
         db.add(ParamProfileValue(profile_id=p.id, param_key=k, value=v))
     db.commit()
     db.refresh(p)
+    record_audit(db, user.id, "profile.create", {"id": p.id, "name": p.name, "preset": p.preset})
     return _profile_out(db, p)
 
 
@@ -83,7 +85,7 @@ def update_profile(
     profile_id: int,
     body: ProfileUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles("configurator", "admin")),
+    user: User = Depends(require_roles("configurator", "admin")),
 ) -> ProfileOut:
     p = db.get(ParamProfile, profile_id)
     if p is None:
@@ -116,4 +118,5 @@ def update_profile(
         p.version += 1
     db.commit()
     db.refresh(p)
+    record_audit(db, user.id, "profile.update", {"id": p.id, "name": p.name, "version": p.version})
     return _profile_out(db, p)

@@ -12,7 +12,7 @@ mosaics/*.tif + report/quality.json
 
 本机默认路径集中在 `local_defaults.sh` / `ms_mosaic/local_defaults.py`（解释器、测区、缓存、`runs/`）。
 
-**输入任务目录只读。** 成果写到 `--out`，默认在主程序目录下的 `runs/`。若 `--out` 落在输入目录里会直接报错退出。
+**输入任务目录只读。** 成果写到 `--output-dir`，默认在主程序目录下的 `runs/`。若输出落在输入目录里会直接报错退出。CLI 旗标与 Web 处理方案同名（`input_dir` → `--input-dir`）。
 
 执行（先进入主程序安装目录）：
 
@@ -26,7 +26,7 @@ cd /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融�
 ./run.sh
 
 # 指定输出目录
-./run.sh --out /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/manual_01
+./run.sh --output-dir /Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/projects/数据融合/prod/server/worker/runs/manual_01
 ```
 
 Python 默认 `/Users/jiangshengping/wwwroot/shenzhen/spectrum/algorithm/source/.venv/bin/python`，可用 `MS_MOSAIC_PYTHON` 覆盖。

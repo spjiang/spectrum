@@ -11,6 +11,7 @@ from app.db import get_db
 from app.models import User
 from app.schemas import SystemStatusOut, WorkerEnvOut, WorkerEnvUpdate, WorkerInspectOut, WorkerKillOut
 from app.services import jobs as jobsvc
+from app.services.audit import record_audit
 from app.services.deps import get_mq
 from app.services.mq import MQPublisher
 from app.services.worker_env import save_worker_env
@@ -62,10 +63,12 @@ def worker_inspect(
 def worker_kill_all(
     db: Session = Depends(get_db),
     mq: MQPublisher = Depends(get_mq),
-    _: User = Depends(require_roles("executor", "admin")),
+    user: User = Depends(require_roles("executor", "admin")),
 ) -> WorkerKillOut:
     """立刻杀掉 Worker 计算进程，并取消所有未结束任务。"""
-    return WorkerKillOut(killed=jobsvc.kill_all_active(db, mq))
+    killed = jobsvc.kill_all_active(db, mq)
+    record_audit(db, user.id, "job.kill_all", {"killed": killed})
+    return WorkerKillOut(killed=killed)
 
 
 @router.get("/worker-env", response_model=WorkerEnvResponse)
@@ -86,6 +89,16 @@ def update_worker_env(
 ) -> WorkerEnvResponse:
     save_worker_env(
         db,
+        {
+            "data_roots": body.data_roots,
+            "default_input_dir": body.default_input_dir,
+            "default_output_dir": body.default_output_dir,
+        },
+    )
+    record_audit(
+        db,
+        user.id,
+        "settings.update",
         {
             "data_roots": body.data_roots,
             "default_input_dir": body.default_input_dir,
