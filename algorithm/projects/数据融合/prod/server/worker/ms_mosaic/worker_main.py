@@ -1,26 +1,24 @@
 from __future__ import annotations
 
-"""RabbitMQ worker：任务在本进程跑，没有独立包装进程。
+"""RabbitMQ worker：只听队列，拼图在独立子进程里跑。
 
-计算进程池是 Worker 的子进程。队列通道断开、ack 超时都不能把计算父进程带走，
-进度才能一直往前走。可视化 kill 只杀 spawn 计算池，不杀 Worker。
+任务先 ack 再拉起子进程，队列断开不会把计算带走。子进程退出后操作系统收回
+全部内存，Worker 自身保持空闲基线。可视化 kill 杀任务子进程树，不杀 Worker。
 """
 
 import json
 import logging
 import os
 import queue
+import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from ms_mosaic.control import ControlState
-from ms_mosaic.job_proc import terminate_job_workers
-from ms_mosaic.log_io import stamp_print_line
-from ms_mosaic.mq_pub import MqReporter, QUEUES, amqp_params
-from ms_mosaic.stage_runner import run_stages
+from ms_mosaic.job_proc import terminate_job_workers, terminate_process_tree
+from ms_mosaic.mq_pub import QUEUES, amqp_params
 from ms_mosaic import worker_status
 
 log = logging.getLogger("ms_mosaic.worker")
@@ -33,84 +31,13 @@ QUEUE_EVENTS = "mosaic.events"
 _job_lock = threading.Lock()
 _job_id: str | None = None
 _job_active = False
+_job_child_pid: int | None = None
 _incoming: queue.Queue[dict[str, Any]] = queue.Queue()
 
 
-class _JobLogTee:
-    """把 print / logging 同步写到任务 run.log，供可视化实时拉取。"""
-
-    def __init__(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self.path = path
-        self._fp = path.open("a", encoding="utf-8")
-        self._handler = logging.FileHandler(path, encoding="utf-8")
-        self._handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-        logging.getLogger().addHandler(self._handler)
-        self._stdout = sys.stdout
-        self._buf = ""
-        sys.stdout = self  # type: ignore[assignment]
-
-    def write(self, s: str) -> int:
-        self._stdout.write(s)
-        self._buf += s
-        while "\n" in self._buf:
-            line, self._buf = self._buf.split("\n", 1)
-            self._fp.write(stamp_print_line(line + "\n"))
-        self._fp.flush()
-        return len(s)
-
-    def flush(self) -> None:
-        self._stdout.flush()
-        if self._buf:
-            self._fp.write(stamp_print_line(self._buf))
-            self._buf = ""
-        self._fp.flush()
-
-    def close(self) -> None:
-        self.flush()
-        sys.stdout = self._stdout
-        logging.getLogger().removeHandler(self._handler)
-        self._handler.close()
-        self._fp.close()
-
-
-def handle_job(
-    channel,
-    payload: dict[str, Any],
-    *,
-    rabbitmq_url: str,
-    connect: Callable[[str], Any] | None = None,
-) -> None:
-    job_id = str(payload["job_id"])
-    params = dict(payload.get("params_snapshot") or {})
-    out = Path(params["output_dir"])
-    ctrl_path = out / "log" / "control.json"
-    control = ControlState(path=ctrl_path)
-    reporter = MqReporter(channel, job_id, rabbitmq_url=rabbitmq_url, connect=connect)
-    job_log = _JobLogTee(out / "log" / "run.log")
-    log.info("job %s start input=%s out=%s", job_id, params.get("input_dir"), out)
-    try:
-        if control.checkpoint_barrier() == "cancel":
-            reporter.event("cancelled")
-            return
-        result = run_stages(Path(params["input_dir"]), out, params=params, reporter=reporter, control=control)
-        status = result.get("status", "succeeded")
-        if status == "awaiting_continue":
-            reporter.event("awaiting_continue", stage_id=result.get("completed_stage"), message=result.get("message"))
-        elif status == "failed":
-            reporter.event("failed", error=result.get("error"))
-        elif status == "cancelled":
-            reporter.event("cancelled")
-        elif status == "paused":
-            reporter.event("paused", stage_id=result.get("completed_stage"), message=result.get("message") or "已暂停，可继续运行")
-        else:
-            reporter.event("succeeded", n_shots=result.get("n_shots"))
-    except Exception as exc:  # noqa: BLE001
-        log.exception("job failed")
-        reporter.event("failed", error=str(exc))
-    finally:
-        reporter.close()
-        job_log.close()
+def job_child_command(job_id: str, payload_path: Path) -> list[str]:
+    """命令行带 --ms-job-。不导入 job_child，避免 Worker 主进程加载算法库。"""
+    return [sys.executable, "-m", "ms_mosaic.job_child", f"--ms-job-{job_id}", str(payload_path)]
 
 
 def _job_running() -> bool:
@@ -118,11 +45,30 @@ def _job_running() -> bool:
         return _job_active
 
 
+def _spawn_job(url: str, payload: dict[str, Any]) -> subprocess.Popen:
+    """把任务参数落到文件，再拉起带 --ms-job- 标记的子进程。"""
+    job_id = str(payload["job_id"])
+    params = dict(payload.get("params_snapshot") or {})
+    out = Path(params["output_dir"])
+    log_dir = out / "log"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    payload_path = log_dir / "job_payload.json"
+    payload_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    env = os.environ.copy()
+    env["RABBITMQ_URL"] = url
+    cmd = job_child_command(job_id, payload_path)
+    log.info("spawn job child: %s", " ".join(cmd))
+    return subprocess.Popen(cmd, env=env, start_new_session=True)
+
+
 def kill_current_job() -> str | None:
-    """立刻杀掉当前任务的计算进程池，Worker 本身继续听队列。"""
+    """立刻杀掉当前任务子进程树，Worker 本身继续听队列。"""
     with _job_lock:
         jid = _job_id
-    log.info("killing job %s compute workers", jid)
+        child = _job_child_pid
+    log.info("killing job %s child=%s", jid, child)
+    if child:
+        terminate_process_tree(child)
     leftover = terminate_job_workers(os.getpid())
     if leftover:
         log.info("compute still alive after kill: %s", leftover)
@@ -259,28 +205,38 @@ def _consume_jobs(url: str, stop: threading.Event) -> None:
 
 
 def _run_payload(url: str, payload: dict[str, Any]) -> None:
-    """在 Worker 主线程跑任务。心跳 pid 就是 Worker，进程池挂在本进程下面。"""
-    global _job_id, _job_active
+    """拉起任务子进程并等待结束。心跳 pid 是子进程，便于和 Worker 自身内存分开。"""
+    global _job_id, _job_active, _job_child_pid
     job_id = str(payload.get("job_id") or "")
+    proc = _spawn_job(url, payload)
     with _job_lock:
         _job_id = job_id
         _job_active = True
+        _job_child_pid = proc.pid
     worker_status.set_current_job(
         {
             "job_id": job_id,
-            "pid": os.getpid(),
+            "pid": proc.pid,
             "input_dir": (payload.get("params_snapshot") or {}).get("input_dir"),
             "output_dir": (payload.get("params_snapshot") or {}).get("output_dir"),
             "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
     )
     try:
-        handle_job(None, payload, rabbitmq_url=url)
+        code = proc.wait()
+        if code not in (0, None):
+            log.warning("job child %s exit %s", job_id, code)
     finally:
+        if proc.poll() is None:
+            terminate_process_tree(proc.pid)
         leftover = terminate_job_workers(os.getpid())
         if leftover:
             log.warning("compute leftover after job %s: %s", job_id, leftover)
-        _release_job(job_id)
+        with _job_lock:
+            if _job_id == job_id:
+                _job_id = None
+                _job_active = False
+            _job_child_pid = None
         worker_status.set_current_job(None, remember=False)
 
 
@@ -295,7 +251,7 @@ def main() -> int:
     threading.Thread(target=_control_supervisor, args=(url, stop), daemon=True, name="worker-control").start()
     threading.Thread(target=_consume_jobs, args=(url, stop), daemon=True, name="worker-jobs").start()
     worker_status.set_listening(True)
-    log.info("worker ready, jobs run in-process")
+    log.info("worker ready, jobs run in child process")
     try:
         while True:
             try:

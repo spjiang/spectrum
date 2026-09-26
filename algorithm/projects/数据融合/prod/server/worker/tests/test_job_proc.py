@@ -28,7 +28,7 @@ def test_terminate_job_workers_skips_worker(monkeypatch):
         lambda pid: {
             7: "python -m ms_mosaic.worker_main",
             10: "python -c from multiprocessing.spawn import spawn_main",
-            11: "python -c from multiprocessing.spawn import spawn_main",
+            11: "python -m ms_mosaic.job_child --ms-job-abc /tmp/p.json",
             12: "resource_tracker",
         }.get(pid, ""),
     )
@@ -39,3 +39,4 @@ def test_terminate_job_workers_skips_worker(monkeypatch):
     leftover = terminate_job_workers(7)
     assert leftover == []
     assert sent[0] == [10, 11]
+    assert any("ms-job-" in job_proc._cmdline(pid) for pid in sent[0])

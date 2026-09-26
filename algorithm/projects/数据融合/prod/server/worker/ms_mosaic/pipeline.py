@@ -409,7 +409,7 @@ def run_mosaic(
         if not poses:
             log(f"跳过 {band}：没有对应的空三外方位")
             return None
-        log(f"=== 正射 {band}  {len(poses)} 张 ===")
+        log(f"=== 正射 {group_name(band)} ({band})  {len(poses)} 张 ===")
         mosaic, labels, views = render_band(
             ortho_grid,
             flatten_edge_z(
@@ -443,7 +443,7 @@ def run_mosaic(
         # 足迹已按 edge_trim_m 收过，这里只清 RGB 全 0，不再二次腐蚀
         write_band_product(mosaic, ortho_grid, band, out_path, trim_m=0)
         files["bands"][band] = str(out_path)
-        log(f"写出 {out_path.name}")
+        log(f"已写出 {out_path.name}（{band} 完成）")
         if band == RGB_BAND or band == PRIMARY_BAND:
             files["rgb"] = str(out_path)
             nonlocal labels_rgb, views_rgb

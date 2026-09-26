@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Key } from "react";
-import { Alert, Button, Card, Col, Popconfirm, Row, Space, Table, Tag, Typography, message } from "antd";
-import { ReloadOutlined, StopOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Col, Popconfirm, Row, Space, Table, Tag, Tooltip, Typography, message } from "antd";
+import { QuestionCircleOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { formatNo } from "../ids";
@@ -49,10 +49,17 @@ type Inspect = {
   } | null;
 };
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, help }: { label: string; value: string; help: string }) {
   return (
     <div className="mosaic-stat">
-      <div className="mosaic-stat-label">{label}</div>
+      <div className="mosaic-stat-label">
+        {label}
+        <Tooltip title={help} placement="topLeft">
+          <button type="button" className="mosaic-stat-help" aria-label={`${label}说明`}>
+            <QuestionCircleOutlined />
+          </button>
+        </Tooltip>
+      </div>
       <div className="mosaic-stat-value" style={{ fontSize: 16 }}>
         {value}
       </div>
@@ -229,25 +236,46 @@ export default function WorkerPage() {
         </Space>
         <Row gutter={[12, 12]}>
           <Col xs={12} md={6}>
-            <Stat label="主机" value={w?.hostname || "—"} />
+            <Stat
+              label="主机"
+              value={w?.hostname || "—"}
+              help="跑计算的容器或机器名称，用来确认当前连的是哪一台 Worker。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="主进程 PID" value={w?.pid != null ? String(w.pid) : "—"} />
+            <Stat
+              label="主进程 PID"
+              value={w?.pid != null ? String(w.pid) : "—"}
+              help="Worker 主程序的进程号。它负责监听任务队列；真正做空三、DSM、正射的是它拉起的子进程。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="消费者 / 排队" value={`${data?.consumers ?? "—"} / ${data?.queued_messages ?? "—"}`} />
+            <Stat
+              label="消费者 / 排队"
+              value={`${data?.consumers ?? "—"} / ${data?.queued_messages ?? "—"}`}
+              help="消费者：有几路在听 mosaic.jobs 队列（一般是 1）。排队：队列里还有几条未被领取的拼图任务。跑长任务时消费者可能短暂为 0，只要心跳在线，任务通常仍在算。"
+            />
           </Col>
           <Col xs={12} md={6}>
             <Stat
               label="心跳延迟"
               value={data?.heartbeat_age_seconds != null ? `${data.heartbeat_age_seconds}s` : "无心跳"}
+              help="距离 Worker 上次写入「我还活着」过了多久。几秒内正常；持续变大或显示无心跳，说明进程已挂或卡住。"
             />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="Worker 自身" value={fmtMb(mem.worker_rss_mb)} />
+            <Stat
+              label="Worker 自身"
+              value={fmtMb(mem.worker_rss_mb)}
+              help="听队列的主进程内存。拼图在子进程里跑，任务结束后这里应回到几十到一两百 MB，不会留下几个 GB。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="任务进程" value={fmtMb(mem.job_rss_mb ?? 0)} />
+            <Stat
+              label="任务进程"
+              value={fmtMb(mem.job_rss_mb ?? 0)}
+              help="当前拼图子进程及其计算进程池。空闲应接近 0；进入空三、密集匹配、正射后会上升。"
+            />
           </Col>
         </Row>
         <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
@@ -399,38 +427,71 @@ export default function WorkerPage() {
 
       <Card className="mosaic-panel" title="内存占用">
         <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
-          没有任务时「任务进程」为 0 MB，这里仍会显示 Worker 自身和容器占用，方便对比空闲基线。Worker 容器不设内存上限。
+          拼图在独立子进程里跑，结束后内存还给系统。没有任务时「任务进程」应接近 0，「Worker 自身」只剩听队列的基线。Worker 容器不设内存上限。
         </Typography.Paragraph>
         <Row gutter={[12, 12]}>
           <Col xs={12} md={6}>
-            <Stat label="Worker 自身" value={fmtMb(mem.worker_rss_mb)} />
+            <Stat
+              label="Worker 自身"
+              value={fmtMb(mem.worker_rss_mb)}
+              help="听队列的主进程。任务结束后应回到空闲基线，不会把上次拼图的几个 GB 留在这里。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="任务进程" value={fmtMb(mem.job_rss_mb ?? 0)} />
+            <Stat
+              label="任务进程"
+              value={fmtMb(mem.job_rss_mb ?? 0)}
+              help="正在跑拼图的子进程及其进程池。空闲为 0；密集匹配和正射时最高。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="辅助进程" value={fmtMb(mem.helper_rss_mb ?? 0)} />
+            <Stat
+              label="辅助进程"
+              value={fmtMb(mem.helper_rss_mb ?? 0)}
+              help="Python 多进程附带的资源跟踪等辅助进程，不是算法本体，一般很小。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="进程树合计" value={fmtMb(mem.tree_rss_mb)} />
+            <Stat
+              label="进程树合计"
+              value={fmtMb(mem.tree_rss_mb)}
+              help="Worker 自身 + 任务进程 + 辅助进程。看「这一整棵计算进程」一共占了多少。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="容器已用" value={fmtMb(mem.container_used_mb)} />
+            <Stat
+              label="容器已用"
+              value={fmtMb(mem.container_used_mb)}
+              help="整个 Worker 容器当前用掉的内存，可能略大于进程树合计（含未单独列出的开销）。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="容器峰值" value={fmtMb(mem.container_peak_mb)} />
+            <Stat
+              label="容器峰值"
+              value={fmtMb(mem.container_peak_mb)}
+              help="本容器启动以来用过的最高内存。用来判断有没有冲过峰值、会不会逼近机器上限。"
+            />
           </Col>
           <Col xs={12} md={6}>
             <Stat
               label="容器限额"
               value={mem.container_limit_mb == null ? "不限制" : fmtMb(mem.container_limit_mb)}
+              help="Docker 给这个容器设的内存上限。显示「不限制」表示容器本身没封顶，仍受引擎可见总量约束。"
             />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="引擎可见总量" value={fmtMb(w?.host_memory?.mem_total_mb)} />
+            <Stat
+              label="引擎可见总量"
+              value={fmtMb(w?.host_memory?.mem_total_mb)}
+              help="Docker 分给 Linux 虚拟机的内存，不是 macOS 整机内存。任务预算要到 36GB，请把 Docker Desktop → Settings → Resources → Memory 调到 ≥ 36GB。"
+            />
           </Col>
           <Col xs={12} md={6}>
-            <Stat label="引擎当前空闲" value={fmtMb(w?.host_memory?.mem_available_mb)} />
+            <Stat
+              label="引擎当前空闲"
+              value={fmtMb(w?.host_memory?.mem_available_mb)}
+              help="引擎此刻还能再分给新计算的内存。接近 0 时再开任务容易变慢或被系统回收进程。"
+            />
           </Col>
         </Row>
         <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>

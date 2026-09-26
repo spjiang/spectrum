@@ -428,6 +428,22 @@ body,
 .mosaic-stat-label {
   color: var(--mosaic-muted);
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mosaic-stat-help {
+  border: 0;
+  background: none;
+  padding: 0;
+  line-height: 1;
+  color: var(--mosaic-muted);
+  cursor: pointer;
+}
+
+.mosaic-stat-help:hover {
+  color: var(--mosaic-text);
 }
 
 .mosaic-stat-value {

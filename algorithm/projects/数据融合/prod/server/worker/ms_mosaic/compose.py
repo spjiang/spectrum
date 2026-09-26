@@ -31,6 +31,7 @@ from ms_mosaic.products import (
     RasterWriter,
     apply_coverage_mask,
     band_dtype,
+    group_name,
     quantize,
     rgb_with_alpha,
 )
@@ -176,6 +177,7 @@ def _render_band_with_payload(
     use_gain: bool,
     log,
 ) -> tuple[np.ndarray, np.ndarray, list[int]]:
+    out_name = group_name(band)
     if use_gain:
         acc = OverlapStats()
         for _, _window, tile_acc in map_tiles(
@@ -184,7 +186,7 @@ def _render_band_with_payload(
             _overlap_fn,
             workers=workers,
             log=log,
-            label=f"曝光统计 {band}",
+            label=f"曝光统计 {out_name} ({band})",
         ):
             if tile_acc:
                 merge_overlap(acc, tile_acc)
@@ -194,11 +196,11 @@ def _render_band_with_payload(
             if vals:
                 p = np.percentile(vals, [10, 50, 90])
                 log(
-                    f"全局增益 {len(vals)} 张，"
+                    f"全局增益 {out_name} ({band}) {len(vals)} 张，"
                     f"p10/p50/p90={p[0]:.3f}/{p[1]:.3f}/{p[2]:.3f}"
                 )
             else:
-                log("全局增益：重叠不足，保持 1.0")
+                log(f"全局增益 {out_name} ({band})：重叠不足，保持 1.0")
     sample_bands = 3 if band == RGB_BAND else 1
     acc = np.zeros((sample_bands, grid.height, grid.width), np.float32)
     wsum = np.zeros(grid.shape, np.float32)
@@ -211,7 +213,7 @@ def _render_band_with_payload(
         _ortho_fn,
         workers=workers,
         log=log,
-        label=f"正射 {band}",
+        label=f"正射 {out_name} ({band})",
     ):
         if tile_m.size == 0:
             continue
