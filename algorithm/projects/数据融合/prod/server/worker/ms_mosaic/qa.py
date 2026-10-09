@@ -547,11 +547,12 @@ def plot_camera_positions(gps_rows: Sequence[dict], out: Path) -> Path | None:
     y1 = [r["gps1"][1] for r in rows]
     _cjk_rcparams()
     fig, ax = plt.subplots(figsize=(6.4, 6.4))
-    ax.scatter(x0, y0, s=18, c="#1f4e9e", marker="D", label="初始POS", zorder=2)
-    ax.scatter(x1, y1, s=14, c="#2ca02c", marker="D", label="优化POS", zorder=3)
+    # 中文图例不画在图里。Worker 没有中文字体，matplotlib 会把汉字画成方框。
+    # 蓝点是初始 POS，绿点是优化 POS，说明由 PDF 用 CID 字体写出。
+    ax.scatter(x0, y0, s=18, c="#1f4e9e", marker="D", zorder=2)
+    ax.scatter(x1, y1, s=14, c="#2ca02c", marker="D", zorder=3)
     ax.set_aspect("equal", adjustable="datalim")
     ax.grid(True, color="#eeeeee")
-    ax.legend(loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.12))
     ax.set_xticks([])
     ax.set_yticks([])
     for spine in ax.spines.values():

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import FileResponse, PlainTextResponse
@@ -171,7 +170,7 @@ def job_report(
     job = db.get(JobRun, job_id)
     if job is None:
         raise HTTPException(404, "任务不存在")
-    path = Path(job.report_pdf_path or "")
-    if not path.is_file():
+    path = jobsvc.locate_report_pdf(job)
+    if path is None:
         raise HTTPException(404, "质量报告尚未生成")
     return FileResponse(path, filename="质量报告.pdf", media_type="application/pdf")

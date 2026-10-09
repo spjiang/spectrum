@@ -176,6 +176,59 @@ def _header(canvas, doc, *, first: bool, created_cn: str):
     canvas.restoreState()
 
 
+def _diamond(color: str, size: float = 8):
+    """图例用的菱形色块。颜色与相机位置图里的散点一致。"""
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import Flowable
+
+    class Diamond(Flowable):
+        def __init__(self) -> None:
+            super().__init__()
+            self.width = size
+            self.height = size
+
+        def draw(self) -> None:
+            c = self.canv
+            c.setFillColor(HexColor(color))
+            p = c.beginPath()
+            p.moveTo(size / 2, 0)
+            p.lineTo(size, size / 2)
+            p.lineTo(size / 2, size)
+            p.lineTo(0, size / 2)
+            p.close()
+            c.drawPath(p, fill=1, stroke=0)
+
+    return Diamond()
+
+
+def _marker_legend(items: list[tuple[str, str]]):
+    """色块加中文。中文走 PDF 字体，避免嵌进 matplotlib 图后变成方框。"""
+    from reportlab.platypus import Paragraph, Table, TableStyle
+
+    styles = _styles()
+    row = []
+    widths = []
+    for color, label in items:
+        row.extend([_diamond(color), Paragraph(label, styles["cell"])])
+        widths.extend([14, 72])
+    legend = Table([row], colWidths=widths)
+    legend.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("ALIGN", (0, 0), (0, -1), "CENTER"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
+    wrap = Table([[legend]])
+    wrap.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+    return wrap
+
+
 def _maybe_image(path, width=240, height=240):
     from reportlab.platypus import Image, Spacer
 
@@ -483,7 +536,7 @@ def write_quality_pdf(payload: dict, path: Path) -> Path:
     story.append(KeepTogether([
         Paragraph("相机位置视图", styles["h1"]),
         _maybe_image(figures.get("camera_pos"), 420, 420),
-        Paragraph("优化POS　　初始POS", styles["caption"]),
+        _marker_legend([("#1f4e9e", "初始POS"), ("#2ca02c", "优化POS")]),
         Paragraph("相机位置视图", styles["caption"]),
     ]))
     story.append(KeepTogether([

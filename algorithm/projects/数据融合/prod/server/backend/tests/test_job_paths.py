@@ -43,6 +43,30 @@ def test_stamp_run_output_dir_skips_if_already_stamped():
     assert stamp_run_output_dir(p) == p
 
 
+def test_resolve_paths_puts_report_at_run_root(tmp_path: Path):
+    from app.services.jobs import resolve_paths
+
+    out = tmp_path / "out"
+    paths = resolve_paths({}, str(tmp_path / "in"), str(out))
+    assert paths["report_pdf_path"] == str(out.resolve() / "质量报告.pdf")
+    assert paths["products_dir"] == str(out.resolve() / "拼图结果")
+
+
+def test_locate_report_pdf_falls_back_to_run_root(tmp_path: Path):
+    from types import SimpleNamespace
+
+    from app.services.jobs import locate_report_pdf
+
+    pdf = tmp_path / "质量报告.pdf"
+    pdf.write_bytes(b"%PDF")
+    job = SimpleNamespace(
+        report_pdf_path=str(tmp_path / "拼图结果" / "质量报告.pdf"),
+        output_dir=str(tmp_path),
+        products_dir=str(tmp_path / "拼图结果"),
+    )
+    assert locate_report_pdf(job) == pdf
+
+
 def test_detach_derived_dirs_clears_paths_under_old_output():
     from app.services.paths import detach_derived_dirs
 

@@ -143,6 +143,7 @@ def test_write_quality_pdf_is_valid_and_contains_metrics(tmp_path: Path):
     assert "基于GPS配准" in text
     assert "GPS配准列表" in text
     assert "相机位置视图" in text
+    assert "初始POS" in text and "优化POS" in text
     assert "重叠度视图" in text
     assert "航线信息" in text
     assert "较差航向重叠率信息" in text

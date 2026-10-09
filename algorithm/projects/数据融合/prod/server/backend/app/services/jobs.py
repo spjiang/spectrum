@@ -137,6 +137,29 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def locate_report_pdf(job: Any) -> Path | None:
+    """按实际写出位置找质量报告。旧任务把路径记在成果子目录下，文件其实在输出根目录。"""
+    candidates: list[Path] = []
+    stored = str(getattr(job, "report_pdf_path", None) or "").strip()
+    if stored:
+        candidates.append(Path(stored))
+    out = str(getattr(job, "output_dir", None) or "").strip()
+    if out:
+        candidates.append(Path(out) / "质量报告.pdf")
+    products = str(getattr(job, "products_dir", None) or "").strip()
+    if products:
+        candidates.append(Path(products) / "质量报告.pdf")
+    seen: set[str] = set()
+    for path in candidates:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        if path.is_file():
+            return path
+    return None
+
+
 def _defaults(db: Session) -> dict[str, Any]:
     rows = db.scalars(select(ParamDefinition)).all()
     return {row.key: row.default_value for row in rows}
@@ -159,7 +182,8 @@ def resolve_paths(params: dict[str, Any], input_dir: str, output_dir: str) -> di
         if params.get("process_dir")
         else str(out / "附件"),
         "products_dir": str(products),
-        "report_pdf_path": str(products / "质量报告.pdf"),
+        # 质量报告写在本次输出目录根上，与 pipeline 的 out_dir / 质量报告.pdf 一致
+        "report_pdf_path": str(out / "质量报告.pdf"),
     }
 
 def build_snapshot(db: Session, profile_id: int | None, overrides: dict[str, Any]) -> tuple[dict[str, Any], int | None, int | None]:
