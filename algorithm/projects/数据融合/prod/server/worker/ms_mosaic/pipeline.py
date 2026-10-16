@@ -9,7 +9,7 @@ from typing import Any, Sequence
 import numpy as np
 
 from ms_mosaic.compose import render_band, write_band_product
-from ms_mosaic.parallel import resolve_workers, split_ortho_pools
+from ms_mosaic.parallel import resolve_workers, split_ortho_pools, tile_worker_mb
 from ms_mosaic.dense import DenseConfig, compute_height_field
 from ms_mosaic.dsm import (
     Dsm,
@@ -42,7 +42,13 @@ from ms_mosaic.products import (
     write_kml,
     write_pseudocolor,
 )
-from ms_mosaic.qa import build_quality_payload, cameras_table, render_report_figures
+from ms_mosaic.qa import (
+    band_rms_px,
+    build_quality_payload,
+    cameras_table,
+    registered_image_ids,
+    render_report_figures,
+)
 from ms_mosaic.report import write_report
 from ms_mosaic.report_pdf import write_quality_pdf
 from ms_mosaic.control import ControlState
@@ -131,6 +137,24 @@ def resolve_benchmark_dir(path: Path | str | None, *, required: bool = True) -> 
     return None
 
 
+def _bind_job_memory(fn):
+    """跑管线期间让分块并行读到这次任务的内存预算。"""
+    from functools import wraps
+
+    from ms_mosaic.memory import set_job_memory_gb
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        set_job_memory_gb(kwargs.get("memory_gb"))
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            set_job_memory_gb(None)
+
+    return wrapper
+
+
+@_bind_job_memory
 def run_mosaic(
     input_dir: Path,
     out_dir: Path,
@@ -205,14 +229,31 @@ def run_mosaic(
     wanted = tuple(bands) if bands is not None else BAND_ORDER
     timings: dict[str, float] = {}
 
+    # 当前阶段。日志行随事件写入数据库，刷屏的块进度不发。
+    held_stage = {"id": None}
+
     def log(msg: str) -> None:
         with _log_lock:
             print(msg, flush=True)
+        stage_id = held_stage["id"]
+        if not stage_id or ("/" in msg and "块" in msg and "进程" not in msg):
+            return
+        try:
+            reporter.event("stage_log", stage_id=stage_id, message=msg)
+        except Exception:
+            pass
+
+    def enter(stage_id: str, message: str = "") -> None:
+        held_stage["id"] = stage_id
+        reporter.stage_start(stage_id, message)
 
     from ms_mosaic.checkpoint import checkpoint_path, resolve_sparse, should_reuse_at
 
     reuse_at = should_reuse_at(start_stage, checkpoint_path(cache_dir))
-    reporter.stage_start("S2_at", "复用空三检查点" if reuse_at else "空三 / 稀疏重建")
+    # 编目节点在进入空三前结束。影像筛选发生在空三内部，这里只记交接耗时。
+    if stage_index(start_stage) <= stage_index("S1_catalog"):
+        reporter.stage_done("S1_catalog", max(0.0, time.time() - t0))
+    enter("S2_at", "复用空三检查点" if reuse_at else "空三 / 稀疏重建")
     t = time.time()
     sparse = resolve_sparse(
         input_dir,
@@ -245,13 +286,20 @@ def run_mosaic(
             return early
     block = sparse.block
     at = sparse.at
+    # 空三可含全部波段影像；密集/足迹仍只用主波段 Color，避免同曝光多镜头重复撑大范围
+    primary_ids = {im.index for im in block.primary()}
+    dense_poses = {i: p for i, p in sparse.poses.items() if i in primary_ids}
+    dense_paths = {i: sparse.image_paths[i] for i in dense_poses if i in sparse.image_paths}
+    if not dense_poses:
+        dense_poses = dict(sparse.poses)
+        dense_paths = dict(sparse.image_paths)
 
     t = time.time()
     pts = sparse.points
     # 参考面取覆盖区按面积加权的稳健地形面：稀疏点密度在纹理强的地方高出几十倍，
     # 直接取中位数会被那一小块区域拉走，估出的航高偏大、GSD 偏粗。
     ground_z = ground_reference_z(pts) if len(pts) else block.ground_z
-    cams = {i: sparse.camera for i in sparse.poses}
+    cams = {i: sparse.camera for i in dense_poses}
     ref_dir = resolve_benchmark_dir(benchmark_dir, required=benchmark_dir is not None)
     if match_reference_color and ref_dir is None:
         raise ValueError("--match-reference-color 需要同时指定 --benchmark-dir")
@@ -271,11 +319,11 @@ def run_mosaic(
         )
     else:
         if dsm_gsd is None:
-            dsm_gsd = estimate_dsm_gsd(sparse.camera, sparse.poses, ground_z)
+            dsm_gsd = estimate_dsm_gsd(sparse.camera, dense_poses, ground_z)
             log(f"DSM GSD 由航高/焦距估计为 {dsm_gsd:.6f} m（正射为其一半）")
-        grid = grid_from_footprints(cams, sparse.poses, ground_z, dsm_gsd, block.crs)
+        grid = grid_from_footprints(cams, dense_poses, ground_z, dsm_gsd, block.crs)
     coverage = smooth_coverage_mask(
-        coverage_from_footprints(grid, cams, sparse.poses, ground_z), grid.gsd
+        coverage_from_footprints(grid, cams, dense_poses, ground_z), grid.gsd
     )
     trim = 0.0 if edge_trim_m is None else float(edge_trim_m)
     if trim > 0:
@@ -287,7 +335,7 @@ def run_mosaic(
     if reuse_dsm is not None:
         import rasterio
 
-        reporter.stage_start("S3_dense", f"复用 DSM {reuse_dsm}")
+        enter("S3_dense", f"复用 DSM {reuse_dsm}")
         src = Path(reuse_dsm).expanduser().resolve()
         with rasterio.open(src) as ds:
             z = ds.read(1).astype(np.float64)
@@ -295,7 +343,7 @@ def run_mosaic(
                 z = np.where(z == ds.nodata, np.nan, z)
             grid = Grid(ds.transform, ds.width, ds.height, str(ds.crs))
         coverage = smooth_coverage_mask(
-            coverage_from_footprints(grid, cams, sparse.poses, ground_z), grid.gsd
+            coverage_from_footprints(grid, cams, dense_poses, ground_z), grid.gsd
         )
         if trim > 0:
             coverage = erode_coverage(coverage, grid.gsd, trim)
@@ -330,7 +378,7 @@ def run_mosaic(
         log(f"复用 DSM {src}，足迹补洞后有效 {dsm.stats['fill_ratio']:.3f}")
         reporter.stage_done("S3_dense", 0.0)
     else:
-        reporter.stage_start("S3_dense", "密集匹配")
+        enter("S3_dense", "密集匹配")
         z_margin = float(z_margin_m) if z_margin_m is not None else estimate_z_margin_m(pts)
         if z_margin_m is None:
             log(f"高程搜索半宽 {z_margin:.1f} m（由稀疏点起伏估计）")
@@ -344,9 +392,9 @@ def run_mosaic(
         field = compute_height_field(
             grid,
             pts,
-            {i: sparse.camera for i in sparse.poses},
-            sparse.poses,
-            sparse.image_paths,
+            {i: sparse.camera for i in dense_poses},
+            dense_poses,
+            dense_paths,
             cfg=dense_cfg,
             log=log,
             workers=dense_workers,
@@ -376,7 +424,7 @@ def run_mosaic(
         dsm = build_dsm(field, **dsm_kw)
 
     t = time.time()
-    reporter.stage_start("S4_dsm", "写出 DSM")
+    enter("S4_dsm", "写出 DSM")
     dsm_path = write_geotiff(dsm, products_dir / "DSM.tif")
     timings["dsm"] = time.time() - t
     reporter.stage_done("S4_dsm", timings["dsm"])
@@ -398,26 +446,27 @@ def run_mosaic(
 
     if ortho_grid is None:
         ortho_grid = dsm.grid.refine(ORTHO_OVER_DSM)
-    reporter.stage_start("S5_ortho", f"正射波段 {wanted}")
+    enter("S5_ortho", f"正射波段 {wanted}")
     files: dict[str, Any] = {"bands": {}, "dsm": str(dsm_path), "mosaic_dir": str(products_dir)}
-    labels_rgb = None
-    views_rgb: list[int] = []
+    rgb_raster = None
     t_ortho = time.time()
+    # 贴边采样面只跟 DSM 有关，各波段相同。算一次，避免八个波段各滤一遍同一张高程。
+    ortho_z = flatten_edge_z(
+        dsm.z,
+        dsm.grid.gsd,
+        win_m=40.0 if flatten_edge_win_m is None else float(flatten_edge_win_m),
+        band_m=80.0 if flatten_edge_band_m is None else float(flatten_edge_band_m),
+    )
 
-    def _run_band(band: str, band_workers: int | None) -> tuple[str, np.ndarray, np.ndarray, list[int]] | None:
+    def _run_band(band: str, band_workers: int | None):
         cameras, poses, paths = transfer_band(block, at.cameras, at.poses, band)
         if not poses:
             log(f"跳过 {band}：没有对应的空三外方位")
             return None
         log(f"=== 正射 {group_name(band)} ({band})  {len(poses)} 张 ===")
-        mosaic, labels, views = render_band(
+        raster = render_band(
             ortho_grid,
-            flatten_edge_z(
-                dsm.z,
-                dsm.grid.gsd,
-                win_m=40.0 if flatten_edge_win_m is None else float(flatten_edge_win_m),
-                band_m=80.0 if flatten_edge_band_m is None else float(flatten_edge_band_m),
-            ),
+            ortho_z,
             dsm.grid,
             cameras,
             poses,
@@ -431,27 +480,42 @@ def run_mosaic(
             # 全局仿射辐射归一化：只改档位，不动纹理与局部对比。自研输出忠实于
             # 源 JPG（G 均值 114.3，源 107.4），商业是减掉暗电平后的档位
             # （G 91.1，饱和 0）。实测校正后分位残差 0.9–1.7 DN、饱和率 0%。
+            # 验收套色要整幅统计，只在显式开启的调试路径整幅读入
             ref_rgb = ref_dir / "Orthomosaic_pix_surf_group0.tif"
-            mosaic = scale_mosaic_to_reference(mosaic, ortho_grid, ref_rgb)
+            mosaic = scale_mosaic_to_reference(raster.to_array(), ortho_grid, ref_rgb)
             if match_reference_color:
                 # 低频替换会把参考的低频底搬过来，属调试手段，不进交付主路径
                 mosaic = match_lowfreq_to_reference(mosaic, ortho_grid, ref_rgb)
-        return band, mosaic, labels, views
+            return band, raster, mosaic
+        return band, raster, None
 
-    def _commit_band(band: str, mosaic: np.ndarray, labels: np.ndarray, views: list[int]) -> None:
+    def _commit_band(band: str, raster, mosaic) -> None:
         out_path = products_dir / group_name(band)
-        # 足迹已按 edge_trim_m 收过，这里只清 RGB 全 0，不再二次腐蚀
-        write_band_product(mosaic, ortho_grid, band, out_path, trim_m=0)
-        files["bands"][band] = str(out_path)
-        log(f"已写出 {out_path.name}（{band} 完成）")
-        if band == RGB_BAND or band == PRIMARY_BAND:
-            files["rgb"] = str(out_path)
-            nonlocal labels_rgb, views_rgb
-            labels_rgb, views_rgb = labels, views
+        try:
+            # 足迹已按 edge_trim_m 收过，这里只清 RGB 全 0，不再二次腐蚀
+            write_band_product(mosaic if mosaic is not None else raster, ortho_grid, band, out_path, trim_m=0)
+            files["bands"][band] = str(out_path)
+            log(f"已写出 {out_path.name}（{band} 完成）")
+            keep = band == RGB_BAND or band == PRIMARY_BAND
+            if keep:
+                files["rgb"] = str(out_path)
+                nonlocal rgb_raster
+                if rgb_raster is not None and rgb_raster is not raster:
+                    rgb_raster.close()
+                rgb_raster = raster
+        except BaseException:
+            raster.close()
+            raise
+        if not keep:
+            raster.close()
 
     rgb_bands = [b for b in wanted if b == RGB_BAND]
     ms_bands = [b for b in wanted if b != RGB_BAND]
-    tile_n = resolve_workers(ortho_workers)
+    ms_cam = next((block.cameras[b] for b in ms_bands if b in block.cameras), None)
+    tile_n = resolve_workers(
+        ortho_workers,
+        per_worker_mb=tile_worker_mb(ms_cam.width * ms_cam.height * 2) if ms_cam is not None else None,
+    )
     for band in rgb_bands:
         got = _run_band(band, ortho_workers)
         if got:
@@ -474,6 +538,8 @@ def run_mosaic(
     reporter.stage_done("S5_ortho", timings["ortho"])
     early = _barrier(control, reporter, "S5_ortho")
     if early:
+        if rgb_raster is not None:
+            rgb_raster.close()
         early["files"] = files
         return early
     early = _stop_here(
@@ -483,26 +549,55 @@ def run_mosaic(
         reporter,
     )
     if early:
+        if rgb_raster is not None:
+            rgb_raster.close()
         return early
 
-    reporter.stage_start("S6_report", "质量报告")
+    t_report = time.time()
+    enter("S6_report", "质量报告")
     pc_path = write_pseudocolor(dsm.z, dsm.grid, extras_dir / "DSM_pseudocolor.tif")
     kml_path = write_kml(ortho_grid, extras_dir / "area.kml", image=Path(files.get("rgb", "DSM.tif")).name)
     files["pseudocolor"] = str(pc_path)
     files["kml"] = str(kml_path)
-    if seamline_enabled and labels_rgb is not None:
-        seam_path = seamline_geojson(labels_rgb, ortho_grid, views_rgb, extras_dir / "seamlines.geojson")
-        files["seamlines"] = str(seam_path)
+    if rgb_raster is not None:
+        try:
+            if seamline_enabled:
+                seam_path = seamline_geojson(
+                    rgb_raster.labels, ortho_grid, rgb_raster.views, extras_dir / "seamlines.geojson"
+                )
+                files["seamlines"] = str(seam_path)
+        finally:
+            rgb_raster.close()
+            rgb_raster = None
 
     n_shots = sparse.counts.get("n_usable", len(block.primary()))
-    cam_info = cameras_table(block, at, at.stats.get("rms_reprojection_px"))
+    # 复用检查点时 keypoint_counts 可能为空：从特征缓存补齐，保证全波段统计
+    kp_counts = dict(sparse.keypoint_counts or {})
+    if len(kp_counts) < len(sparse.image_paths):
+        from ms_mosaic.features import load_keypoints
+
+        for idx, path in sparse.image_paths.items():
+            if idx in kp_counts:
+                continue
+            try:
+                kp_counts[idx] = len(load_keypoints(Path(path), cache_dir=cache_dir))
+            except Exception:
+                kp_counts[idx] = 0
+    reg_ids = registered_image_ids(at, sparse.tracks)
+    cam_info = cameras_table(
+        block,
+        at,
+        at.stats.get("rms_reprojection_px"),
+        registered=reg_ids,
+        rms_by_band=band_rms_px(block, at),
+    )
     payload = build_quality_payload(
         input_dir=input_dir,
         block=block,
         at=at,
         tracks=sparse.tracks,
         matches=sparse.matches,
-        keypoint_counts=sparse.keypoint_counts,
+        keypoint_counts=kp_counts,
         dsm=dsm,
         dense_stats=field.stats if field is not None else {"reused_dsm": True, **{k: dsm.stats[k] for k in ("n_valid", "fill_ratio") if k in dsm.stats}},
         files=files,
@@ -513,7 +608,8 @@ def run_mosaic(
         cameras_info=cam_info,
     )
     primary = [im for im in block.primary() if im.index in at.poses]
-    color_cams = {im.index: at.cameras[PRIMARY_BAND] for im in primary}
+    primary_cam = at.cameras.get(PRIMARY_BAND) or next(iter(at.cameras.values()), None)
+    color_cams = {im.index: primary_cam for im in primary} if primary_cam is not None else {}
     color_poses = {im.index: at.poses[im.index] for im in primary}
     payload["figures"] = render_report_figures(
         fig_dir=out_dir / "report" / "figures",
@@ -548,7 +644,7 @@ def run_mosaic(
                 log("比对未达标，见 比对报告.md")
         except Exception as exc:
             log(f"比对失败（成果已写出）：{exc}")
-    reporter.stage_done("S6_report", 0.0)
+    reporter.stage_done("S6_report", time.time() - t_report)
     payload["status"] = "succeeded"
     payload["completed_stage"] = "S6_report"
     return payload

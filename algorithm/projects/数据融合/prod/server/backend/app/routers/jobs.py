@@ -13,6 +13,7 @@ from app.db import get_db
 from app.models import JobRun, User
 from app.schemas import JobContinue, JobCreate, JobListOut, JobOut, JobsClearedOut
 from app.services import jobs as jobsvc
+from app.services.stage_steps import persist_stage_steps
 from app.services.audit import record_audit
 from app.services.deps import get_mq
 from app.services.mq import MQPublisher
@@ -68,6 +69,8 @@ _JOB_LIST_COLS = (
     JobRun.message,
     JobRun.eta_seconds,
     JobRun.error_summary,
+    JobRun.stage_timings,
+    JobRun.stage_steps,
     JobRun.n_shots,
     JobRun.memory_gb,
     JobRun.cpus,
@@ -146,6 +149,20 @@ def job_action(
     job = jobsvc.control_job(db, mq, job_id, action, stop_after=stop, settings=settings)
     record_audit(db, user.id, f"job.{action}", {"job_id": str(job.id), "seq": job.seq})
     return job
+
+
+@router.get("/{job_id}/stage-steps")
+def job_stage_steps(
+    job_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("executor", "viewer", "admin", "configurator")),
+) -> dict:
+    job = db.get(JobRun, job_id)
+    if job is None:
+        raise HTTPException(404, "任务不存在")
+    payload = persist_stage_steps(job)
+    db.commit()
+    return payload
 
 
 @router.get("/{job_id}/logs")

@@ -138,6 +138,18 @@ def test_pause_live_keeps_running_until_checkpoint(monkeypatch):
     assert "阶段结束后生效" in job.message
 
 
+def test_stop_kills_process_and_unlocks_page(monkeypatch):
+    job = _job(status="running", completed_stage="S4_dsm")
+    mq = MagicMock()
+    monkeypatch.setattr("app.services.jobs.heartbeat_holds_job", lambda *_a, **_k: True)
+    control_job(_db(job), mq, job.id, "stop")
+    assert job.status == "paused"
+    assert "已立即停止" in job.message
+    sent = mq.publish_control.call_args[0][0]
+    assert sent["action"] == "kill"
+    assert sent["job_id"] == str(job.id)
+
+
 def test_pause_orphan_sets_paused_immediately(monkeypatch):
     job = _job(status="running")
     monkeypatch.setattr("app.services.jobs.heartbeat_holds_job", lambda *_a, **_k: False)

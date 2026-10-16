@@ -119,6 +119,8 @@ class JobListOut(BaseModel):
     message: str
     eta_seconds: int | None = None
     error_summary: str | None = None
+    stage_timings: dict[str, Any] = Field(default_factory=dict)
+    stage_steps: dict[str, Any] = Field(default_factory=dict)
     n_shots: int | None = None
     memory_gb: float | None = None
     cpus: int | None = None
@@ -133,7 +135,6 @@ class JobListOut(BaseModel):
 
 class JobOut(JobListOut):
     params_snapshot: dict[str, Any] = Field(default_factory=dict)
-    stage_timings: dict[str, Any] = Field(default_factory=dict)
 
 
 class HealthOut(BaseModel):

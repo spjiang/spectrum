@@ -16,11 +16,79 @@ from ms_mosaic.scene import BAND_ORDER, PRIMARY_BAND, Block, transfer_band
 
 GPS_BIN_EDGES = tuple(range(-6, 20, 2))
 YAW_TURN_DEG = 40.0
-GAP_STEP_FACTOR = 3.5
+# 略放宽间距阈值，减少把同航迹首尾拆成单张航线（商业 MAX_0001–0005 同线）
+GAP_STEP_FACTOR = 5.0
 POOR_FORWARD = 0.60
 POOR_SIDE = 0.30
 POOR_KEYPOINT_FRACTION = 0.20
 MIN_POOR_KEYPOINTS = 80
+
+
+def observation_summary(at) -> tuple[dict[int, int], dict[int, float]]:
+    """每张影像的 (观测数, 残差平方和)。逐条观测已释放时读 ATResult 上的摘要。"""
+    counts = dict(getattr(at, "obs_counts", None) or {})
+    sq = dict(getattr(at, "obs_sq_residual", None) or {})
+    if counts:
+        return counts, sq
+    observations = list(getattr(at, "observations", None) or [])
+    if not observations:
+        return {}, {}
+    raw = getattr(at, "residuals_px", None)
+    residuals = np.asarray([] if raw is None else raw, float).ravel()
+    with_res = residuals.size == len(observations)
+    for k, obs in enumerate(observations):
+        idx = int(obs.image)
+        counts[idx] = counts.get(idx, 0) + 1
+        if with_res:
+            sq[idx] = sq.get(idx, 0.0) + float(residuals[k]) ** 2
+    return counts, sq
+
+
+def registered_image_ids(at, tracks=None) -> set[int]:
+    """已注册影像：有空三观测；检查点无观测时读 stats / 连接点。"""
+    obs_counts, _ = observation_summary(at)
+    if obs_counts:
+        return {i for i, n in obs_counts.items() if n > 0}
+    saved = (getattr(at, "stats", None) or {}).get("registered_ids")
+    if saved:
+        return {int(i) for i in saved}
+    if tracks is not None:
+        counts = tracks.per_image_counts()
+        hit = {int(i) for i, n in counts.items() if n > 0}
+        if hit:
+            return hit
+    return {int(i) for i in getattr(at, "poses", {}) or {}}
+
+
+def keypoint_series(block: Block, keypoint_counts: dict[int, int]) -> list[tuple[int, int]]:
+    """按全部影像建特征点序列；缺省为 0，对齐商业「均值按 1896 张、最少可在窄波段」。"""
+    return [(im.index, int(keypoint_counts.get(im.index, 0))) for im in block.images]
+
+
+def band_rms_px(block: Block, at) -> dict[str, float | None]:
+    """各组重投影 RMS；无分观测残差时退回全局。"""
+    global_rms = None
+    if getattr(at, "stats", None):
+        global_rms = at.stats.get("rms_reprojection_px")
+    counts, sq = observation_summary(at)
+    if not counts or not sq:
+        return {band: global_rms for band in BAND_ORDER if band in block.cameras}
+    by_index = {im.index: im for im in block.images}
+    band_n: dict[str, int] = defaultdict(int)
+    band_sq: dict[str, float] = defaultdict(float)
+    for idx, n in counts.items():
+        im = by_index.get(int(idx))
+        if im is None:
+            continue
+        band_n[im.band] += int(n)
+        band_sq[im.band] += float(sq.get(idx, 0.0))
+    out: dict[str, float | None] = {}
+    for band in BAND_ORDER:
+        if band not in block.cameras:
+            continue
+        n = band_n.get(band, 0)
+        out[band] = float(np.sqrt(band_sq[band] / n)) if n else global_rms
+    return out
 
 
 def crs_label(crs: str) -> str:
@@ -32,6 +100,57 @@ def crs_label(crs: str) -> str:
     zone = code % 100
     hemi = "S" if 32700 <= code < 32800 else "N"
     return f"[EPSG::{code}] UTM {zone}{hemi} (WGS84), egm_none"
+
+
+def survey_area_km2(z: np.ndarray, grid: Grid) -> float:
+    """测区面积：有效 DSM 像元的轴对齐外接矩形，单位平方公里。
+
+    不用整幅格网外框——格网常含大块 nodata，会明显大于真实有图范围。
+    LiMapper 报告的测区面积也接近「有内容的外包」，而非空白边框。
+    无有效像元时退回整幅格网外框。
+    """
+    valid = np.isfinite(z)
+    if not valid.any():
+        left, bottom, right, top = grid.bounds
+        return abs(right - left) * abs(top - bottom) / 1e6
+    rows = np.where(valid.any(axis=1))[0]
+    cols = np.where(valid.any(axis=0))[0]
+    r0, r1 = int(rows[0]), int(rows[-1]) + 1
+    c0, c1 = int(cols[0]), int(cols[-1]) + 1
+    # 像元外缘（与 rasterio 窗口一致），不是中心
+    x0 = grid.transform.c + c0 * grid.transform.a
+    x1 = grid.transform.c + c1 * grid.transform.a
+    y0 = grid.transform.f + r0 * grid.transform.e
+    y1 = grid.transform.f + r1 * grid.transform.e
+    return abs(x1 - x0) * abs(y1 - y0) / 1e6
+
+
+def mean_flight_agl_m(block: Block, at, dsm) -> float:
+    """平均航高（相对地面），单位米。
+
+    优先用照片 XMP ``AboveGroundAltitude``：编目时
+    ``block.ground_z = 平均绝对高程 − 平均相对航高``，故
+    ``平均绝对高程 − ground_z`` 即各曝光相对航高的均值。
+
+    若照片没有相对航高，再退回「空三相机高 − DSM 中位高程」。
+    不要用有偏的 DSM 去减椭球相机高——本测区 DSM 中位偏低约 10 m 时，
+    会把航高从约 70 m 抬到 84 m。
+    """
+    primary = block.primary()
+    alts = [
+        float(block.gps[im.index][2])
+        for im in primary
+        if im.index in block.gps
+    ]
+    if alts and abs(block.ground_z) > 1e-6:
+        xmp_agl = float(np.mean(alts) - block.ground_z)
+        if xmp_agl > 1.0:
+            return xmp_agl
+    z_med = float(dsm.stats.get("z_median", block.ground_z))
+    centers = [at.poses[i].center[2] for i in at.poses]
+    if not centers:
+        return 0.0
+    return float(sum(abs(z - z_med) for z in centers) / len(centers))
 
 
 def chinese_date(when: datetime | None = None) -> str:
@@ -131,7 +250,57 @@ def split_strips(
             strips.append([int(indices[k])])
         else:
             strips[-1].append(int(indices[k]))
-    return strips
+    return _absorb_singleton_strips(strips, centers, yaws, indices, yaw_turn_deg=yaw_turn_deg)
+
+
+def _absorb_singleton_strips(
+    strips: list[list[int]],
+    centers: np.ndarray,
+    yaws: np.ndarray,
+    indices: Sequence[int],
+    *,
+    yaw_turn_deg: float,
+) -> list[list[int]]:
+    """商业航线不把孤立单张单独成线：航向接近时并入前/后一段。"""
+    if len(strips) <= 1:
+        return strips
+    pos = {int(i): k for k, i in enumerate(indices)}
+    out = [list(strips[0])]
+    for strip in strips[1:]:
+        if len(strip) != 1:
+            out.append(list(strip))
+            continue
+        idx = int(strip[0])
+        if idx not in pos:
+            out.append(list(strip))
+            continue
+        k = pos[idx]
+        merged = False
+        if out:
+            prev = int(out[-1][-1])
+            if prev in pos:
+                dyaw = abs(wrap_yaw_deg(float(yaws[k]) - float(yaws[pos[prev]])))
+                if dyaw <= yaw_turn_deg:
+                    out[-1].append(idx)
+                    merged = True
+        if not merged:
+            out.append([idx])
+    # 仍为单张的段尝试并入下一段
+    final: list[list[int]] = []
+    i = 0
+    while i < len(out):
+        if len(out[i]) == 1 and i + 1 < len(out):
+            idx = int(out[i][0])
+            nxt = int(out[i + 1][0])
+            if idx in pos and nxt in pos:
+                dyaw = abs(wrap_yaw_deg(float(yaws[pos[nxt]]) - float(yaws[pos[idx]])))
+                if dyaw <= yaw_turn_deg:
+                    final.append([idx] + list(out[i + 1]))
+                    i += 2
+                    continue
+        final.append(list(out[i]))
+        i += 1
+    return final
 
 
 def connected_sequences(matches: Iterable[PairMatches], indices: Sequence[int]) -> list[list[int]]:
@@ -278,17 +447,28 @@ def build_quality_payload(
 ) -> dict[str, Any]:
     by_index = {im.index: im for im in block.images}
     names = {im.index: im.path.name for im in block.images}
-    primary = [im for im in block.primary() if im.index in at.poses]
-    centers = np.array([at.poses[im.index].center for im in primary]) if primary else np.zeros((0, 3))
-    yaws = np.array([_yaw_of(at.poses[im.index]) for im in primary]) if primary else np.zeros(0)
-    strips_idx = split_strips([im.index for im in primary], centers, yaws) if primary else []
+    registered = registered_image_ids(at, tracks)
+    # 航线/重叠只统计主波段已注册影像（商业航线表仅组 0）
+    primary_reg = [im for im in block.primary() if im.index in registered]
+    if not primary_reg:
+        primary_reg = [im for im in block.primary() if im.index in at.poses]
+    strip_ids = [im.index for im in primary_reg if im.index in at.poses]
+    centers = (
+        np.array([at.poses[i].center for i in strip_ids], float) if strip_ids else np.zeros((0, 3))
+    )
+    yaws = np.array([_yaw_of(at.poses[i]) for i in strip_ids]) if strip_ids else np.zeros(0)
+    strips_idx = split_strips(strip_ids, centers, yaws) if strip_ids else []
     strip_names = [[names[i] for i in strip] for strip in strips_idx]
 
-    color_cams = {im.index: at.cameras[PRIMARY_BAND] for im in primary}
-    color_poses = {im.index: at.poses[im.index] for im in primary}
+    primary_cam = at.cameras.get(PRIMARY_BAND) or next(iter(at.cameras.values()), None)
+    color_cams = (
+        {i: primary_cam for i in strip_ids} if primary_cam is not None else {}
+    )
+    color_poses = {i: at.poses[i] for i in strip_ids if i in at.poses}
     overlap = flight_overlap(color_cams, color_poses, dsm.stats.get("z_median", block.ground_z), strips_idx, names)
 
-    kp_items = sorted(keypoint_counts.items())
+    # 特征统计覆盖全部 1896 张（含窄波段低点数），对齐商业均值/最少/较差影像
+    kp_items = keypoint_series(block, keypoint_counts)
     kp_vals = np.array([c for _, c in kp_items], int) if kp_items else np.array([], int)
     mean_kp = float(kp_vals.mean()) if kp_vals.size else 0.0
     max_kp = int(kp_vals.max()) if kp_vals.size else 0
@@ -311,52 +491,62 @@ def build_quality_payload(
         max_two_view = max(max_two_view, n)
         pair_count[pm.i] += n
         pair_count[pm.j] += n
+    # 连接点/稀疏观测统计覆盖全部波段影像，对齐商业「最多在 850nm、最少在 450nm」
+    all_indices = [im.index for im in block.images]
     track_counts = tracks.per_image_counts() if tracks is not None else {}
     if track_counts:
         hi = max(track_counts, key=track_counts.get)
-        lo_candidates = [im.index for im in primary]
-        lo = min(lo_candidates, key=lambda i: track_counts.get(i, 0)) if lo_candidates else hi
+        lo = min(all_indices, key=lambda i: track_counts.get(i, 0)) if all_indices else hi
         match_most = _image_tag(by_index[hi], str(track_counts[hi])) if hi in by_index else str(hi)
         match_least = _image_tag(by_index[lo], str(track_counts.get(lo, 0))) if lo in by_index else str(lo)
-        mean_tracks = float(np.mean([track_counts.get(im.index, 0) for im in primary])) if primary else 0.0
+        mean_tracks = (
+            float(np.mean([track_counts.get(i, 0) for i in all_indices])) if all_indices else 0.0
+        )
     else:
         match_most = match_least = "-"
         mean_tracks = 0.0
 
-    obs_per = Counter(o.image for o in at.observations)
+    obs_per, _ = observation_summary(at)
     if obs_per:
         hi_obs = max(obs_per, key=obs_per.get)
-        lo_obs = min((im.index for im in primary), key=lambda i: obs_per.get(i, 0)) if primary else hi_obs
+        lo_obs = min(all_indices, key=lambda i: obs_per.get(i, 0)) if all_indices else hi_obs
         sparse_most = _image_tag(by_index[hi_obs], str(obs_per[hi_obs])) if hi_obs in by_index else str(hi_obs)
         sparse_least = _image_tag(by_index[lo_obs], str(obs_per.get(lo_obs, 0))) if lo_obs in by_index else str(lo_obs)
     else:
         sparse_most = sparse_least = "-"
 
-    sequences = connected_sequences(matches, [im.index for im in primary])
+    # 全波段匹配时连通分量按组出现，与商业「关联影像序列」一致
+    seq_seed = [im.index for im in block.images]
+    sequences = connected_sequences(matches, seq_seed)
     seq_payload = [{"id": k, "indices": seq, "n": len(seq)} for k, seq in enumerate(sequences)]
 
-    poses_all: dict[int, Pose] = dict(at.poses)
+    # GPS 仅已注册影像（商业参考点 1888 = 已注册数）
+    poses_gps: dict[int, Pose] = {i: at.poses[i] for i in registered if i in at.poses}
     for band in BAND_ORDER:
         if band == PRIMARY_BAND:
             continue
+        missing = [im.index for im in block.by_band(band) if im.index in registered and im.index not in poses_gps]
+        if not missing:
+            continue
         _, band_poses, _ = transfer_band(block, at.cameras, at.poses, band)
-        poses_all.update(band_poses)
-    gps_rows = build_gps_rows(block, poses_all)
+        for idx in missing:
+            if idx in band_poses:
+                poses_gps[idx] = band_poses[idx]
+    gps_rows = build_gps_rows(block, poses_gps)
 
-    registered_shots = {by_index[i].shot_index for i in at.poses if i in by_index}
-    unregistered = [im.index for im in block.images if im.shot_index not in registered_shots]
+    unregistered = sorted(im.index for im in block.images if im.index not in registered)
 
-    left, bottom, right, top = dsm.grid.bounds
-    area_km2 = abs(right - left) * abs(top - bottom) / 1e6
-    z_med = float(dsm.stats.get("z_median", block.ground_z))
-    mean_agl = float(
-        sum(abs(at.poses[i].center[2] - z_med) for i in at.poses) / max(1, len(at.poses))
-    )
+    area_km2 = survey_area_km2(dsm.z, dsm.grid)
+    mean_agl = mean_flight_agl_m(block, at, dsm)
     created = datetime.now()
     n_images = len(block.images)
-    n_registered = sum(1 for im in block.images if im.shot_index in registered_shots)
+    n_registered = len(registered)
 
     at_stats = dict(at.stats)
+    at_stats["n_images"] = n_registered
+    at_stats["mean_obs_per_image"] = float(
+        at_stats.get("n_observations", 0) / max(1, n_registered)
+    )
     if gps_rows:
         err = np.array([r["error"] for r in gps_rows])
         dx = np.array([r["dx"] for r in gps_rows])
@@ -428,7 +618,7 @@ def build_quality_payload(
         "strips": strip_names,
         "overlap": overlap,
         "figures": figures or {},
-        "camera_type": next(iter(at.cameras.values())).model if at.cameras else "MAX-S810",
+        "camera_type": next(iter(at.cameras.values())).model if at.cameras else "MAX-S800",
     }
 
 
@@ -697,16 +887,29 @@ def render_report_figures(
     return out
 
 
-def cameras_table(block: Block, at, rms_px: float | None) -> dict:
-    """8 个组都进表：主波段用空三内参，其余按 transfer_band 迁移。"""
+def cameras_table(
+    block: Block,
+    at,
+    rms_px: float | None,
+    *,
+    registered: set[int] | None = None,
+    rms_by_band: dict[str, float | None] | None = None,
+) -> dict:
+    """8 个组都进表：空三已解的波段用 at.cameras，否则按 transfer_band 迁移。"""
+    reg = registered if registered is not None else registered_image_ids(at)
+    band_rms = rms_by_band or {}
     info = {}
     for band in BAND_ORDER:
         if band not in block.cameras:
             continue
-        cams, poses, _ = transfer_band(block, at.cameras, at.poses, band)
-        cam = next(iter(cams.values())) if cams else block.cameras[band]
         n_all = len(block.by_band(band))
-        n_reg = len(poses)
+        if band in at.cameras:
+            cam = at.cameras[band]
+            n_reg = sum(1 for im in block.by_band(band) if im.index in reg)
+        else:
+            cams, poses, _ = transfer_band(block, at.cameras, at.poses, band)
+            cam = next(iter(cams.values())) if cams else block.cameras[band]
+            n_reg = sum(1 for i in poses if i in reg)
         info[band] = {
             "group": BAND_ORDER.index(band),
             "model": cam.model,
@@ -724,6 +927,6 @@ def cameras_table(block: Block, at, rms_px: float | None) -> dict:
             "b2": cam.b2,
             "n_images": n_all,
             "n_registered": n_reg,
-            "rms_px": rms_px,
+            "rms_px": band_rms.get(band, rms_px),
         }
     return info

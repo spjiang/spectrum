@@ -13,6 +13,7 @@ from app.db import SessionLocal
 from app.routers import audit, auth, docs, jobs, profiles, rbac, system, tools, users
 from app.schemas import HealthOut
 from app.services.progress_ws import start_consumers, websocket_job
+from app.services.stage_steps import start_stage_step_sync
 
 log = logging.getLogger("uvicorn.error")
 
@@ -33,6 +34,10 @@ async def lifespan(app: FastAPI):
         start_consumers(loop)
     except Exception:  # noqa: BLE001
         pass
+    try:
+        start_stage_step_sync()
+    except Exception:  # noqa: BLE001
+        log.exception("stage step sync failed to start")
     yield
 
 

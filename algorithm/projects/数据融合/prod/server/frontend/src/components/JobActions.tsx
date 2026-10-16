@@ -18,6 +18,7 @@ type JobLike = {
 
 const ACTION_OK: Record<string, string> = {
   pause: "已请求暂停，当前阶段结束后生效",
+  stop: "已立即停止，页面可以继续操作",
   resume: "已继续运行",
   continue: "已继续下一阶段",
   recover: "已清理空转并从已有成果续跑",
@@ -88,6 +89,26 @@ export default function JobActions({
             disabled={Boolean(busy)}
           >
             暂停
+          </Button>
+        </Popconfirm>
+      )}
+      {running && (
+        <Popconfirm
+          title="立即停止计算？"
+          description="马上结束进程，页面恢复可操作。已经写完的 DSM 和正射保留；当前阶段还没写完的部分不保留。之后可点「继续运行」。"
+          okText="立即停止"
+          okButtonProps={{ danger: true }}
+          onConfirm={() => act("stop")}
+        >
+          <Button
+            size={size}
+            danger
+            type={compact ? "link" : "primary"}
+            icon={<PauseCircleOutlined />}
+            loading={busy === "stop"}
+            disabled={Boolean(busy)}
+          >
+            立即停止
           </Button>
         </Popconfirm>
       )}

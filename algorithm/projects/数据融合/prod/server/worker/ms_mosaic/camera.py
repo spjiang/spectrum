@@ -105,7 +105,8 @@ class Camera:
     p2: float = 0.0
     b1: float = 0.0
     b2: float = 0.0
-    model: str = "MAX-S810"
+    # 与本测区 LiMapper 报告相机类型一致（MAX-S800）
+    model: str = "MAX-S800"
 
     @classmethod
     def initial(cls, key: str, width: int, height: int, *, kind: str = "ms") -> Camera:

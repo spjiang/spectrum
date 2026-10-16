@@ -4,8 +4,9 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# D=原始航片，W=白板，R=辐射校正产品。三种都入册；白板在 usable_shots 里再剔。
 NAME_RE = re.compile(
-    r"^MAX_(\d+)_(Color|(?P<wl>\d+)nm)_(?P<role>[DWdw])\.(?P<ext>jpg|jpeg|tif|tiff)$",
+    r"^MAX_(\d+)_(Color|(?P<wl>\d+)nm)_(?P<role>[DWRdw])\.(?P<ext>jpg|jpeg|tif|tiff)$",
     re.IGNORECASE,
 )
 XMP_RE = {
@@ -115,28 +116,32 @@ def _xmp_blob(path: Path) -> str:
     return m.group(0).decode("utf-8", "replace") if m else ""
 
 
-def _pos_from_xmp(xmp: str) -> tuple[Pos | None, str]:
-    if not xmp:
-        return None, ""
-    got = {k: rx.search(xmp) for k, rx in XMP_RE.items()}
-    uuid = got["uuid"].group(1) if got["uuid"] else ""
-    if not got["lat"] or not got["lon"]:
-        return None, uuid
-    pos = Pos(
-        lon=float(got["lon"].group(1)),
-        lat=float(got["lat"].group(1)),
-        alt_m=float(got["alt"].group(1)) if got["alt"] else 0.0,
-        yaw_deg=float(got["yaw"].group(1)) if got["yaw"] else 0.0,
-        pitch_deg=float(got["pitch"].group(1)) if got["pitch"] else -90.0,
-        roll_deg=float(got["roll"].group(1)) if got["roll"] else 0.0,
-        agl_m=float(got["agl"].group(1)) if got["agl"] else 0.0,
-        focal_mm=float(got["focal"].group(1)) if got["focal"] else 5.0,
-        rtk=int(float(got["rtk"].group(1))) if got["rtk"] else 0,
-    )
-    return pos, uuid
+def _xmp_matches(xmp: str) -> dict:
+    return {k: rx.search(xmp) for k, rx in XMP_RE.items()} if xmp else {}
 
 
-def _pos_from_exif_gps(path: Path) -> Pos | None:
+def _attitude_from_xmp(got: dict) -> dict[str, float | int]:
+    """姿态、相对高、焦距、RTK 只来自 XMP。辐射 _R 仍保留这些字段。"""
+    return {
+        "yaw_deg": float(got["yaw"].group(1)) if got.get("yaw") else 0.0,
+        "pitch_deg": float(got["pitch"].group(1)) if got.get("pitch") else -90.0,
+        "roll_deg": float(got["roll"].group(1)) if got.get("roll") else 0.0,
+        "agl_m": float(got["agl"].group(1)) if got.get("agl") else 0.0,
+        "focal_mm": float(got["focal"].group(1)) if got.get("focal") else 5.0,
+        "rtk": int(float(got["rtk"].group(1))) if got.get("rtk") else 0,
+    }
+
+
+def _xyz_from_xmp_fused(got: dict) -> tuple[float, float, float] | None:
+    """优先用 XMP 融合位置。_R 通常没有这三项。"""
+    if not got.get("lat") or not got.get("lon"):
+        return None
+    alt = float(got["alt"].group(1)) if got.get("alt") else 0.0
+    return float(got["lat"].group(1)), float(got["lon"].group(1)), alt
+
+
+def _xyz_from_exif_gps(path: Path) -> tuple[float, float, float] | None:
+    """EXIF GPS 经纬高。_D 与 _R 都有，作融合位置缺失时的回退。"""
     suffix = path.suffix.lower()
     if suffix in {".jpg", ".jpeg"}:
         from PIL import Image
@@ -155,7 +160,7 @@ def _pos_from_exif_gps(path: Path) -> Pos | None:
         lat = _dms_to_deg(gpsn["GPSLatitude"], gpsn.get("GPSLatitudeRef", "N"))
         lon = _dms_to_deg(gpsn["GPSLongitude"], gpsn.get("GPSLongitudeRef", "E"))
         alt = float(gpsn.get("GPSAltitude") or 0)
-        return Pos(lon=lon, lat=lat, alt_m=alt, yaw_deg=0.0, pitch_deg=-90.0, roll_deg=0.0, agl_m=0.0)
+        return lat, lon, alt
     if suffix in {".tif", ".tiff"}:
         import tifffile
 
@@ -173,16 +178,40 @@ def _pos_from_exif_gps(path: Path) -> Pos | None:
             alt = float(alt_raw[0]) / float(alt_raw[1])
         else:
             alt = float(alt_raw or 0)
-        return Pos(lon=lon, lat=lat, alt_m=alt, yaw_deg=0.0, pitch_deg=-90.0, roll_deg=0.0, agl_m=0.0)
+        return lat, lon, alt
     return None
 
 
 def read_sidecar(path: Path) -> tuple[Pos | None, str]:
+    """读外方位初值。
+
+    位置：XMP ``Position*Fused`` 优先；没有则用 EXIF GPS（_D/_R 都有）。
+    姿态 / 相对高 / 焦距 / RTK：始终来自 XMP，避免 GPS 回退时把航高清成 0。
+    """
     xmp = _xmp_blob(path)
-    pos, uuid = _pos_from_xmp(xmp)
-    if pos is None:
-        pos = _pos_from_exif_gps(path)
-    return pos, uuid
+    got = _xmp_matches(xmp)
+    uuid = got["uuid"].group(1) if got.get("uuid") else ""
+    att = _attitude_from_xmp(got)
+    xyz = _xyz_from_xmp_fused(got)
+    if xyz is None:
+        xyz = _xyz_from_exif_gps(path)
+    if xyz is None:
+        return None, uuid
+    lat, lon, alt_m = xyz
+    return (
+        Pos(
+            lon=lon,
+            lat=lat,
+            alt_m=alt_m,
+            yaw_deg=float(att["yaw_deg"]),
+            pitch_deg=float(att["pitch_deg"]),
+            roll_deg=float(att["roll_deg"]),
+            agl_m=float(att["agl_m"]),
+            focal_mm=float(att["focal_mm"]),
+            rtk=int(att["rtk"]),
+        ),
+        uuid,
+    )
 
 
 def group_shots(records: list[FileRecord | None]) -> dict[int, Shot]:
@@ -210,8 +239,11 @@ def group_shots(records: list[FileRecord | None]) -> dict[int, Shot]:
                 if src.capture_uuid:
                     shot.capture_uuid = src.capture_uuid
         ms_roles = {r.role for r in shot.ms.values()}
+        # 只有全是白板才标 W；原始 D 与辐射 R 都当正常航片。
         if ms_roles and ms_roles <= {"W"}:
             shot.role = "W"
+        elif ms_roles and ms_roles <= {"R"}:
+            shot.role = "R"
         else:
             shot.role = "D"
     return shots

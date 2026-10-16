@@ -32,7 +32,7 @@ def _payload():
         "cameras": {
             "Color": {
                 "group": 0,
-                "model": "MAX-S810",
+                "model": "MAX-S800",
                 "width": 2048,
                 "height": 1536,
                 "f": 2381.3,
@@ -147,7 +147,7 @@ def test_write_quality_pdf_is_valid_and_contains_metrics(tmp_path: Path):
     assert "重叠度视图" in text
     assert "航线信息" in text
     assert "较差航向重叠率信息" in text
-    assert "MAX-S810" in text
+    assert "MAX-S800" in text
     assert "未注册影像" in text
 
 

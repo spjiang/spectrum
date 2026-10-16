@@ -189,3 +189,19 @@ def test_extract_file_rebuilds_corrupt_npz(tmp_path):
 
     assert zipfile.is_zipfile(cache / "shot.npz")
 
+
+def test_load_keypoints_skips_descriptors(tmp_path):
+    """缓存里即使有描述子，load_keypoints 也只读关键点数组。"""
+    from ms_mosaic.features import load_keypoints
+
+    img = tmp_path / "shot.jpg"
+    img.write_bytes(b"placeholder")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    kps = np.array([[10.0, 20.0, 3.0, 0.1], [30.0, 40.0, 4.0, 0.2]], dtype=np.float32)
+    desc = np.zeros((2, 128), dtype=np.float32)
+    np.savez_compressed(cache / "shot.npz", keypoints=kps, descriptors=desc)
+    got = load_keypoints(img, cache_dir=cache)
+    assert np.allclose(got, kps)
+    assert got.shape == (2, 4)
+

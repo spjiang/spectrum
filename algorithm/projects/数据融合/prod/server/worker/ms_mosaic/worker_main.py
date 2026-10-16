@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from ms_mosaic.job_proc import terminate_job_workers, terminate_process_tree
-from ms_mosaic.mq_pub import QUEUES, amqp_params
+from ms_mosaic.mq_pub import QUEUES, amqp_params, connect_amqp
 from ms_mosaic import worker_status
 
 log = logging.getLogger("ms_mosaic.worker")
@@ -204,6 +204,33 @@ def _consume_jobs(url: str, stop: threading.Event) -> None:
             time.sleep(2)
 
 
+def _crash_message(code: int) -> str:
+    if code == -9:
+        return "计算进程被系统杀掉（内存不足，exit -9）。已完成的阶段仍保留，可失败重试。"
+    if code < 0:
+        return f"计算进程被信号结束（exit {code}）。已完成的阶段仍保留，可失败重试。"
+    return f"计算进程异常退出（exit {code}）。已完成的阶段仍保留，可失败重试。"
+
+
+def _report_child_crash(url: str, job_id: str, code: int) -> None:
+    """子进程被信号杀掉时发不出失败事件，页面会一直停在运行中。这里补报一次。"""
+    if code in (0, None):
+        return
+    body = json.dumps(
+        {"schema_version": 1, "job_id": job_id, "event": "failed", "error": _crash_message(code)},
+        ensure_ascii=False,
+    ).encode("utf-8")
+    try:
+        conn = connect_amqp(url)
+        try:
+            channel = conn.channel()
+            channel.basic_publish(exchange="", routing_key=QUEUE_EVENTS, body=body)
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001
+        log.exception("report child crash failed job=%s code=%s", job_id, code)
+
+
 def _run_payload(url: str, payload: dict[str, Any]) -> None:
     """拉起任务子进程并等待结束。心跳 pid 是子进程，便于和 Worker 自身内存分开。"""
     global _job_id, _job_active, _job_child_pid
@@ -226,6 +253,7 @@ def _run_payload(url: str, payload: dict[str, Any]) -> None:
         code = proc.wait()
         if code not in (0, None):
             log.warning("job child %s exit %s", job_id, code)
+            _report_child_crash(url, job_id, int(code))
     finally:
         if proc.poll() is None:
             terminate_process_tree(proc.pid)

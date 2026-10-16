@@ -294,12 +294,16 @@ def refine_coverage_mask(
     merge_gap_cells: int = 8,
     min_island_cells: int = 256,
 ) -> np.ndarray:
-    """只保留主体覆盖，并填掉内部小孔。
+    """去掉小游离斑、填掉内部小孔，够大的另一块覆盖要留下。
 
     商业正射 alpha 只有 1 个连通域、几乎无孔。自研全量成果曾出现：
     - 十万级内部空洞（QGIS 白点）：正射在 DSM 有效处仍留下 nan
     - 贴着主体、只隔 1～数像素的碎块：必须并回去，否则会切掉商业也有的条带边缘
-    - 距主体数十米的游离斑（右下角绿斑）：商业 alpha=0，必须丢掉
+    - 只有几像素到几十像素、离主体很远的游离斑（右下角绿斑）：商业 alpha=0，必须丢掉
+
+    不能把「不与最大块相连」一律删掉。红树林航带被水道隔开，立体匹配是多块树冠：
+    粗格网在足迹里大约解出 15%，最大连通域只占约 2%，其余东边解出的部分
+    与主体隔了不止几个像素。按面积留下这些块，小绿斑仍低于 min_island_cells 被丢掉。
     """
     from scipy.ndimage import (
         binary_closing,
@@ -322,6 +326,11 @@ def refine_coverage_mask(
         touch = binary_dilation(main, structure=conn, iterations=gap)
         ids = np.unique(lab[touch])
         ids = ids[ids > 0]
+        # 面积够的连通域全部保留，不论是否贴着最大块。贴着主体的小碎块仍按原规则丢掉。
+        # sizes[0] 是背景像元个数，不能当成一块覆盖。
+        big = np.flatnonzero(sizes[1:] >= int(min_island_cells)) + 1
+        if big.size:
+            ids = np.unique(np.concatenate([ids.astype(np.int64), big.astype(np.int64)]))
         keep = (ids == main_id) | (sizes[ids] >= int(min_island_cells))
         take = np.isin(lab, ids[keep])
         take = binary_closing(take, structure=conn, iterations=min(gap, 3))

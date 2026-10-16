@@ -386,7 +386,7 @@ def write_quality_pdf(payload: dict, path: Path) -> Path:
         cam_rows.append(
             [
                 f"组 {g}",
-                c.get("model", payload.get("camera_type", "MAX-S810")),
+                c.get("model", payload.get("camera_type", "MAX-S800")),
                 f"[{c.get('width', '-')}x{c.get('height', '-')}]",
                 f"{_fmt(c.get('f'), 6)} [像素]",
                 f"{_fmt(c.get('cx'), 6)}, {_fmt(c.get('cy'), 6)} [像素]",

@@ -109,7 +109,7 @@ def usable_shots(
 
 
 def build_block(shots: Mapping[int, Shot], *, crs: str | None = None) -> Block:
-    """由曝光构造测区。相机中心取 XMP 的融合绝对高程，与 DSM 同一垂直基准。"""
+    """由曝光构造测区。相机中心取 XMP 融合高程，缺则用 EXIF GPS，与 DSM 同一垂直基准。"""
     if not shots:
         raise ValueError("没有可用曝光")
     first = shots[min(shots)]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,7 @@ from app.presets import RGB_PREVIEW_VALUES
 from app.services.mq import MQPublisher
 from app.services.params import assert_param_values
 from app.services.paths import detach_derived_dirs, stamp_run_output_dir, validate_paths
+from app.services.stage_steps import persist_stage_steps
 from app.services.worker_env import apply_worker_env
 from app.services.worker_inspect import heartbeat_holds_job
 
@@ -31,6 +33,19 @@ def stage_rank(stage: str | None) -> int:
     if not stage or stage not in STAGES:
         return -1
     return STAGES.index(stage)
+
+
+def _reenter_stage(job: JobRun, stage: str) -> None:
+    """重新进入较早阶段。完成标记停在它前面，进度条回到该阶段起点。
+
+    失败在质量报告后再跑正射时，库里的当前阶段仍是质量报告。
+    若不退回，界面会一直亮着报告节点，而日志实际在写正射。
+    """
+    rank = stage_rank(stage)
+    job.current_stage = stage
+    job.completed_stage = STAGES[rank - 1] if rank > 0 else None
+    job.stage_progress = 0.0
+    job.global_percent = rank / len(STAGES) * 100.0
 
 
 def job_deletable(status: str) -> tuple[bool, str]:
@@ -411,6 +426,18 @@ def control_job(
             job.status = "paused"
             job.message = "包装进程已退出，已立即暂停。可继续运行或清理续跑（会清掉残留进程）"
             append_run_log(db, job.id, "Worker 未持有包装进程，已立即暂停", commit=False)
+    elif action == "stop":
+        if job.status != "running":
+            raise HTTPException(400, "仅运行中的任务可立即停止")
+        _write_control(job, pause=True, cancel=False)
+        try:
+            mq.publish_control({"schema_version": 1, "job_id": str(job.id), "action": "kill"})
+        except Exception as exc:  # noqa: BLE001
+            append_run_log(db, job.id, f"立即停止的控制消息投递失败（已写 control.json）: {exc}", level="error", commit=False)
+        job.status = "paused"
+        job.finished_at = None
+        job.message = "已立即停止。已写完的成果保留，当前阶段没写完的部分不保留，可继续运行"
+        append_run_log(db, job.id, "收到立即停止，已结束计算进程。已写完的文件保留", commit=False)
     elif action == "resume":
         if job.status != "paused":
             raise HTTPException(400, "仅已暂停的任务可继续运行")
@@ -725,6 +752,99 @@ def apply_progress(db: Session, payload: dict[str, Any]) -> JobRun | None:
     return job
 
 
+_CLOCK_STOP = {"failed", "paused", "cancelled", "succeeded", "awaiting_continue"}
+
+
+def _add_open_slice(timings: dict, stage: str, since: str, now: datetime) -> None:
+    """把一段正在跑的时间加进该阶段。停掉之后的空档不在 since 和 now 之间。"""
+    try:
+        started = datetime.fromisoformat(str(since))
+    except ValueError:
+        return
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    sec = max(0.0, (now - started).total_seconds())
+    prev = timings.get(stage)
+    try:
+        prev_s = float(prev) if prev is not None and not isinstance(prev, dict) else 0.0
+    except (TypeError, ValueError):
+        prev_s = 0.0
+    timings[stage] = prev_s + sec
+
+
+def _parse_open_since(open_: dict) -> datetime | None:
+    try:
+        started = datetime.fromisoformat(str(open_.get("since") or ""))
+    except ValueError:
+        return None
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return started
+
+
+def _last_quiet_log_time(job: JobRun, now: datetime, quiet_s: float = 120) -> datetime | None:
+    """取现在之前、已经安静了一段时间的最后一条日志时间。
+
+    重新开跑时，新日志就在这几秒里。用它当上一趟的结束时间，中断空档不会被加进去。
+    """
+    from app.services.stage_steps import _parse_ts, read_run_log
+
+    text = read_run_log(getattr(job, "output_dir", None), getattr(job, "log_dir", None))
+    latest: datetime | None = None
+    for line in text.splitlines():
+        ts = _parse_ts(line)
+        if ts is None:
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if (now - ts).total_seconds() < quiet_s:
+            continue
+        if latest is None or ts > latest:
+            latest = ts
+    return latest
+
+
+def _sync_stage_clock(job: JobRun, event: str | None, stage: str | None, was_running: bool) -> None:
+    """阶段耗时只累计进程真的在跑的时段。失败、暂停、杀掉之后不再往下加。"""
+    timings = dict(job.stage_timings or {})
+    raw = timings.get("_open")
+    open_ = raw if isinstance(raw, dict) else None
+    now = _utcnow()
+    if event in _CLOCK_STOP:
+        if open_ and open_.get("stage") and open_.get("since"):
+            end = now
+            since = _parse_open_since(open_)
+            # 进程早已不在，停按钮是事后点的。加到最后一条旧日志为止，不把关机空档算进去。
+            if since is not None and (now - since).total_seconds() > 120:
+                if not heartbeat_holds_job(Settings(), job.id):
+                    last = _last_quiet_log_time(job, now)
+                    if last is not None and last > since:
+                        end = last
+            _add_open_slice(timings, str(open_["stage"]), str(open_["since"]), end)
+        timings.pop("_open", None)
+        job.stage_timings = timings
+        return
+    if event == "stage_done":
+        if open_ and (not stage or open_.get("stage") == stage):
+            timings.pop("_open", None)
+            job.stage_timings = timings
+        return
+    if event == "running" and stage:
+        same = bool(was_running and open_ and open_.get("stage") == stage)
+        since = _parse_open_since(open_) if open_ else None
+        stale = bool(same and since is not None and (now - since).total_seconds() > 120)
+        if stale and open_ and since is not None:
+            last = _last_quiet_log_time(job, now)
+            if last is not None and last > since:
+                _add_open_slice(timings, str(open_["stage"]), str(open_["since"]), last)
+            timings["_open"] = {"stage": str(stage), "since": now.isoformat()}
+            job.stage_timings = timings
+            return
+        if not same:
+            timings["_open"] = {"stage": str(stage), "since": now.isoformat()}
+            job.stage_timings = timings
+
+
 def apply_event(db: Session, payload: dict[str, Any]) -> JobRun | None:
     job_id = payload.get("job_id")
     if not job_id:
@@ -734,6 +854,7 @@ def apply_event(db: Session, payload: dict[str, Any]) -> JobRun | None:
         return None
     event = payload.get("event")
     stage = payload.get("stage_id")
+    was_running = job.status == "running"
     if event == "stage_done" and stage:
         if stage_rank(str(stage)) >= stage_rank(job.completed_stage):
             job.completed_stage = str(stage)
@@ -741,7 +862,13 @@ def apply_event(db: Session, payload: dict[str, Any]) -> JobRun | None:
             job.current_stage = str(stage)
         timings = dict(job.stage_timings or {})
         if "elapsed_s" in payload:
-            timings[str(stage)] = payload["elapsed_s"]
+            # 重试会再报一次耗时。累加，不能用这次的数盖掉上次已经记下的。
+            prev = timings.get(str(stage))
+            try:
+                prev_s = float(prev) if prev is not None else 0.0
+            except (TypeError, ValueError):
+                prev_s = 0.0
+            timings[str(stage)] = prev_s + float(payload["elapsed_s"])
         job.stage_timings = timings
     if event == "awaiting_continue":
         job.status = "awaiting_continue"
@@ -752,9 +879,11 @@ def apply_event(db: Session, payload: dict[str, Any]) -> JobRun | None:
         job.finished_at = _utcnow()
         job.message = payload.get("message") or "完成"
     elif event == "failed":
-        job.status = "failed"
-        job.error_summary = payload.get("error") or payload.get("message")
-        job.finished_at = _utcnow()
+        # 立即停止已经把任务标成暂停。随后进程被杀掉时补报的失败不能把暂停盖掉。
+        if job.status not in {"paused", "cancelled", "succeeded"}:
+            job.status = "failed"
+            job.error_summary = payload.get("error") or payload.get("message")
+            job.finished_at = _utcnow()
     elif event == "cancelled":
         job.status = "cancelled"
         job.finished_at = _utcnow()
@@ -764,10 +893,17 @@ def apply_event(db: Session, payload: dict[str, Any]) -> JobRun | None:
     elif event == "running":
         job.status = "running"
         job.started_at = job.started_at or _utcnow()
+        if stage and stage_rank(str(stage)) >= 0:
+            incoming = str(stage)
+            if stage_rank(incoming) < stage_rank(job.current_stage):
+                _reenter_stage(job, incoming)
+            else:
+                job.current_stage = incoming
     if "n_shots" in payload:
         job.n_shots = payload["n_shots"]
+    _sync_stage_clock(job, event, str(stage) if stage else None, was_running)
     job.updated_at = _utcnow()
-    if event:
+    if event and event != "stage_log":
         extra = payload.get("error") or payload.get("message") or ""
         append_run_log(
             db,
@@ -776,6 +912,10 @@ def apply_event(db: Session, payload: dict[str, Any]) -> JobRun | None:
             level="error" if event == "failed" else "info",
             commit=False,
         )
+    try:
+        persist_stage_steps(job)
+    except Exception:
+        logging.getLogger("uvicorn.error").exception("保存阶段步骤失败")
     db.commit()
     db.refresh(job)
     return job

@@ -90,6 +90,8 @@ class JobRun(Base):
     eta_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     stage_timings: Mapped[dict] = mapped_column(JSONB, default=dict)
+    # 各节点功能步骤：名称、统计、耗时、状态。键是阶段 id。
+    stage_steps: Mapped[dict] = mapped_column(JSONB, default=dict)
     n_shots: Mapped[int | None] = mapped_column(Integer, nullable=True)
     memory_gb: Mapped[float | None] = mapped_column(Float, nullable=True)
     cpus: Mapped[int | None] = mapped_column(Integer, nullable=True)

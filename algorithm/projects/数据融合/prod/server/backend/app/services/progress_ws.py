@@ -107,6 +107,10 @@ def _job_dict(job) -> dict:
         "message": job.message,
         "eta_seconds": job.eta_seconds,
         "error_summary": job.error_summary,
+        "stage_timings": dict(job.stage_timings or {}),
+        "stage_steps": dict(getattr(job, "stage_steps", None) or {}),
+        "started_at": job.started_at.isoformat() if job.started_at else None,
+        "updated_at": job.updated_at.isoformat() if job.updated_at else None,
     }
 
 

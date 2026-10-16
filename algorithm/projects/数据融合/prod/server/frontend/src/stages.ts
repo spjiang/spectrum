@@ -27,9 +27,13 @@ export const STAGE_META: Record<
 export type StageTone = "wait" | "process" | "finish" | "error" | "pause";
 
 export type JobStageLike = {
+  id?: string | null;
   status?: string | null;
   current_stage?: string | null;
   completed_stage?: string | null;
+  started_at?: string | null;
+  updated_at?: string | null;
+  stage_timings?: Record<string, number | string | null | { stage?: string; since?: string; beat?: string }> | null;
 };
 
 function stageIndex(id: string | null | undefined): number {

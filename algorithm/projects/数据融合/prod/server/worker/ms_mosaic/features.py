@@ -107,6 +107,10 @@ def extract(
     return Features(kp, root_sift(desc))
 
 
+def _cache_path(path: Path, cache_dir: Path) -> Path:
+    return cache_dir / f"{path.stem}.npz"
+
+
 def extract_file(
     path: Path, *, cache_dir: Path | None = None, max_features: int = MAX_FEATURES
 ) -> Features:
@@ -118,7 +122,7 @@ def extract_file(
     cache_path = None
     if cache_dir is not None:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        cache_path = cache_dir / f"{path.stem}.npz"
+        cache_path = _cache_path(path, cache_dir)
         if cache_path.exists():
             try:
                 with np.load(cache_path) as data:
@@ -133,3 +137,20 @@ def extract_file(
         )
         tmp.replace(cache_path)
     return feats
+
+
+def load_keypoints(path: Path, *, cache_dir: Path) -> np.ndarray:
+    """只读缓存里的关键点坐标，不加载描述子。
+
+    交会只用 u/v。1992 张 × 8192 × 128 float32 描述子约 8 GB，
+    全量驻留会在 24 GB 引擎里把前方交会直接 oom_kill。
+    """
+    cache_path = _cache_path(path, cache_dir)
+    if not cache_path.is_file():
+        return extract_file(path, cache_dir=cache_dir).keypoints
+    try:
+        with np.load(cache_path) as data:
+            return np.asarray(data["keypoints"])
+    except (OSError, ValueError, KeyError, zipfile.BadZipFile):
+        cache_path.unlink(missing_ok=True)
+        return extract_file(path, cache_dir=cache_dir).keypoints

@@ -957,6 +957,12 @@ body.is-col-resizing {
 
 .job-stage-node {
   display: flex;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
   flex-direction: column;
   align-items: center;
   gap: 2px;
@@ -1011,7 +1017,12 @@ body.is-col-resizing {
 
 .job-stage-flow.is-full {
   width: 100%;
+  align-items: flex-start;
   padding: 8px 0 4px;
+}
+
+.job-stage-flow.is-full .job-stage-item {
+  align-items: flex-start;
 }
 
 .job-stage-flow.is-full .job-stage-item:not(:first-child) {
@@ -1035,11 +1046,26 @@ body.is-col-resizing {
   font-size: 13px;
 }
 
+.job-stage-time {
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--mosaic-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-height: 14px;
+}
+
+.job-stage-node.is-process .job-stage-time {
+  color: #1b6bbe;
+  font-weight: 650;
+}
+
 .job-stage-flow.is-full .job-stage-line {
   flex: 1 1 auto;
   width: auto;
   min-width: 12px;
   height: 3px;
+  margin-top: 13px;
 }
 
 .job-stage-summary {
@@ -1113,6 +1139,175 @@ body.is-col-resizing {
   font-size: 12px;
   color: #1b6bbe;
   white-space: nowrap;
+}
+
+.job-stage-popover .ant-popover-inner {
+  padding: 14px 16px 12px;
+  border-radius: 12px;
+}
+
+.job-stage-popover .ant-popover-title {
+  margin-bottom: 2px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.job-stage-panel {
+  width: 380px;
+}
+
+.job-stage-panel-hint {
+  margin: 0 0 12px;
+  color: var(--mosaic-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.job-stage-detail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.job-stage-detail li {
+  position: relative;
+  margin: 0;
+  padding: 0 0 12px 16px;
+}
+
+.job-stage-detail li::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 8px;
+  bottom: -2px;
+  width: 1px;
+  background: #e2e8f0;
+}
+
+.job-stage-detail li:last-child {
+  padding-bottom: 0;
+}
+
+.job-stage-detail li:last-child::before {
+  display: none;
+}
+
+.job-stage-detail li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1f9d63;
+  box-shadow: 0 0 0 3px #e8f7ef;
+}
+
+.job-stage-detail li.is-running::after {
+  background: #1b6bbe;
+  box-shadow: 0 0 0 3px #e7f1fb;
+}
+
+.job-stage-step-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.job-stage-step-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.job-stage-step-name {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--mosaic-text);
+}
+
+.job-stage-step-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #94a3b8;
+  cursor: help;
+  font-size: 13px;
+}
+
+.job-stage-step-help-btn:hover,
+.job-stage-step-help-btn:focus-visible {
+  color: #1b6bbe;
+}
+
+.job-stage-step-tooltip .ant-tooltip-inner {
+  width: 280px;
+  padding: 10px 12px;
+}
+
+.job-stage-step-help p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.job-stage-step-help p + p {
+  margin-top: 6px;
+}
+
+.job-stage-step-badge {
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #1b6bbe;
+  background: #e7f1fb;
+}
+
+.job-stage-step-time {
+  margin-left: auto;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mosaic-muted);
+  white-space: nowrap;
+}
+
+.job-stage-detail li.is-running .job-stage-step-time {
+  color: #1b6bbe;
+}
+
+.job-stage-step-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.job-stage-step-fact {
+  font-size: 12px;
+  line-height: 20px;
+  padding: 0 8px;
+  border-radius: 6px;
+  color: #334155;
+  background: #f4f7fb;
+}
+
+.job-stage-detail-empty {
+  color: var(--mosaic-muted);
+  line-height: 1.45;
+  font-size: 13px;
 }
 
 .job-stage-summary:hover .job-stage-summary-more {

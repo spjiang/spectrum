@@ -126,6 +126,13 @@ function readError(text: string, fallback: string) {
   return msg;
 }
 
+export type StageStep = {
+  name: string;
+  detail: string;
+  elapsed_s: number | null;
+  status: "done" | "running";
+};
+
 export const api = {
   login: async (username: string, password: string) => {
     const body = new URLSearchParams({ username, password });
@@ -191,6 +198,7 @@ export const api = {
   deleteJob: (id: string) => request<void>(`/api/jobs/${id}`, { method: "DELETE" }),
   clearJobs: () => request<{ deleted: number }>("/api/jobs", { method: "DELETE" }),
   logs: (id: string) => request<string>(`/api/jobs/${id}/logs?tail=800`),
+  stageSteps: (id: string) => request<{ stages: Record<string, StageStep[]> }>(`/api/jobs/${id}/stage-steps`),
   openJobReport: (id: string) => openAuthedFile(`/api/jobs/${id}/report.pdf`, "质量报告.pdf"),
   workerInspect: () => request<any>("/api/system/worker"),
   inspectUpload: (file: File, onProgress?: (pct: number, phase: "upload" | "parse") => void) =>

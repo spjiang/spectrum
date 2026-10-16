@@ -100,6 +100,46 @@ def test_run_payload_uses_job_child_pid(tmp_path: Path, monkeypatch):
     assert worker_status.snapshot().get("current_job") is None
 
 
+def test_child_sigkill_is_reported_as_failed(tmp_path: Path, monkeypatch):
+    from ms_mosaic import worker_main
+
+    inp = tmp_path / "in"
+    out = tmp_path / "out"
+    inp.mkdir()
+    published: list[bytes] = []
+
+    class FakeProc:
+        pid = 77
+
+        def wait(self):
+            return -9
+
+        def poll(self):
+            return -9
+
+    class FakeConn:
+        def channel(self):
+            return self
+
+        def basic_publish(self, **kwargs):
+            published.append(kwargs["body"])
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr("ms_mosaic.worker_main._spawn_job", lambda _url, _payload: FakeProc())
+    monkeypatch.setattr("ms_mosaic.worker_main.terminate_job_workers", lambda _pid: [])
+    monkeypatch.setattr("ms_mosaic.worker_main.connect_amqp", lambda _url: FakeConn())
+    worker_main._run_payload(
+        "amqp://example",
+        {"job_id": "job-killed", "params_snapshot": {"input_dir": str(inp), "output_dir": str(out)}},
+    )
+    body = published[0].decode("utf-8")
+    assert "job-killed" in body
+    assert "failed" in body
+    assert "exit -9" in body
+
+
 def test_kill_current_job_stops_job_child(monkeypatch):
     from ms_mosaic import worker_main
 

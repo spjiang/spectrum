@@ -34,6 +34,23 @@ def visible_limit_bytes() -> int | None:
 
 AUTO_LIMIT_FRACTION = 0.9
 
+# 任务上手动指定的内存（GB）。分块并行把它当作上限，仍与此刻剩余内存取较小值。
+_job_memory_gb: float | None = None
+
+
+def set_job_memory_gb(memory_gb: float | None) -> None:
+    """记下这次任务的内存预算。0 或空表示没有单独预算。"""
+    global _job_memory_gb
+    try:
+        gb = float(memory_gb) if memory_gb is not None else 0.0
+    except (TypeError, ValueError):
+        gb = 0.0
+    _job_memory_gb = gb if gb > 0 else None
+
+
+def job_memory_gb() -> float | None:
+    return _job_memory_gb
+
 
 def resolve_memory_budget(memory_gb: float | None) -> int | None:
     """把任务 memory_gb 收成字节预算。
@@ -59,6 +76,17 @@ def resolve_memory_budget(memory_gb: float | None) -> int | None:
 
 def available_bytes() -> int | None:
     return _meminfo_bytes("MemAvailable")
+
+
+def process_rss_bytes() -> int | None:
+    """本进程当前常驻内存。任务预算是总量，已被自己占掉的部分不能再分给工人。"""
+    try:
+        for line in Path("/proc/self/status").read_text(encoding="utf-8").splitlines():
+            if line.startswith("VmRSS:"):
+                return int(line.split()[1]) * 1024
+    except (OSError, ValueError):
+        return None
+    return None
 
 
 def cap_workers(

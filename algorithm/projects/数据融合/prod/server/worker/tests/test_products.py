@@ -237,6 +237,18 @@ def test_refine_coverage_mask_drops_island_and_fills_speckle():
     assert out[35, 35]
 
 
+def test_refine_coverage_mask_keeps_large_separate_region():
+    """被水道隔开、但本身够大的另一块覆盖要留下；远处几像素的绿斑仍丢掉。"""
+    valid = np.zeros((80, 80), bool)
+    valid[5:40, 5:30] = True
+    valid[5:40, 50:75] = True
+    valid[0:2, 78:80] = True
+    out = refine_coverage_mask(valid, max_hole_cells=0, merge_gap_cells=4, min_island_cells=64)
+    assert out[20, 15]
+    assert out[20, 60]
+    assert not out[0, 78]
+
+
 def test_refine_coverage_mask_merges_near_peninsula():
     """只隔数像素的碎块是被白点切断的条带边缘，商业成品里仍然有覆盖。"""
     valid = np.zeros((40, 40), bool)

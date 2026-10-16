@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import gc
 import multiprocessing
 import os
 import time
@@ -18,13 +19,14 @@ import numpy as np
 from ms_mosaic.at import ATResult, run_at
 from ms_mosaic.camera import Camera, Pose
 from ms_mosaic.catalog import scan_directory
-from ms_mosaic.features import extract_file
+from ms_mosaic.features import extract_file, load_keypoints
 from ms_mosaic.matching import PairMatches, match_pair
 from ms_mosaic.cpu import cpu_cap, job_cpus
 from ms_mosaic.memory import resolve_memory_budget, visible_limit_bytes
 from ms_mosaic.pairs import select_pairs
 from ms_mosaic.at import CALIBRATION_STAGES
 from ms_mosaic.scene import (
+    BAND_ORDER,
     MIN_AGL_M,
     MAX_TILT_DEG,
     PRIMARY_BAND,
@@ -112,20 +114,53 @@ def _limit_blas_threads() -> None:
 
 
 def _extract_init() -> None:
+    from ms_mosaic.parallel import prefer_oom_kill
+
     _limit_blas_threads()
+    prefer_oom_kill()
+
+
+@dataclass(frozen=True)
+class PairStat:
+    """像对匹配摘要。质量报告只要 (i, j, 内点数)，不必留着内点下标数组。"""
+
+    i: int
+    j: int
+    n: int
+
+    def __len__(self) -> int:
+        return int(self.n)
+
+
+@dataclass
+class TrackSummary:
+    """连接点摘要：每张影像上的连接点数与总条数，检查点续跑时代替完整轨迹。"""
+
+    counts: dict[int, int]
+    n_tracks: int
+
+    def __len__(self) -> int:
+        return int(self.n_tracks)
+
+    def per_image_counts(self) -> dict[int, int]:
+        return dict(self.counts)
+
+
+def summarize_matches(matches) -> list[PairStat]:
+    return [PairStat(int(pm.i), int(pm.j), int(len(pm))) for pm in matches]
 
 
 @dataclass
 class SparseResult:
     block: Block
     at: ATResult
-    tracks: Tracks
+    tracks: Tracks | TrackSummary
     image_paths: dict[int, Path]
     poses: dict[int, Pose]
     camera: Camera
     timings: dict[str, float] = field(default_factory=dict)
     counts: dict[str, int] = field(default_factory=dict)
-    matches: list[PairMatches] = field(default_factory=list)
+    matches: list[PairStat] = field(default_factory=list)
     keypoint_counts: dict[int, int] = field(default_factory=dict)
 
     @property
@@ -139,15 +174,18 @@ def _extract_worker(job):
     return index
 
 
-def _match_init(cache_dir, cam):
+def _match_init(cache_dir, cameras_by_band: dict):
+    from ms_mosaic.parallel import prefer_oom_kill
+
     _limit_blas_threads()
-    _SHARED["cam"] = cam
+    prefer_oom_kill()
+    _SHARED["cameras"] = cameras_by_band
     _SHARED["cache_dir"] = str(cache_dir)
 
 
 def _match_worker(job):
-    i, j, path_i, path_j = job
-    cam = _SHARED["cam"]
+    i, j, path_i, path_j, band = job
+    cam = _SHARED["cameras"][band]
     cache = Path(_SHARED["cache_dir"])
     fi = extract_file(Path(path_i), cache_dir=cache)
     fj = extract_file(Path(path_j), cache_dir=cache)
@@ -155,6 +193,29 @@ def _match_worker(job):
     if pm is None:
         return None
     return (pm.i, pm.j, pm.indices, pm.model)
+
+
+def _band_pair_candidates(block: Block, ground_z: float) -> list:
+    """按波段组内选像对，对齐 LiMapper「关联影像序列」按组连通的做法。"""
+    from ms_mosaic.pairs import PairCandidate
+
+    seen: set[tuple[int, int]] = set()
+    out: list[PairCandidate] = []
+    for band in BAND_ORDER:
+        band_ims = block.by_band(band)
+        if len(band_ims) < 2 or band not in block.cameras:
+            continue
+        cam = block.cameras[band]
+        cameras = {im.index: cam for im in band_ims}
+        poses = {im.index: block.poses[im.index] for im in band_ims}
+        for cand in select_pairs(cameras, poses, ground_z):
+            key = (cand.i, cand.j)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(cand)
+    out.sort(key=lambda p: -p.overlap)
+    return out
 
 
 def run_sparse(
@@ -177,7 +238,7 @@ def run_sparse(
     calibrate_intrinsics: bool = True,
     log=lambda *_: None,
 ) -> SparseResult:
-    """跑完主波段的稀疏重建。输入目录只读。"""
+    """全波段稀疏重建（特征/匹配/空三），对齐商业八组都参与。输入目录只读。"""
     timings: dict[str, float] = {}
     t0 = time.time()
 
@@ -193,18 +254,22 @@ def run_sparse(
         keys = sorted(keep)[: int(max_frames)]
         keep = {k: keep[k] for k in keys}
     block = build_block(keep)
+    images = list(block.images)
     primary = block.primary()
-    cam = block.cameras[PRIMARY_BAND]
-    log(f"曝光 {len(shots)} → 可用 {len(keep)}（过滤 {reasons}）")
+    log(f"曝光 {len(shots)} → 可用 {len(keep)}（过滤 {reasons}），影像 {len(images)} 张（含各波段）")
 
-    cameras = {im.index: cam for im in primary}
-    poses = {im.index: block.poses[im.index] for im in primary}
-    candidates = select_pairs(cameras, poses, block.ground_z)
-    log(f"候选像对 {len(candidates)} 对（全组合 {len(primary) * (len(primary) - 1) // 2}）")
+    poses = {im.index: block.poses[im.index] for im in images}
+    candidates = _band_pair_candidates(block, block.ground_z)
+    n_full = len(images) * (len(images) - 1) // 2
+    log(
+        f"候选像对 {len(candidates)} 对（按 {len(BAND_ORDER)} 个波段组内选对；"
+        f"若全影像两两组合为 {n_full}）"
+    )
 
     cache_dir.mkdir(parents=True, exist_ok=True)
-    indices = [im.index for im in primary]
-    paths = [str(im.path) for im in primary]
+    indices = [im.index for im in images]
+    paths = [str(im.path) for im in images]
+    band_by = {im.index: im.band for im in images}
     requested = workers
     budget_bytes = resolve_memory_budget(memory_gb)
     try:
@@ -236,47 +301,48 @@ def run_sparse(
         log(f"空三并行下调 {requested} → {workers}（按{why}封顶）")
     else:
         log(f"空三并行 {workers} 进程")
-    ctx = multiprocessing.get_context("spawn")
-
     t = time.time()
     jobs = [(i, p, str(cache_dir), max_features) for i, p in zip(indices, paths)]
-    with ProcessPoolExecutor(max_workers=workers, mp_context=ctx, initializer=_extract_init) as pool:
-        list(pool.map(_extract_worker, jobs))
+    _extract_all(jobs, workers)
     timings["features"] = time.time() - t
-    log(f"特征提取 {timings['features']:.1f}s")
+    log(f"特征提取 {len(jobs)} 张，{timings['features']:.1f}s")
 
     t = time.time()
     path_by = dict(zip(indices, paths))
-    pair_jobs = [(c.i, c.j, path_by[c.i], path_by[c.j]) for c in candidates]
-    with ProcessPoolExecutor(
-        max_workers=workers,
-        mp_context=ctx,
-        initializer=_match_init,
-        initargs=(str(cache_dir), cam),
-    ) as pool:
-        raw = list(pool.map(_match_worker, pair_jobs, chunksize=4))
-    matches = [PairMatches(*r) for r in raw if r is not None]
+    pair_jobs = [
+        (c.i, c.j, path_by[c.i], path_by[c.j], band_by[c.i]) for c in candidates
+    ]
+    matches = _match_all(pair_jobs, workers, cache_dir, dict(block.cameras))
     timings["matching"] = time.time() - t
     log(f"匹配 {len(matches)}/{len(candidates)} 对成功，{timings['matching']:.1f}s")
 
     tracks = build_tracks(matches)
+    # 内点下标数组交完轨即可丢；报告只要每对的 (i, j, 内点数)。
+    match_stats = summarize_matches(matches)
+    del matches
+    gc.collect()
     log(
         f"连接点 {len(tracks)} 条，观测 {tracks.total_observations()}，"
         f"平均轨迹长 {tracks.lengths.mean():.2f}"
     )
 
-    feats = {i: extract_file(Path(p), cache_dir=cache_dir) for i, p in zip(indices, paths)}
-    image_camera = {i: PRIMARY_BAND for i in indices}
-    gps = {i: block.gps[i] for i in indices}
-    att = {i: block.poses[i].rotation for i in indices}
+    # 交会只要关键点。不加载描述子，峰值大约少 8 GB（1992×8192×128 float32）。
+    keypoints = {
+        i: load_keypoints(Path(p), cache_dir=cache_dir) for i, p in zip(indices, paths)
+    }
+    # run_at 交会后会清空 keypoints，点数必须先记下。
+    keypoint_counts = {i: int(len(kp)) for i, kp in keypoints.items()}
+    image_camera = {im.index: im.band for im in images}
+    gps = {im.index: block.gps[im.index] for im in images}
+    att = {im.index: block.poses[im.index].rotation for im in images}
 
     t = time.time()
     at_stages = CALIBRATION_STAGES if calibrate_intrinsics else ((),)
     at = run_at(
-        {PRIMARY_BAND: cam},
+        dict(block.cameras),
         poses,
         tracks,
-        feats,
+        keypoints,
         image_camera,
         gps,
         att,
@@ -286,26 +352,54 @@ def run_sparse(
         outlier_threshold_px=outlier_threshold_px if outlier_threshold_px is not None else 6.0,
         log=log,
     )
+    del keypoints
+    # 逐条观测和完整轨迹后面只用于报告计数，约 2~3 GB。压成每影像摘要再进加密/正射。
+    at.summarize_observations(drop=True)
+    track_stats = TrackSummary(tracks.per_image_counts(), len(tracks))
+    del tracks
+    gc.collect()
     timings["at"] = time.time() - t
     timings["total"] = time.time() - t0
     log(f"空三 {timings['at']:.1f}s，稀疏重建合计 {timings['total']:.1f}s")
 
+    # 密集/GSD 仍取主波段内参；缺 Color 时退回任一已解相机
+    primary_cam = at.cameras.get(PRIMARY_BAND) or next(iter(at.cameras.values()))
     return SparseResult(
         block=block,
         at=at,
-        tracks=tracks,
-        image_paths={i: Path(p) for i, p in zip(indices, paths)},
+        tracks=track_stats,
+        image_paths={im.index: im.path for im in images},
         poses=at.poses,
-        camera=at.cameras[PRIMARY_BAND],
+        camera=primary_cam,
         timings=timings,
         counts={
             "n_shots": len(shots),
             "n_usable": len(keep),
             "n_primary": len(primary),
+            "n_images": len(images),
             "n_candidates": len(candidates),
-            "n_matched_pairs": len(matches),
-            "n_tracks": len(tracks),
+            "n_matched_pairs": len(match_stats),
+            "n_tracks": len(track_stats),
+            "n_keypoints": int(sum(keypoint_counts.values())),
         },
-        matches=matches,
-        keypoint_counts={i: len(feats[i]) for i in feats},
+        matches=match_stats,
+        keypoint_counts=keypoint_counts,
     )
+
+
+def _extract_all(jobs: list, workers: int) -> None:
+    ctx = multiprocessing.get_context("spawn")
+    with ProcessPoolExecutor(max_workers=workers, mp_context=ctx, initializer=_extract_init) as pool:
+        list(pool.map(_extract_worker, jobs))
+
+
+def _match_all(pair_jobs: list, workers: int, cache_dir: Path, cameras: dict) -> list[PairMatches]:
+    ctx = multiprocessing.get_context("spawn")
+    with ProcessPoolExecutor(
+        max_workers=workers,
+        mp_context=ctx,
+        initializer=_match_init,
+        initargs=(str(cache_dir), cameras),
+    ) as pool:
+        raw = list(pool.map(_match_worker, pair_jobs, chunksize=4))
+    return [PairMatches(*r) for r in raw if r is not None]

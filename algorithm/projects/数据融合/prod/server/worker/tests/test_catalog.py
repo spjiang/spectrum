@@ -2,8 +2,16 @@ from pathlib import Path
 
 import pytest
 
-from ms_mosaic.catalog import Shot, group_shots, parse_filename, scan_directory
+from ms_mosaic.catalog import Shot, group_shots, parse_filename, read_sidecar, scan_directory
 from ms_mosaic.local_defaults import INPUT as REAL
+
+# 容器内挂载的 S810 辐射校正样例（与原始同曝光，XMP 无 Fused、有 EXIF GPS）
+_R_SAMPLE = Path(
+    "/data/input/S810原始数据/20260528原始数据/辐射校正数据/15：30/MAX_0002_450nm_R.tif"
+)
+_D_SAMPLE = Path(
+    "/data/input/S810原始数据/20260528原始数据/原始数据/15：30/MAX_20260528_002/MAX_0002_450nm_D.tif"
+)
 
 
 def test_parse_color_jpg():
@@ -20,6 +28,16 @@ def test_parse_green_tif():
     assert rec.band == "550nm"
     assert rec.wavelength_nm == 550
     assert rec.role == "D"
+    assert rec.kind == "ms"
+
+
+def test_parse_radiometric_r():
+    """辐射校正产品后缀是 _R，必须能入册。"""
+    rec = parse_filename(Path("MAX_0002_450nm_R.tif"))
+    assert rec is not None
+    assert rec.index == 2
+    assert rec.band == "450nm"
+    assert rec.role == "R"
     assert rec.kind == "ms"
 
 
@@ -45,6 +63,42 @@ def test_group_shots_binds_rgb_and_bands():
     assert shots[3].rgb.path.name == "MAX_0003_Color_D.jpg"
     assert "550nm" in shots[3].ms
     assert shots[4].ms == {}
+
+
+def test_group_shots_radiometric_is_not_whiteboard():
+    files = [
+        parse_filename(Path("MAX_0002_450nm_R.tif")),
+        parse_filename(Path("MAX_0002_550nm_R.tif")),
+    ]
+    shots = group_shots(files)
+    assert shots[2].role != "W"
+    assert "450nm" in shots[2].ms
+
+
+@pytest.mark.skipif(not _R_SAMPLE.is_file(), reason="no S810 radiometric sample")
+def test_r_sidecar_uses_exif_gps_keeps_xmp_attitude():
+    """_R 无 Position*Fused，位置走 EXIF GPS；Yaw/Pitch/相对高仍取 XMP。"""
+    pos, uuid = read_sidecar(_R_SAMPLE)
+    assert pos is not None
+    assert uuid == "20265286f345915"
+    assert abs(pos.lat - 22.71191089) < 1e-5
+    assert abs(pos.lon - 114.411399) < 1e-5
+    assert abs(pos.alt_m - 129.86) < 0.1
+    assert abs(pos.yaw_deg - 51.1) < 0.05
+    assert abs(pos.pitch_deg - (-90.1)) < 0.05
+    assert abs(pos.agl_m - 100.1) < 0.05
+    assert pos.agl_m > 50  # 不能再被当成贴地
+
+
+@pytest.mark.skipif(not (_R_SAMPLE.is_file() and _D_SAMPLE.is_file()), reason="no S810 pair")
+def test_r_and_d_sidecar_agree_on_position():
+    pos_r, _ = read_sidecar(_R_SAMPLE)
+    pos_d, _ = read_sidecar(_D_SAMPLE)
+    assert pos_r is not None and pos_d is not None
+    assert abs(pos_r.lat - pos_d.lat) < 1e-4
+    assert abs(pos_r.lon - pos_d.lon) < 1e-4
+    assert abs(pos_r.alt_m - pos_d.alt_m) < 0.2
+    assert abs(pos_r.yaw_deg - pos_d.yaw_deg) < 0.05
 
 
 @pytest.mark.skipif(not REAL.exists(), reason="no MAX_20251017_001 dataset")
